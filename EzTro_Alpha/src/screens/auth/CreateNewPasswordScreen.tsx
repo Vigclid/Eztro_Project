@@ -1,0 +1,159 @@
+import { useNavigation } from "@react-navigation/native";
+import React, { useState } from "react";
+import {
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { AppButton } from "../../components/AppButton";
+import {
+  BORDER_RADIUS,
+  COLORS,
+  FONT_SIZE,
+  IMAGE_SIZE,
+  SPACING,
+} from "../../constants/theme";
+import { AuthNavigationProp } from "../../navigation/navigation.type";
+
+const BACK_BUTTON_ICON_URI =
+  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/zRSUK6gXk9/xt6amf9v_expires_30_days.png";
+
+export const CreateNewPasswordScreen = () => {
+  const navigation = useNavigation<AuthNavigationProp>();
+  const [newPassword, onChangeNewPassword] = useState("");
+  const [confirmPassword, onChangeConfirmPassword] = useState("");
+
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
+  const handleResetPasswordPress = () => {
+    // TODO: Implement reset password logic
+    alert("Pressed!");
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBackPress}
+          activeOpacity={0.8}
+        >
+          <Image
+            source={{ uri: BACK_BUTTON_ICON_URI }}
+            resizeMode="stretch"
+            style={styles.backButtonIcon}
+          />
+        </TouchableOpacity>
+
+        <View style={styles.headingContainer}>
+          <Text style={styles.heading}>Create new password</Text>
+        </View>
+
+        <TextInput
+          placeholder="New Password"
+          placeholderTextColor={COLORS.PLACEHOLDER_TEXT}
+          value={newPassword}
+          onChangeText={onChangeNewPassword}
+          secureTextEntry
+          style={styles.passwordInput}
+        />
+
+        <TextInput
+          placeholder="Confirm Password"
+          placeholderTextColor={COLORS.PLACEHOLDER_TEXT}
+          value={confirmPassword}
+          onChangeText={onChangeConfirmPassword}
+          secureTextEntry
+          style={styles.confirmPasswordInput}
+        />
+
+        <AppButton
+          title="Reset Password"
+          onPress={handleResetPasswordPress}
+          variant="primary"
+          style={styles.resetButton}
+        />
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.WHITE,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: COLORS.WHITE,
+  },
+  scrollContent: {
+    paddingTop: SPACING.OTP_SCREEN_TOP_PADDING,
+    paddingRight: SPACING.SCROLL_PADDING_RIGHT,
+    paddingBottom: SPACING.SCROLL_BOTTOM_PADDING,
+  },
+  backButton: {
+    alignSelf: "flex-start",
+    backgroundColor: COLORS.WHITE,
+    borderColor: COLORS.BORDER,
+    borderRadius: BORDER_RADIUS.BACK_BUTTON,
+    borderWidth: 1,
+    paddingVertical: SPACING.MEDIUM_SMALL,
+    paddingHorizontal: SPACING.SMALL,
+    marginBottom: SPACING.SECTION_SPACING,
+    marginLeft: SPACING.BACK_BUTTON_MARGIN_LEFT,
+  },
+  backButtonIcon: {
+    width: IMAGE_SIZE.BACK_BUTTON_ICON_WIDTH,
+    height: IMAGE_SIZE.BACK_BUTTON_ICON_HEIGHT,
+  },
+  headingContainer: {
+    alignSelf: "flex-start",
+    paddingBottom: SPACING.XS,
+    marginBottom: SPACING.LARGE_SECTION_SPACING,
+    marginLeft: SPACING.BACK_BUTTON_MARGIN_LEFT,
+  },
+  heading: {
+    color: COLORS.BLACK,
+    fontSize: FONT_SIZE.HEADING,
+    fontWeight: "bold",
+  },
+  passwordInput: {
+    color: COLORS.PLACEHOLDER_TEXT,
+    fontSize: FONT_SIZE.INPUT,
+    marginBottom: SPACING.MEDIUM,
+    marginLeft: SPACING.PASSWORD_INPUT_MARGIN_LEFT,
+    backgroundColor: COLORS.PASSWORD_CONTAINER_BACKGROUND,
+    borderColor: COLORS.BORDER,
+    borderRadius: BORDER_RADIUS.INPUT,
+    borderWidth: 1,
+    padding: SPACING.INPUT_PADDING,
+  },
+  confirmPasswordInput: {
+    color: COLORS.PLACEHOLDER_TEXT,
+    fontSize: FONT_SIZE.INPUT,
+    marginBottom: SPACING.CONFIRM_PASSWORD_MARGIN_BOTTOM,
+    marginLeft: SPACING.PASSWORD_INPUT_MARGIN_LEFT,
+    backgroundColor: COLORS.PASSWORD_CONTAINER_BACKGROUND,
+    borderColor: COLORS.BORDER,
+    borderRadius: BORDER_RADIUS.INPUT,
+    borderWidth: 1,
+    padding: SPACING.INPUT_PADDING,
+  },
+  resetButton: {
+    marginBottom: SPACING.RESET_PASSWORD_BUTTON_MARGIN_BOTTOM,
+    marginLeft: SPACING.PASSWORD_INPUT_MARGIN_LEFT,
+  },
+});
+
+export default CreateNewPasswordScreen;

@@ -1,0 +1,34 @@
+You must follow these rules strictly.
+
+GENERAL
+
+- This project uses React Native with TypeScript ONLY.
+- Do NOT generate JavaScript files. Use .ts or .tsx only.
+- If you are unsure about a requirement, ASK before writing code.
+
+FILE PLACEMENT
+
+- Do NOT write or modify code in App.tsx unless explicitly instructed.
+- Screens MUST be created or modified ONLY in src/screens.
+- Navigation logic MUST be created or modified ONLY in src/navigation.
+- Reusable UI components MUST be created ONLY in src/components.
+- Layout and default app layout MUST be created or modified ONLY in src/components/layout.
+- Interfaces and types MUST be declared ONLY in src/types.
+- Constants MUST be declared ONLY in src/constants.
+- Utility and shared functions MUST be declared ONLY in src/utils.
+- Global state (user session, auth, app state) MUST be handled using:
+  - src/context OR
+  - src/features and src/stores (Redux or similar)
+
+FILE CREATION RULES
+
+- Do NOT create new files without explicit permission.
+- If a required file does not exist, ASK before creating it.
+- Prefer modifying existing files when instructed.
+
+CODE STYLE
+
+- Use functional components only.
+- Use named exports unless explicitly told to use default export.
+- Use StyleSheet for styling (no inline styles).
+- Do NOT hardcode colors, spacing, or text values; use constants or theme where applicable.
