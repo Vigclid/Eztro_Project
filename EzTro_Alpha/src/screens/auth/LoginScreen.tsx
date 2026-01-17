@@ -36,7 +36,7 @@ export const LoginScreen = () => {
 
   const handleLoginPress = () => {
     // TODO: Implement login logic
-    alert("Pressed!");
+    navigation.navigate("createBoardingHouse");
   };
 
   const handleForgotPasswordPress = () => {

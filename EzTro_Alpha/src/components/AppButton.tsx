@@ -39,11 +39,11 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.LARGE,
   },
   primaryButton: {
-    backgroundColor: COLORS.BLACK,
+    backgroundColor: COLORS.PRIMARY,
   },
   secondaryButton: {
     backgroundColor: COLORS.WHITE,
-    borderColor: COLORS.BLACK,
+    borderColor: COLORS.PRIMARY,
     borderWidth: 1,
   },
   text: {
@@ -54,6 +54,6 @@ const styles = StyleSheet.create({
     color: COLORS.WHITE,
   },
   secondaryText: {
-    color: COLORS.BLACK,
+    color: COLORS.PRIMARY,
   },
 });

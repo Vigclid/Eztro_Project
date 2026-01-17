@@ -13,6 +13,8 @@ export type AuthStackParamList = {
   forgotPassword: undefined;
   otpVerification: undefined;
   createNewPassword: undefined;
+  changePasswordSuccessful: undefined;
+  createBoardingHouse: undefined;
 };
 
 export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;

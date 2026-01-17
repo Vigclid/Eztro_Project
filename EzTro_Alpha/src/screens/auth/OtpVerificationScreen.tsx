@@ -27,7 +27,6 @@ export const OtpVerificationScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
-
   const handleBackPress = () => {
     navigation.goBack();
   };

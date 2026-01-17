@@ -34,7 +34,7 @@ export const CreateNewPasswordScreen = () => {
 
   const handleResetPasswordPress = () => {
     // TODO: Implement reset password logic
-    alert("Pressed!");
+    navigation.navigate("changePasswordSuccessful");
   };
 
   return (
