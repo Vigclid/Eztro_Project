@@ -9,6 +9,8 @@ export const COLORS = {
   HIGHLIGHT_TEXT: "#FF8E1D",
   PLACEHOLDER_TEXT: "#8390A1",
   SECONDARY_TEXT: "#6A707C",
+  ERROR_TEXT: "#FF4D4F",
+  SUCCESS_TEXT: "#52C41A",
 } as const;
 
 export const SPACING = {

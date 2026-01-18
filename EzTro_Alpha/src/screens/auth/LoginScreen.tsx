@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { AppButton } from "../../components/AppButton";
 import {
@@ -19,6 +20,10 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { AuthNavigationProp } from "../../navigation/navigation.type";
+import { loginAsync } from "../../features/auth/authSlice";
+
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../../stores/store";
 
 const BACK_BUTTON_ICON_URI =
   "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/zRSUK6gXk9/no0krzbp_expires_30_days.png";
@@ -27,16 +32,104 @@ const PASSWORD_ICON_URI =
 
 export const LoginScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
-  const [userId, onChangeUserId] = useState("");
-  const [password, onChangePassword] = useState("");
+  const dispatch = useDispatch<AppDispatch>();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailSuccess, setEmailSuccess] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [checkValid, setCheckValid] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleBackPress = () => {
     navigation.goBack();
   };
 
-  const handleLoginPress = () => {
+  const renderPasswordMessage = () => {
+    if (!password) return null;
+
+    if (passwordError) {
+      return <Text style={styles.error}>{passwordError}</Text>;
+    }
+
+    return <Text style={styles.message}>{passwordSuccess}</Text>;
+  };
+
+  const renderEmailMessage = () => {
+    if (!email) return null;
+
+    if (emailError) {
+      return <Text style={styles.error}>{emailError}</Text>;
+    }
+
+    return <Text style={styles.message}>{emailSuccess}</Text>;
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+
+    if (text === "") {
+      setEmailError("");
+      setEmailSuccess("");
+      setCheckValid(false);
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (emailRegex.test(text)) {
+      setEmailSuccess("Email hợp lệ");
+      setEmailError("");
+      setCheckValid(true);
+    } else {
+      setEmailError("Email không đúng định dạng");
+      setEmailSuccess("");
+      setCheckValid(false);
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+
+    if (text === "") {
+      setPasswordError("");
+      setPasswordSuccess("");
+      setCheckValid(false);
+      return;
+    }
+
+    if (text.length >= 8) {
+      setPasswordSuccess("Mật khẩu hợp lệ");
+      setPasswordError("");
+      setCheckValid(true);
+    } else {
+      setPasswordError("Mật khẩu phải có ít nhất 8 ký tự");
+      setPasswordSuccess("");
+      setCheckValid(false);
+    }
+  };
+
+  const handleLoginPress = async () => {
     // TODO: Implement login logic
-    navigation.navigate("createBoardingHouse");
+    if (!email || !password) {
+      Alert.alert("ban vui long nhap day du thong tin");
+      return;
+    }
+    if (!checkValid) {
+      Alert.alert("Vui long kiem tra lai thong tin");
+      return;
+    }
+    setLoading(true);
+    const result = await dispatch(loginAsync({ email, password }));
+    setLoading(false);
+
+    if (loginAsync.fulfilled.match(result)) {
+      Alert.alert("Dang nhap thanh cong");
+      navigation.navigate("createBoardingHouse");
+    } else {
+      Alert.alert("Dang nhap that bai", result.payload as string);
+    }
   };
 
   const handleForgotPasswordPress = () => {
@@ -64,48 +157,45 @@ export const LoginScreen = () => {
             style={styles.backButtonIcon}
           />
         </TouchableOpacity>
-
         <View style={styles.headingContainer}>
           <Text style={styles.heading}>Chào Mừng!</Text>
         </View>
-
         <TextInput
-          placeholder="Nhập ID của bạn"
+          placeholder="Nhập Email"
           placeholderTextColor={COLORS.PLACEHOLDER_TEXT}
-          value={userId}
-          onChangeText={onChangeUserId}
+          value={email}
+          onChangeText={handleEmailChange}
           style={styles.input}
         />
-
+        {renderEmailMessage()}
         <View style={styles.passwordContainer}>
           <TextInput
             placeholder="Nhập mật khẩu"
             placeholderTextColor={COLORS.PLACEHOLDER_TEXT}
             value={password}
-            onChangeText={onChangePassword}
+            onChangeText={handlePasswordChange}
             secureTextEntry
             style={styles.passwordInput}
           />
+
           <Image
             source={{ uri: PASSWORD_ICON_URI }}
             resizeMode="stretch"
             style={styles.passwordIcon}
           />
         </View>
-
+        {renderPasswordMessage()}
         <View style={styles.forgotPasswordContainer}>
           <TouchableOpacity onPress={handleForgotPasswordPress}>
             <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
           </TouchableOpacity>
         </View>
-
         <AppButton
           title="Đăng nhập"
           onPress={handleLoginPress}
           variant="primary"
           style={styles.loginButton}
         />
-
         <View style={styles.registerContainer}>
           <Text style={styles.registerText}>Don't have an account?</Text>
           <TouchableOpacity onPress={handleRegisterPress}>
@@ -217,6 +307,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: SPACING.EXTRA_LARGE,
+  },
+  messageContainer: {
+    alignItems: "center",
+    marginBottom: SPACING.SMALL,
+  },
+  message: {
+    color: COLORS.SUCCESS_TEXT,
+    fontSize: FONT_SIZE.INPUT,
+    marginLeft: 25,
+    marginBottom: 10,
+  },
+  errorContainer: {
+    alignItems: "center",
+    marginBottom: SPACING.SMALL,
+  },
+  error: {
+    color: COLORS.ERROR_TEXT,
+    fontSize: FONT_SIZE.INPUT,
+    marginLeft: 25,
+    marginBottom: 10,
   },
 });
 
