@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import axios, { AxiosInstance } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import axios, { AxiosInstance } from "axios";
 import environments from "../../environments/env";
 import { IUser } from "../../types/users";
 
@@ -26,8 +26,6 @@ export const loginAsync = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      console.log("SERVER =", process.env.EXPO_PUBLIC_SERVER_URI);
-
       const res = await authAxios
         .post(
           `${environments.SERVER_URI}login`,
@@ -81,17 +79,17 @@ const authSlice = createSlice({
   },
   extraReducers: (builder: any) => {
     builder
-      .addCase(loginAsync.pending, (state) => {
+      .addCase(loginAsync.pending, (state: any) => {
         state.error = null;
       })
-      .addCase(loginAsync.fulfilled, (state, action) => {
+      .addCase(loginAsync.fulfilled, (state: any, action: any) => {
         state.accessToken = action.payload?.accessToken || null;
         state.user = action.payload?.user || null;
       })
-      .addCase(loginAsync.rejected, (state, action) => {
+      .addCase(loginAsync.rejected, (state: any, action: any) => {
         state.error = action.payload as string;
       })
-      .addCase(logoutAsync.fulfilled, (state) => {
+      .addCase(logoutAsync.fulfilled, (state: any) => {
         state.accessToken = null;
         state.user = null;
       });
