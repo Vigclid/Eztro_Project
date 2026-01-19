@@ -1,82 +1,185 @@
 import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { CheckCircle2 } from "lucide-react-native";
 import React from "react";
 import {
-  Image,
+  Dimensions,
+  Platform,
   SafeAreaView,
-  ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
-import { AppButton } from "../../components/AppButton";
-import { COLORS, FONT_SIZE, IMAGE_SIZE, SPACING } from "../../constants/theme";
+
+// Types
 import { AuthNavigationProp } from "../../navigation/navigation.type";
 
-const SUCCESS_ICON_URI =
-  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/zRSUK6gXk9/cxzkv7td_expires_30_days.png";
+const { width } = Dimensions.get("window");
 
 export const ChangePasswordSuccessfulPage = () => {
   const navigation = useNavigation<AuthNavigationProp>();
 
+  // Logic Handler (Preserved)
   const handleBackToLogin = () => {
     navigation.navigate("login");
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Image
-          source={{ uri: SUCCESS_ICON_URI }}
-          resizeMode="stretch"
-          style={styles.successIcon}
-        />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      {/* Background Gradient (emerald-50 via white to teal-50) */}
+      <LinearGradient
+        colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
+        style={styles.background}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      
+      {/* Decorative Blobs */}
+      <View style={[styles.blob, styles.blobTop]} />
+      <View style={[styles.blob, styles.blobBottom]} />
 
-        <View style={styles.headingContainer}>
-          <Text style={styles.heading}>Đã đổi mật khẩu</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.contentContainer}>
+          
+          {/* Success Icon */}
+          <View style={styles.iconWrapper}>
+            <LinearGradient
+              colors={["#34d399", "#14b8a6"]} // emerald-400 -> teal-500
+              style={styles.iconGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <CheckCircle2 size={64} color="#ffffff" strokeWidth={3} />
+            </LinearGradient>
+          </View>
+
+          {/* Title & Subtitle */}
+          <Text style={styles.title}>Thành công! 🎉</Text>
+          <Text style={styles.subtitle}>
+            Mật khẩu của bạn đã được thay đổi{"\n"}thành công
+          </Text>
+
+          {/* Back to Login Button */}
+          <TouchableOpacity 
+            style={styles.buttonShadow} 
+            onPress={handleBackToLogin}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={["#10b981", "#0d9488"]} // emerald-500 -> teal-600
+              start={{ x: 0, y: 0.5 }} // Horizontal gradient
+              end={{ x: 1, y: 0.5 }}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>Quay lại đăng nhập</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
         </View>
-
-        <AppButton
-          title="Trở lại đăng nhập"
-          onPress={handleBackToLogin}
-          variant="primary"
-          style={styles.button}
-        />
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  /* Decorative Blobs */
+  blob: {
+    position: "absolute",
+    borderRadius: 999,
+  },
+  blobTop: {
+    top: 0,
+    right: 0,
+    width: 256,
+    height: 256,
+    backgroundColor: "rgba(167, 243, 208, 0.2)", // emerald-200/20
+    transform: [{ translateX: 50 }, { translateY: -50 }],
+  },
+  blobBottom: {
+    bottom: 0,
+    left: 0,
+    width: 384,
+    height: 384,
+    backgroundColor: "rgba(153, 246, 228, 0.1)", // teal-200/10
+    transform: [{ translateX: -50 }, { translateY: 50 }],
+  },
+
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
-  scrollView: {
+  contentContainer: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
-  },
-  scrollContent: {
-    paddingVertical: SPACING.SUCCESS_SCREEN_TOP_PADDING,
     alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
   },
-  successIcon: {
-    width: IMAGE_SIZE.SUCCESS_ICON_SIZE,
-    height: IMAGE_SIZE.SUCCESS_ICON_SIZE,
-    marginBottom: SPACING.SUCCESS_ICON_MARGIN_BOTTOM,
+
+  /* Icon Styles */
+  iconWrapper: {
+    marginBottom: 32,
+    // Shadow for the circle
+    shadowColor: "#10b981", // emerald-500
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  headingContainer: {
-    paddingBottom: SPACING.XS,
-    marginBottom: SPACING.SUCCESS_HEADING_MARGIN_BOTTOM,
+  iconGradient: {
+    width: 128, // w-32 (32 * 4)
+    height: 128, // h-32
+    borderRadius: 64, // rounded-full
+    alignItems: "center",
+    justifyContent: "center",
   },
-  heading: {
-    color: COLORS.BLACK,
-    fontSize: FONT_SIZE.SUCCESS_HEADING,
+
+  /* Typography */
+  title: {
+    fontSize: 30, // text-3xl
+    fontWeight: "bold",
+    color: "#111827", // gray-900
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#4b5563", // gray-600
+    textAlign: "center",
+    marginBottom: 48,
+    lineHeight: 24,
+  },
+
+  /* Button */
+  buttonShadow: {
+    width: "100%",
+    maxWidth: 380,
+    shadowColor: "#10b981", // emerald-500
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
   },
   button: {
-    alignSelf: "stretch",
+    height: 56, // h-14
+    borderRadius: 16, // rounded-2xl
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

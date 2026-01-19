@@ -1,158 +1,361 @@
 import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Image,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { AppButton } from "../../components/AppButton";
-import {
-  BORDER_RADIUS,
-  COLORS,
-  FONT_SIZE,
-  IMAGE_SIZE,
-  SPACING,
-} from "../../constants/theme";
-import { AuthNavigationProp } from "../../navigation/navigation.type";
 
-const BACK_BUTTON_ICON_URI =
-  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/zRSUK6gXk9/xt6amf9v_expires_30_days.png";
+// Types
+import { AuthNavigationProp } from "../../navigation/navigation.type";
 
 export const CreateNewPasswordScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
-  const [newPassword, onChangeNewPassword] = useState("");
-  const [confirmPassword, onChangeConfirmPassword] = useState("");
+  
+  // State
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
 
+  // Logic Handlers
   const handleBackPress = () => {
     navigation.goBack();
   };
 
   const handleResetPasswordPress = () => {
-    // TODO: Implement reset password logic
+    setError("");
+
+    // Logic from Figma Code
+    if (!newPassword || !confirmPassword) {
+      setError("Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError("Mật khẩu phải có ít nhất 8 ký tự");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Mật khẩu không khớp");
+      return;
+    }
+
+    // Success - Navigate
+    // Note: You might want to call an API here before navigating
     navigation.navigate("changePasswordSuccessful");
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBackPress}
-          activeOpacity={0.8}
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
+        style={styles.background}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      
+      {/* Decorative Blob */}
+      <View style={styles.blob} />
+
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardView}
         >
-          <Image
-            source={{ uri: BACK_BUTTON_ICON_URI }}
-            resizeMode="stretch"
-            style={styles.backButtonIcon}
-          />
-        </TouchableOpacity>
+          {/* Header Back Button */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={handleBackPress}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={20} color="#374151" />
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.headingContainer}>
-          <Text style={styles.heading}>Create new password</Text>
-        </View>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Main Content */}
+            <View style={styles.contentContainer}>
+              
+              {/* Lock Icon Box */}
+              <View style={styles.iconBoxWrapper}>
+                <LinearGradient
+                   colors={["#d1fae5", "#ccfbf1"]} // emerald-100 -> teal-100
+                   style={styles.iconBox}
+                   start={{ x: 0, y: 0 }}
+                   end={{ x: 1, y: 1 }}
+                >
+                  <Lock size={40} color="#059669" /> 
+                </LinearGradient>
+              </View>
 
-        <TextInput
-          placeholder="New Password"
-          placeholderTextColor={COLORS.PLACEHOLDER_TEXT}
-          value={newPassword}
-          onChangeText={onChangeNewPassword}
-          secureTextEntry
-          style={styles.passwordInput}
-        />
+              {/* Title & Description */}
+              <Text style={styles.title}>Tạo mật khẩu mới</Text>
+              <Text style={styles.subtitle}>
+                Mật khẩu mới phải khác với mật khẩu cũ
+              </Text>
 
-        <TextInput
-          placeholder="Confirm Password"
-          placeholderTextColor={COLORS.PLACEHOLDER_TEXT}
-          value={confirmPassword}
-          onChangeText={onChangeConfirmPassword}
-          secureTextEntry
-          style={styles.confirmPasswordInput}
-        />
+              {/* Input 1: New Password */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Mật khẩu mới</Text>
+                <View style={styles.inputWrapper}>
+                  <View style={styles.iconContainer}>
+                    <Lock size={20} color="#9ca3af" />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#9ca3af"
+                    value={newPassword}
+                    onChangeText={(text) => {
+                      setNewPassword(text);
+                      setError("");
+                    }}
+                    secureTextEntry={!showNewPassword}
+                  />
+                  <TouchableOpacity 
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    {showNewPassword ? (
+                      <EyeOff size={20} color="#9ca3af" />
+                    ) : (
+                      <Eye size={20} color="#9ca3af" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-        <AppButton
-          title="Reset Password"
-          onPress={handleResetPasswordPress}
-          variant="primary"
-          style={styles.resetButton}
-        />
-      </ScrollView>
-    </SafeAreaView>
+              {/* Input 2: Confirm Password */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Xác nhận mật khẩu</Text>
+                <View style={styles.inputWrapper}>
+                  <View style={styles.iconContainer}>
+                    <Lock size={20} color="#9ca3af" />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#9ca3af"
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      setError("");
+                    }}
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity 
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} color="#9ca3af" />
+                    ) : (
+                      <Eye size={20} color="#9ca3af" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Error Message Box */}
+              {error ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Submit Button */}
+              <TouchableOpacity 
+                style={styles.submitBtnShadow} 
+                onPress={handleResetPasswordPress}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={["#10b981", "#0d9488"]} // emerald-500 -> teal-600
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.submitBtn}
+                >
+                  <Text style={styles.submitBtnText}>Đặt lại mật khẩu</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  blob: {
+    position: "absolute",
+    top: -60,
+    right: -60,
+    width: 256,
+    height: 256,
+    borderRadius: 128,
+    backgroundColor: "rgba(167, 243, 208, 0.2)", // emerald-200/20
+    transform: [{ scale: 1.2 }],
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
-  scrollView: {
+  keyboardView: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
   },
-  scrollContent: {
-    paddingTop: SPACING.OTP_SCREEN_TOP_PADDING,
-    paddingRight: SPACING.SCROLL_PADDING_RIGHT,
-    paddingBottom: SPACING.SCROLL_BOTTOM_PADDING,
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    marginBottom: 20,
+    zIndex: 10,
   },
   backButton: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.WHITE,
-    borderColor: COLORS.BORDER,
-    borderRadius: BORDER_RADIUS.BACK_BUTTON,
-    borderWidth: 1,
-    paddingVertical: SPACING.MEDIUM_SMALL,
-    paddingHorizontal: SPACING.SMALL,
-    marginBottom: SPACING.SECTION_SPACING,
-    marginLeft: SPACING.BACK_BUTTON_MARGIN_LEFT,
+    width: 48,
+    height: 48,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    // Shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  backButtonIcon: {
-    width: IMAGE_SIZE.BACK_BUTTON_ICON_WIDTH,
-    height: IMAGE_SIZE.BACK_BUTTON_ICON_HEIGHT,
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
-  headingContainer: {
-    alignSelf: "flex-start",
-    paddingBottom: SPACING.XS,
-    marginBottom: SPACING.LARGE_SECTION_SPACING,
-    marginLeft: SPACING.BACK_BUTTON_MARGIN_LEFT,
+  contentContainer: {
+    flex: 1,
   },
-  heading: {
-    color: COLORS.BLACK,
-    fontSize: FONT_SIZE.HEADING,
+  
+  /* Icon Box */
+  iconBoxWrapper: {
+    marginBottom: 24,
+  },
+  iconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Text Styles */
+  title: {
+    fontSize: 28,
     fontWeight: "bold",
+    color: "#111827", // gray-900
+    marginBottom: 8,
   },
-  passwordInput: {
-    color: COLORS.PLACEHOLDER_TEXT,
-    fontSize: FONT_SIZE.INPUT,
-    marginBottom: SPACING.MEDIUM,
-    marginLeft: SPACING.PASSWORD_INPUT_MARGIN_LEFT,
-    backgroundColor: COLORS.PASSWORD_CONTAINER_BACKGROUND,
-    borderColor: COLORS.BORDER,
-    borderRadius: BORDER_RADIUS.INPUT,
+  subtitle: {
+    fontSize: 16,
+    color: "#4b5563", // gray-600
+    marginBottom: 40,
+  },
+
+  /* Input Styles */
+  inputContainer: {
+    marginBottom: 16, // Reduced margin between inputs
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151", // gray-700
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#e5e7eb", // gray-200
+    borderRadius: 16,
+    height: 56,
+  },
+  iconContainer: {
+    paddingLeft: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    height: "100%",
+    fontSize: 16,
+    color: "#111827",
+    paddingHorizontal: 12,
+  },
+  eyeIcon: {
+    padding: 16,
+  },
+
+  /* Error Box */
+  errorBox: {
+    backgroundColor: "#fef2f2", // red-50
+    borderColor: "#fecaca", // red-200
     borderWidth: 1,
-    padding: SPACING.INPUT_PADDING,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 24,
+    alignItems: "center",
   },
-  confirmPasswordInput: {
-    color: COLORS.PLACEHOLDER_TEXT,
-    fontSize: FONT_SIZE.INPUT,
-    marginBottom: SPACING.CONFIRM_PASSWORD_MARGIN_BOTTOM,
-    marginLeft: SPACING.PASSWORD_INPUT_MARGIN_LEFT,
-    backgroundColor: COLORS.PASSWORD_CONTAINER_BACKGROUND,
-    borderColor: COLORS.BORDER,
-    borderRadius: BORDER_RADIUS.INPUT,
-    borderWidth: 1,
-    padding: SPACING.INPUT_PADDING,
+  errorText: {
+    color: "#dc2626", // red-600
+    fontSize: 14,
+    fontWeight: "500",
   },
-  resetButton: {
-    marginBottom: SPACING.RESET_PASSWORD_BUTTON_MARGIN_BOTTOM,
-    marginLeft: SPACING.PASSWORD_INPUT_MARGIN_LEFT,
+
+  /* Submit Button */
+  submitBtnShadow: {
+    marginTop: 8,
+    shadowColor: "#10b981", // emerald-500
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  submitBtn: {
+    height: 56,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

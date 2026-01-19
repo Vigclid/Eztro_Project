@@ -1,161 +1,342 @@
 import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { ArrowLeft, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Image,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { AppButton } from "../../components/AppButton";
-import {
-  BORDER_RADIUS,
-  COLORS,
-  FONT_SIZE,
-  IMAGE_SIZE,
-  SPACING,
-} from "../../constants/theme";
-import { AuthNavigationProp } from "../../navigation/navigation.type";
 
-const BACK_BUTTON_ICON_URI =
-  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/zRSUK6gXk9/ourkfwr3_expires_30_days.png";
+// Types
+import { AuthNavigationProp } from "../../navigation/navigation.type";
 
 export const ForgotPasswordScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
+  
+  // State
   const [email, onChangeEmail] = useState("");
+  const [error, setError] = useState("");
 
+  // Logic Handlers (Preserved from your code)
   const handleBackPress = () => {
     navigation.goBack();
-  };
-
-  const handleSendCodePress = () => {
-    navigation.navigate("otpVerification");
   };
 
   const handleLoginPress = () => {
     navigation.navigate("login");
   };
 
+  const handleSendCodePress = () => {
+    setError("");
+
+    if (!email) {
+      setError("Vui lòng nhập email");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Email không hợp lệ");
+      return;
+    }
+
+    // Navigate to OTP verification logic
+    navigation.navigate("otpVerification"); 
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBackPress}
-          activeOpacity={0.8}
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
+        style={styles.background}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      
+      {/* Decorative Blob */}
+      <View style={styles.blob} />
+
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardView}
         >
-          <Image
-            source={{ uri: BACK_BUTTON_ICON_URI }}
-            resizeMode="stretch"
-            style={styles.backButtonIcon}
-          />
-        </TouchableOpacity>
+          {/* Header Back Button */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={handleBackPress}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={20} color="#374151" />
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.headingContainer}>
-          <Text style={styles.heading}>Forgot Password?</Text>
-        </View>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Main Content Area */}
+            <View style={styles.contentContainer}>
+              
+              {/* Mail Icon Box */}
+              <View style={styles.iconBoxWrapper}>
+                <LinearGradient
+                   colors={["#d1fae5", "#ccfbf1"]} // emerald-100 -> teal-100
+                   style={styles.iconBox}
+                   start={{ x: 0, y: 0 }}
+                   end={{ x: 1, y: 1 }}
+                >
+                  <Mail size={40} color="#059669" /> 
+                </LinearGradient>
+              </View>
 
-        <TextInput
-          placeholder="Enter your email"
-          placeholderTextColor={COLORS.PLACEHOLDER_TEXT}
-          value={email}
-          onChangeText={onChangeEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={styles.input}
-        />
+              {/* Title & Description */}
+              <Text style={styles.title}>Quên mật khẩu?</Text>
+              <Text style={styles.subtitle}>
+                Nhập email của bạn và chúng tôi sẽ gửi mã xác thực để đặt lại mật khẩu
+              </Text>
 
-        <AppButton
-          title="Send Code"
-          onPress={handleSendCodePress}
-          variant="primary"
-          style={styles.sendCodeButton}
-        />
+              {/* Email Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Email</Text>
+                <View style={styles.inputWrapper}>
+                  <View style={styles.iconContainer}>
+                    <Mail size={20} color="#9ca3af" />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="example@email.com"
+                    placeholderTextColor="#9ca3af"
+                    value={email}
+                    onChangeText={(text) => {
+                      onChangeEmail(text);
+                      setError("");
+                    }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    returnKeyType="done"
+                    onSubmitEditing={handleSendCodePress}
+                  />
+                </View>
+              </View>
 
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Remember Password?</Text>
-          <TouchableOpacity onPress={handleLoginPress}>
-            <Text style={styles.loginTextColor}> Login</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+              {/* Error Message Box */}
+              {error ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Send Code Button */}
+              <TouchableOpacity 
+                style={styles.sendBtnShadow} 
+                onPress={handleSendCodePress}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={["#10b981", "#0d9488"]} // emerald-500 -> teal-600
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.sendBtn}
+                >
+                  <Text style={styles.sendBtnText}>Gửi mã xác thực</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+            </View>
+
+            {/* Bottom Login Link (Pushed to bottom via flex) */}
+            <View style={styles.footerLink}>
+              <Text style={styles.footerText}>Đã nhớ mật khẩu? </Text>
+              <TouchableOpacity onPress={handleLoginPress}>
+                <Text style={styles.linkText}>Quay lại đăng nhập</Text>
+              </TouchableOpacity>
+            </View>
+
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  blob: {
+    position: "absolute",
+    top: -60,
+    right: -60,
+    width: 256,
+    height: 256,
+    borderRadius: 128,
+    backgroundColor: "rgba(167, 243, 208, 0.2)", // emerald-200/20
+    transform: [{ scale: 1.2 }],
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
-  scrollView: {
-    paddingTop: SPACING.EXTRA_EXTRA_LARGE,
+  keyboardView: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
   },
-  scrollContent: {
-    paddingTop: SPACING.EXTRA_EXTRA_LARGE,
-    paddingBottom: SPACING.SCROLL_BOTTOM_PADDING,
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    marginBottom: 20,
+    zIndex: 10,
   },
   backButton: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.WHITE,
-    borderColor: COLORS.BORDER,
-    borderRadius: BORDER_RADIUS.BACK_BUTTON,
-    borderWidth: 1,
-    paddingVertical: SPACING.MEDIUM_SMALL,
-    paddingHorizontal: SPACING.SMALL,
-    marginBottom: SPACING.SECTION_SPACING,
-    marginLeft: SPACING.BACK_BUTTON_MARGIN_LEFT,
+    width: 48,
+    height: 48,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    // Shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  backButtonIcon: {
-    width: IMAGE_SIZE.BACK_BUTTON_ICON_WIDTH,
-    height: IMAGE_SIZE.BACK_BUTTON_ICON_HEIGHT,
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    justifyContent: 'space-between', // Push footer to bottom
   },
-  headingContainer: {
-    alignSelf: "flex-start",
-    paddingBottom: SPACING.XS,
-    marginBottom: SPACING.LARGE_SECTION_SPACING,
-    marginLeft: SPACING.BACK_BUTTON_MARGIN_LEFT,
+  contentContainer: {
+    flex: 1,
   },
-  heading: {
-    color: COLORS.BLACK,
-    fontSize: FONT_SIZE.HEADING,
+  
+  /* Icon Box Styles */
+  iconBoxWrapper: {
+    marginBottom: 24,
+  },
+  iconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Text Styles */
+  title: {
+    fontSize: 28, // ~text-3xl
     fontWeight: "bold",
+    color: "#111827", // gray-900
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#4b5563", // gray-600
+    marginBottom: 40,
+    lineHeight: 24,
+  },
+  
+  /* Input Styles */
+  inputContainer: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151", // gray-700
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#e5e7eb", // gray-200
+    borderRadius: 16,
+    height: 56,
+  },
+  iconContainer: {
+    paddingLeft: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   input: {
-    color: COLORS.PLACEHOLDER_TEXT,
-    fontSize: FONT_SIZE.INPUT,
-    marginBottom: SPACING.FORGOT_PASSWORD_INPUT_MARGIN_BOTTOM,
-    marginHorizontal: SPACING.CONTENT_MARGIN_HORIZONTAL,
-    backgroundColor: COLORS.PASSWORD_CONTAINER_BACKGROUND,
-    borderColor: COLORS.BORDER,
-    borderRadius: BORDER_RADIUS.INPUT,
+    flex: 1,
+    height: "100%",
+    fontSize: 16,
+    color: "#111827",
+    paddingHorizontal: 12,
+  },
+
+  /* Error Box */
+  errorBox: {
+    backgroundColor: "#fef2f2", // red-50
+    borderColor: "#fecaca", // red-200
     borderWidth: 1,
-    padding: SPACING.INPUT_PADDING,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    alignItems: "center",
   },
-  sendCodeButton: {
-    marginBottom: SPACING.FORGOT_PASSWORD_BUTTON_BOTTOM_MARGIN,
+  errorText: {
+    color: "#dc2626", // red-600
+    fontSize: 14,
+    fontWeight: "500",
   },
-  loginContainer: {
+
+  /* Send Button */
+  sendBtnShadow: {
+    shadowColor: "#10b981", // emerald-500
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  sendBtn: {
+    height: 56,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  /* Footer Link */
+  footerLink: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: SPACING.EXTRA_LARGE,
+    marginTop: 40,
+    paddingBottom: 20,
   },
-  loginText: {
-    color: COLORS.BLACK,
-    fontSize: FONT_SIZE.BUTTON,
+  footerText: {
+    color: "#4b5563", // gray-600
+    fontSize: 14,
   },
-  loginTextColor: {
-    color: COLORS.HIGHLIGHT_TEXT,
-    fontSize: FONT_SIZE.BUTTON,
+  linkText: {
+    color: "#059669", // emerald-600
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
 
