@@ -9,12 +9,12 @@ export interface IUser extends Document {
   phoneNumber: string;
   roleId: Types.ObjectId | IRole;
   dateOfBirth?: Date;
-  lastLogin?: Date;
   accessFailedCount: number;
   profilePicture?: string;
   statusActive: boolean;
   createdAt: Date;
   loginFailedTime: Date | null;
+  lastLogin?: Date;
 }
 
 const UserSchema = new mongoose.Schema<IUser>(
@@ -27,15 +27,15 @@ const UserSchema = new mongoose.Schema<IUser>(
     roleId: {
       type: Types.ObjectId,
       ref: "roles",
-      required: true,
+      required: false,
     },
     dateOfBirth: { type: Date },
-    lastLogin: { type: Date },
     accessFailedCount: { type: Number, default: 0 },
     profilePicture: { type: String },
     statusActive: { type: Boolean, default: true },
     loginFailedTime: { type: Date, default: null },
     createdAt: { type: Date, default: Date.now },
+    lastLogin: { type: Date },
   },
   {
     versionKey: false,

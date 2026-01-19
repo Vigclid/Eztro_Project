@@ -30,7 +30,7 @@ router
   .put(authenticate, UserController.update)
   .delete(authenticate, authorize(["Admin"]), UserController.delete);
 
-router.route("/exist/:email").get(UserController.checkExistEmail);
+// router.route("/exist/:email").get(UserController.checkExistEmail);
 router.route("/:id/lock").put(authenticate, authorize(["Admin"]), UserController.lockAccount);
 router.route("/:id/unlock").put(authenticate, authorize(["Admin"]), UserController.unlockAccount);
 

@@ -11,6 +11,21 @@ export class userController extends GenericController<IUser> {
     this.UserService = userService;
   }
 
+  createAccount = async (req: Request, res: Response) => {
+    try {
+      console.log("Creating user with data:", req.body);
+      const isEmailExist = await this.UserService.getByEmail(req.body.email);
+      if (isEmailExist) {
+        const result = await this.UserService.createAccount(req.body);
+        res.status(201).json(responseWrapper("success", "Created successfully", result));
+      } else {
+        res.status(400).json(responseWrapper("error", "Email already exists"));
+      }
+    } catch (error: any) {
+      res.status(500).json(responseWrapper("error", "Internal Server Error", null, error.message));
+    }
+  };
+
   getAllPopulated = async (_req: Request, res: Response) => {
     res.json(
       responseWrapper("success", "Fetched successfully", await this.UserService.getAllPopulated())
@@ -29,19 +44,6 @@ export class userController extends GenericController<IUser> {
       res.json(responseWrapper("success", "Change password successfully"));
     } catch (error) {
       res.status(404).json(responseWrapper("error", "Something wrongs!"));
-    }
-  };
-
-  checkExistEmail = async (req: Request, res: Response) => {
-    try {
-      const email = String(req.params.email || "").trim();
-      if (!email) return res.status(400).json(responseWrapper("error", "Email is required"));
-      const user = await this.UserService.getByEmail(email);
-      return res
-        .status(200)
-        .json(responseWrapper("success", "Checked successfully", { exists: !!user }));
-    } catch (error) {
-      res.status(500).json(responseWrapper("error", "Internal Server Error"));
     }
   };
 

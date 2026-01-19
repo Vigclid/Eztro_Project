@@ -12,7 +12,7 @@ export class userService extends GenericService<IUser> {
     return userModel.find().populate("roleId").exec();
   };
 
-  create = async (data: Partial<IUser>) => {
+  createAccount = async (data: Partial<IUser>) => {
     const role = await roleModel.findOne({ name: "Landlord" });
     if (!role) {
       throw new Error("Role 'user' not found");

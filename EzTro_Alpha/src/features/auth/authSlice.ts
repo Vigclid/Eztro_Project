@@ -26,8 +26,6 @@ export const loginAsync = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      console.log("SERVER =", process.env.EXPO_PUBLIC_SERVER_URI);
-
       const res = await authAxios
         .post(
           `${environments.SERVER_URI}login`,
