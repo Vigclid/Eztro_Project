@@ -238,6 +238,7 @@ export const RegisterScreen = () => {
 
         <View style={styles.headingContainer}>
           <Text style={styles.heading}>Đăng ký</Text>
+          <Text></Text>
         </View>
         <View style={styles.inputContainer}>
           <TextInput
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.INPUT,
     borderWidth: 1,
     padding: SPACING.INPUT_PADDING,
-    width: 150,
+    width: 160,
   },
   passwordInput: {
     color: COLORS.PLACEHOLDER_TEXT,

@@ -1,11 +1,11 @@
 import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
+import AppText from "../../components/AppText";
 import {
   Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
@@ -50,20 +50,20 @@ export const LoginScreen = () => {
     if (!password) return null;
 
     if (passwordError) {
-      return <Text style={styles.error}>{passwordError}</Text>;
+      return <AppText style={styles.error}>{passwordError}</AppText>;
     }
 
-    return <Text style={styles.message}>{passwordSuccess}</Text>;
+    return <AppText style={styles.message}>{passwordSuccess}</AppText>;
   };
 
   const renderEmailMessage = () => {
     if (!email) return null;
 
     if (emailError) {
-      return <Text style={styles.error}>{emailError}</Text>;
+      return <AppText style={styles.error}>{emailError}</AppText>;
     }
 
-    return <Text style={styles.message}>{emailSuccess}</Text>;
+    return <AppText style={styles.message}>{emailSuccess}</AppText>;
   };
 
   const handleEmailChange = (text: string) => {
@@ -158,7 +158,7 @@ export const LoginScreen = () => {
           />
         </TouchableOpacity>
         <View style={styles.headingContainer}>
-          <Text style={styles.heading}>Chào Mừng!</Text>
+          <AppText style={styles.heading}>Đăng Nhập</AppText>
         </View>
         <TextInput
           placeholder="Nhập Email"
@@ -187,7 +187,7 @@ export const LoginScreen = () => {
         {renderPasswordMessage()}
         <View style={styles.forgotPasswordContainer}>
           <TouchableOpacity onPress={handleForgotPasswordPress}>
-            <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
+            <AppText style={styles.forgotPasswordText}>Quên mật khẩu?</AppText>
           </TouchableOpacity>
         </View>
         <AppButton
@@ -197,9 +197,9 @@ export const LoginScreen = () => {
           style={styles.loginButton}
         />
         <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>Don't have an account?</Text>
+          <AppText style={styles.registerText}>Don't have an account?</AppText>
           <TouchableOpacity onPress={handleRegisterPress}>
-            <Text style={styles.registerTextColor}> Register Now</Text>
+            <AppText style={styles.registerTextColor}> Register Now</AppText>
           </TouchableOpacity>
         </View>
       </ScrollView>
