@@ -1,4 +1,5 @@
 import { apiService } from "../../service/apiService";
+import { ApiResponse } from "../../types/app.common";
 import { IUser } from "../../types/users";
 import * as FileSystem from "expo-file-system/legacy";
 
@@ -25,9 +26,13 @@ export const getUserApi = {
   async createUser(userData: any) {
     try {
       const response = await apiService.post(userApi, userData);
-      return response.data;
+      console.log("createUser response:", response);
+      return response;
     } catch (error: any) {
-      console.error("createUser error:", error);
+      if (error.response?.data) {
+        console.log("Backend response:", error.response?.data);
+        return error.response.data;
+      }
       throw error;
     }
   },
