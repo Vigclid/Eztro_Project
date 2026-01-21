@@ -9,7 +9,7 @@ import {
   Phone,
   User,
 } from "lucide-react-native";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -24,8 +24,8 @@ import {
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { AuthNavigationProp } from "../../navigation/navigation.type";
 import { getUserApi } from "../../api/user/user"; // Import từ file chức năng
+import { AuthNavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IUser } from "../../types/users";
 
@@ -165,7 +165,6 @@ export const RegisterScreen = () => {
 
     try {
       const response = (await createUser(userData)) as ApiResponse<IUser>;
-      console.log("Register response:", response);
       if (response.status === "success") {
         Alert.alert("Thành công", "Đăng ký tài khoản thành công");
         navigation.navigate("login");
