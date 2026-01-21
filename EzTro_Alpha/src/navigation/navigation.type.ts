@@ -11,8 +11,8 @@ export type AuthStackParamList = {
   login: undefined;
   register: undefined;
   forgotPassword: undefined;
-  otpVerification: undefined;
-  createNewPassword: undefined;
+  otpVerification: { email: string; tempToken: string } | undefined;
+  createNewPassword: { email: string } | undefined;
   changePasswordSuccessful: undefined;
   createBoardingHouse: undefined;
 };
