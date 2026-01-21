@@ -19,9 +19,14 @@ export const Misc = () => {
     ZERO: 0,
   };
 
+  const NETWORK = {
+    AUTH_TIMEOUT_MS: 10000,
+  };
+
   return {
     ERROR_MESSAGE,
     HTTP_STATUS_CODE,
     NUMBER,
+    NETWORK,
   };
 };

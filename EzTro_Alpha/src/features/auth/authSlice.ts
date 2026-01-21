@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios, { AxiosInstance } from "axios";
+import { Misc } from "../../constants/misc";
 import environments from "../../environments/env";
 import { IUser } from "../../types/users";
 
@@ -15,8 +16,11 @@ const initialState: AuthState = {
   user: null,
   error: null,
 };
+
+const { NETWORK } = Misc();
+
 const authAxios: AxiosInstance = axios.create({
-  timeout: 10000,
+  timeout: NETWORK.AUTH_TIMEOUT_MS,
   withCredentials: true,
 });
 export const loginAsync = createAsyncThunk(
