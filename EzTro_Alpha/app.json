@@ -9,16 +9,17 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "bundleIdentifier": "com.eztro.eztroalpha",
-      "supportsTablet": true,
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "supportsTablet": true
     },
     "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.eztro.eztroalpha"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
@@ -37,24 +38,11 @@
             "backgroundColor": "#000000"
           }
         }
-      ],
-      [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.332795377963-piamufth2c0ro8c7dgd6tsrri7hd9ah2"
-        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "88b0d476-388b-45cb-ae95-7f892e8365b5"
-      }
-    },
-    "owner": "vigclid"
+    }
   }
 }
