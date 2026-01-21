@@ -27,7 +27,7 @@ const UserSchema = new mongoose.Schema<IUser>(
     roleId: {
       type: Types.ObjectId,
       ref: "roles",
-      required: true,
+      required: false,
     },
     dateOfBirth: { type: Date },
     lastLogin: { type: Date },

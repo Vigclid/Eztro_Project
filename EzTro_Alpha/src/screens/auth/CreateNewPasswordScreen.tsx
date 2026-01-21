@@ -1,8 +1,9 @@
-import { useNavigation } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -12,28 +13,37 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 // Types
-import { AuthNavigationProp } from "../../navigation/navigation.type";
-
+import {
+  AuthNavigationProp,
+  AuthStackParamList,
+} from "../../navigation/navigation.type";
+import { getUserApi } from "../../api/user/user";
+import { ApiResponse } from "../../types/app.common";
 export const CreateNewPasswordScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
-  
+  const route = useRoute<RouteProp<AuthStackParamList, "createNewPassword">>();
+  const email = route.params?.email || "";
+
   // State
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const { resetPassword } = getUserApi;
 
   // Logic Handlers
   const handleBackPress = () => {
     navigation.goBack();
   };
 
-  const handleResetPasswordPress = () => {
+  const handleResetPasswordPress = async () => {
     setError("");
 
     // Logic from Figma Code
@@ -51,16 +61,38 @@ export const CreateNewPasswordScreen = () => {
       setError("Mật khẩu không khớp");
       return;
     }
+    if (!email) {
+      setError("Thiếu email để đặt lại mật khẩu");
+      return;
+    }
 
-    // Success - Navigate
-    // Note: You might want to call an API here before navigating
-    navigation.navigate("changePasswordSuccessful");
+    try {
+      setLoading(true);
+      const response = (await resetPassword(
+        email,
+        newPassword,
+      )) as ApiResponse<null>;
+      if (response?.status === "success") {
+        Alert.alert("Thành công", "Đặt lại mật khẩu thành công");
+        navigation.navigate("changePasswordSuccessful");
+      } else {
+        setError(response?.message || "Đặt lại mật khẩu thất bại");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Lỗi hệ thống khi đặt lại mật khẩu");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
       {/* Background Gradient */}
       <LinearGradient
         colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
@@ -68,19 +100,19 @@ export const CreateNewPasswordScreen = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-      
+
       {/* Decorative Blob */}
       <View style={styles.blob} />
 
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
           {/* Header Back Button */}
           <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={handleBackPress}
               activeOpacity={0.7}
             >
@@ -88,22 +120,21 @@ export const CreateNewPasswordScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
             {/* Main Content */}
             <View style={styles.contentContainer}>
-              
               {/* Lock Icon Box */}
               <View style={styles.iconBoxWrapper}>
                 <LinearGradient
-                   colors={["#d1fae5", "#ccfbf1"]} // emerald-100 -> teal-100
-                   style={styles.iconBox}
-                   start={{ x: 0, y: 0 }}
-                   end={{ x: 1, y: 1 }}
+                  colors={["#d1fae5", "#ccfbf1"]} // emerald-100 -> teal-100
+                  style={styles.iconBox}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                 >
-                  <Lock size={40} color="#059669" /> 
+                  <Lock size={40} color="#059669" />
                 </LinearGradient>
               </View>
 
@@ -131,7 +162,7 @@ export const CreateNewPasswordScreen = () => {
                     }}
                     secureTextEntry={!showNewPassword}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setShowNewPassword(!showNewPassword)}
                     style={styles.eyeIcon}
                   >
@@ -162,7 +193,7 @@ export const CreateNewPasswordScreen = () => {
                     }}
                     secureTextEntry={!showConfirmPassword}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                     style={styles.eyeIcon}
                   >
@@ -183,9 +214,10 @@ export const CreateNewPasswordScreen = () => {
               ) : null}
 
               {/* Submit Button */}
-              <TouchableOpacity 
-                style={styles.submitBtnShadow} 
+              <TouchableOpacity
+                style={styles.submitBtnShadow}
                 onPress={handleResetPasswordPress}
+                disabled={loading}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -194,10 +226,11 @@ export const CreateNewPasswordScreen = () => {
                   end={{ x: 1, y: 0 }}
                   style={styles.submitBtn}
                 >
-                  <Text style={styles.submitBtnText}>Đặt lại mật khẩu</Text>
+                  <Text style={styles.submitBtnText}>
+                    {loading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
-
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -226,7 +259,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 30 : 0,
+    marginTop: Platform.OS === "android" ? 30 : 0,
   },
   keyboardView: {
     flex: 1,
@@ -259,7 +292,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
-  
+
   /* Icon Box */
   iconBoxWrapper: {
     marginBottom: 24,
@@ -306,8 +339,8 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     paddingLeft: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   input: {
     flex: 1,

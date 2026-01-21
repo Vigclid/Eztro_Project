@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -12,18 +13,23 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 // Types
 import { AuthNavigationProp } from "../../navigation/navigation.type";
+import { MailPostAPI } from "../../api/MailAPI/POST";
+import { ApiResponse } from "../../types/app.common";
 
 export const ForgotPasswordScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
-  
+  const { sendMail } = MailPostAPI();
+
   // State
   const [email, onChangeEmail] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Logic Handlers (Preserved from your code)
   const handleBackPress = () => {
@@ -34,9 +40,10 @@ export const ForgotPasswordScreen = () => {
     navigation.navigate("login");
   };
 
-  const handleSendCodePress = () => {
+  const handleSendCodePress = async () => {
     setError("");
 
+    // 1. Validation Logic
     if (!email) {
       setError("Vui lòng nhập email");
       return;
@@ -44,18 +51,41 @@ export const ForgotPasswordScreen = () => {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Email không hợp lệ");
+      setError("Email không đúng định dạng");
       return;
     }
 
-    // Navigate to OTP verification logic
-    navigation.navigate("otpVerification"); 
+    try {
+      setLoading(true);
+      const response: ApiResponse = await sendMail(email);
+      if (response.status == "error") {
+        Alert.alert(response.message || "Lỗi hệ thống khi gửi mail");
+        return;
+      } else {
+        Alert.alert(
+          response.message || "Mã xác thực đã được gửi đến email của bạn",
+        );
+        setTimeout(() => {
+          navigation.navigate("otpVerification", {
+            email: email,
+            tempToken: response?.data?.token || "",
+          });
+        }, 500);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Lỗi hệ thống khi gửi mail");
+    } finally {
+      setLoading(false);
+    }
   };
-
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
       {/* Background Gradient */}
       <LinearGradient
         colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
@@ -63,19 +93,19 @@ export const ForgotPasswordScreen = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-      
+
       {/* Decorative Blob */}
       <View style={styles.blob} />
 
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
           {/* Header Back Button */}
           <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={handleBackPress}
               activeOpacity={0.7}
             >
@@ -83,29 +113,29 @@ export const ForgotPasswordScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
             {/* Main Content Area */}
             <View style={styles.contentContainer}>
-              
               {/* Mail Icon Box */}
               <View style={styles.iconBoxWrapper}>
                 <LinearGradient
-                   colors={["#d1fae5", "#ccfbf1"]} // emerald-100 -> teal-100
-                   style={styles.iconBox}
-                   start={{ x: 0, y: 0 }}
-                   end={{ x: 1, y: 1 }}
+                  colors={["#d1fae5", "#ccfbf1"]} // emerald-100 -> teal-100
+                  style={styles.iconBox}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                 >
-                  <Mail size={40} color="#059669" /> 
+                  <Mail size={40} color="#059669" />
                 </LinearGradient>
               </View>
 
               {/* Title & Description */}
               <Text style={styles.title}>Quên mật khẩu?</Text>
               <Text style={styles.subtitle}>
-                Nhập email của bạn và chúng tôi sẽ gửi mã xác thực để đặt lại mật khẩu
+                Nhập email của bạn và chúng tôi sẽ gửi mã xác thực để đặt lại
+                mật khẩu
               </Text>
 
               {/* Email Input */}
@@ -140,9 +170,10 @@ export const ForgotPasswordScreen = () => {
               ) : null}
 
               {/* Send Code Button */}
-              <TouchableOpacity 
-                style={styles.sendBtnShadow} 
+              <TouchableOpacity
+                style={styles.sendBtnShadow}
                 onPress={handleSendCodePress}
+                disabled={loading}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -151,10 +182,11 @@ export const ForgotPasswordScreen = () => {
                   end={{ x: 1, y: 0 }}
                   style={styles.sendBtn}
                 >
-                  <Text style={styles.sendBtnText}>Gửi mã xác thực</Text>
+                  <Text style={styles.sendBtnText}>
+                    {loading ? "Đang gửi..." : "Gửi mã xác thực"}
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
-
             </View>
 
             {/* Bottom Login Link (Pushed to bottom via flex) */}
@@ -164,7 +196,6 @@ export const ForgotPasswordScreen = () => {
                 <Text style={styles.linkText}>Quay lại đăng nhập</Text>
               </TouchableOpacity>
             </View>
-
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -192,7 +223,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 30 : 0,
+    marginTop: Platform.OS === "android" ? 30 : 0,
   },
   keyboardView: {
     flex: 1,
@@ -221,12 +252,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingBottom: 40,
-    justifyContent: 'space-between', // Push footer to bottom
+    justifyContent: "space-between", // Push footer to bottom
   },
   contentContainer: {
     flex: 1,
   },
-  
+
   /* Icon Box Styles */
   iconBoxWrapper: {
     marginBottom: 24,
@@ -252,7 +283,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     lineHeight: 24,
   },
-  
+
   /* Input Styles */
   inputContainer: {
     marginBottom: 24,
@@ -274,8 +305,8 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     paddingLeft: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   input: {
     flex: 1,
@@ -337,6 +368,35 @@ const styles = StyleSheet.create({
     color: "#059669", // emerald-600
     fontWeight: "bold",
     fontSize: 14,
+  },
+
+  alertBoxSuccess: {
+    backgroundColor: "#d1fae5", // emerald-100
+    borderColor: "#10b981", // emerald-500
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  alertTextSuccess: {
+    color: "#065f46", // emerald-800
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  alertBoxError: {
+    backgroundColor: "#fef2f2", // red-50
+    borderColor: "#dc2626", // red-600
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  alertTextError: {
+    color: "#991b1b", // red-800
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
 
