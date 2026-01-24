@@ -1,9 +1,10 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Building2, Sparkles } from "lucide-react-native";
+import { Sparkles } from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -36,8 +37,7 @@ const WelcomeScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
-      {/* Main Background Gradient (bg-gradient-to-br from-emerald-50 via-white to-teal-50) */}
+
       <LinearGradient
         colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
         style={styles.background}
@@ -50,34 +50,30 @@ const WelcomeScreen = () => {
       <View style={[styles.blob, styles.blobBottom]} />
 
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <View style={styles.logoWrapper}>
-              <LinearGradient
-                colors={["#10b981", "#0d9488"]} // emerald-500 to teal-600
-                style={styles.logoGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Building2 size={48} color="white" />
-              </LinearGradient>
-              
+              <Image
+                source={require("../../../assets/images/icon.png")}
+                style={styles.logo}
+              />
+
               {/* Sparkle Icon */}
               <View style={styles.sparkleWrapper}>
-                <Sparkles size={32} color="#fbbf24" /> 
+                <Sparkles size={32} color="#fbbf24" />
               </View>
             </View>
           </View>
 
           {/* Texts */}
-          <Text style={styles.title}>EzTro</Text>
           <Text style={styles.subtitle}>Quản lý nhà trọ</Text>
           <Text style={styles.description}>
-            Giải pháp toàn diện cho chủ trọ hiện đại. Quản lý dễ dàng, thu chi minh bạch.
+            Giải pháp toàn diện cho chủ trọ hiện đại. Quản lý dễ dàng, thu chi
+            minh bạch.
           </Text>
 
           {/* Features List */}
@@ -94,7 +90,7 @@ const WelcomeScreen = () => {
         {/* Bottom Buttons */}
         <View style={styles.footer}>
           {/* Login Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleLoginPress}
             style={styles.buttonShadow}
@@ -110,7 +106,7 @@ const WelcomeScreen = () => {
           </TouchableOpacity>
 
           {/* Register Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleRegisterPress}
             style={styles.secondaryButton}
@@ -142,7 +138,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 20,
   },
-  
+
   /* Decorative Background Blobs */
   blob: {
     position: "absolute",
@@ -165,25 +161,17 @@ const styles = StyleSheet.create({
 
   /* Logo Styles */
   logoContainer: {
-    marginBottom: 32,
     alignItems: "center",
     justifyContent: "center",
   },
   logoWrapper: {
     position: "relative",
   },
-  logoGradient: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
+  logo: {
+    width: 168,
+    height: 168,
     alignItems: "center",
     justifyContent: "center",
-    // Shadow
-    shadowColor: "#10b981",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
   },
   sparkleWrapper: {
     position: "absolute",
@@ -193,13 +181,6 @@ const styles = StyleSheet.create({
   },
 
   /* Text Styles */
-  title: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#111827", // gray-900
-    textAlign: "center",
-    marginBottom: 12,
-  },
   subtitle: {
     fontSize: 20,
     color: "#4b5563", // gray-600
