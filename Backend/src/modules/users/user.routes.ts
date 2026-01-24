@@ -7,7 +7,7 @@ import { userService } from "./user.service";
 const router = Router();
 const UserController = new userController(new userService());
 
-router.route("/").post(UserController.create).get(UserController.getAll);
+router.route("/").post(UserController.createAccount).get(UserController.getAll);
 // router.route("/search").get(authenticate, UserController.getUserIsActive);
 
 router.route("/me/password").put(authenticate, UserController.changePassword);

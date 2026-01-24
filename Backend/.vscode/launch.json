@@ -5,12 +5,11 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Backend",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/server.ts",
-      "preLaunchTask": "tsc: build - tsconfig.json",
+      "program": "${workspaceFolder}/dist/server.js",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "sourceMaps": true,
+      "preLaunchTask": "tsc: build - tsconfig.json",
       "env": {
-        "DEBUG": "app:*",
         "NODE_ENV": "development"
       }
     }

@@ -12,7 +12,7 @@ export class userService extends GenericService<IUser> {
     return userModel.find().populate("roleId").exec();
   };
 
-  create = async (data: Partial<IUser>) => {
+  createAccount = async (data: Partial<IUser>) => {
     const role = await roleModel.findOne({ name: "Landlord" });
     if (!role) {
       throw new Error("Role 'user' not found");
@@ -28,7 +28,8 @@ export class userService extends GenericService<IUser> {
   };
 
   getByEmail = async (email: string) => {
-    return userModel.findOne({ email }).populate("roleId").exec();
+    const emailExists = await userModel.findOne({ email }).populate("roleId").exec();
+    return emailExists;
   };
 
   updateLastLogin = async (id: string) => {

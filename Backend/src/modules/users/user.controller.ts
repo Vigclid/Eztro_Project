@@ -17,6 +17,27 @@ export class userController extends GenericController<IUser> {
     );
   };
 
+  createAccount = async (req: Request, res: Response) => {
+    try {
+      const emailExists = await this.UserService.getByEmail(req.body.email);
+
+      if (emailExists === null) {
+        const result = await this.UserService.createAccount(req.body);
+        return res
+          .status(201)
+          .json(responseWrapper("success", "Đăng ký tài khoản thành công", result));
+      } else {
+        return res.status(400).json(responseWrapper("error", "Email đã tồn tại", null));
+      }
+    } catch (error: any) {
+      if (error.code === 11000) {
+        return res.status(400).json(responseWrapper("error", "Email đã tồn tại"));
+      }
+
+      res.status(500).json(responseWrapper("error", "Internal Server Error"));
+    }
+  };
+
   changePassword = async (req: Request, res: Response) => {
     try {
       const { password, oldPassword } = req.body;
@@ -48,10 +69,10 @@ export class userController extends GenericController<IUser> {
   resetPassword = async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
-      const token = await this.UserService.changePasswordByEmail(email, password);
+      const user = await this.UserService.changePasswordByEmail(email, password);
       return res
         .status(200)
-        .json(responseWrapper("success", "Password reset successfully", { token }));
+        .json(responseWrapper("success", "Password reset successfully", { user }));
     } catch (error) {
       res.status(500).json(responseWrapper("error", "Internal Server Error"));
     }

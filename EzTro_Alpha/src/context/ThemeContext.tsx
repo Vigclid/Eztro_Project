@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { useColorScheme } from "react-native";
 
 const darkimages = ["/images/dark.jpg"];
@@ -17,9 +17,9 @@ const Theme = {
     color6: "#272626",
     color5: "#05f589",
     color4: "white",
-    color3: "#A1A1A1",
+    color3: "#ECECEC",
     color2: "#272626",
-    color: "#FF8F00",
+    color: "#10B981",
     white: "white",
     black: "#000",
     backgroundColor: "#FFF",
@@ -37,7 +37,7 @@ const Theme = {
     color4: "#61dafb",
     color3: "#ECECEC",
     color2: "#EBEBEB",
-    color: "#ff9100ff",
+    color: "#10B981",
     white: "white",
     black: "#000",
     backgroundColor: "#101014ff",

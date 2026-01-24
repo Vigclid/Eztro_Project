@@ -1,6 +1,6 @@
+import * as FileSystem from "expo-file-system/legacy";
 import { apiService } from "../../service/apiService";
 import { IUser } from "../../types/users";
-import * as FileSystem from "expo-file-system/legacy";
 
 const userApi = "v1/users";
 
@@ -25,9 +25,11 @@ export const getUserApi = {
   async createUser(userData: any) {
     try {
       const response = await apiService.post(userApi, userData);
-      return response.data;
+      return response?.data;
     } catch (error: any) {
-      console.error("createUser error:", error);
+      if (error.response?.data) {
+        return error.response.data;
+      }
       throw error;
     }
   },
