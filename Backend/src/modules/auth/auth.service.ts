@@ -41,7 +41,8 @@ export class AuthService {
       jwtConfig.secret as Secret,
       { expiresIn: jwtConfig.refreshExpiresIn } as SignOptions
     );
-
+    user.accessFailedCount = 0;
+    user.save();
     return { status: 1, accessToken, refreshToken, user };
   }
 
