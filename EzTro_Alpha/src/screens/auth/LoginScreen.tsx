@@ -21,7 +21,10 @@ import { useDispatch } from "react-redux";
 
 // Navigation & Store types
 import { loginAsync } from "../../features/auth/authSlice";
-import { AuthNavigationProp } from "../../navigation/navigation.type";
+import {
+  AuthNavigationProp,
+  NavigationProp,
+} from "../../navigation/navigation.type";
 import { AppDispatch } from "../../stores/store";
 
 // SET UP GOOGLE LOGIN
@@ -63,6 +66,7 @@ const FacebookIcon = () => (
 
 export const LoginScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
+  const navigation_main = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const redirectUri = AuthSession.makeRedirectUri({
     scheme: "EzTro_Alpha",
@@ -176,7 +180,7 @@ export const LoginScreen = () => {
       if (loginAsync.fulfilled.match(result)) {
         // Success
         Alert.alert("Thành công", "Đăng nhập thành công");
-        navigation.navigate("createBoardingHouse");
+        navigation_main.navigate("mainscreen", { screen: "blank" });
       } else {
         // Failure
         setError(

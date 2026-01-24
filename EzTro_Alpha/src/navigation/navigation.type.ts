@@ -2,6 +2,10 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export type RootStackParamList = {
   authscreen: undefined;
+  mainscreen: {
+    screen: keyof MainStackParamList;
+    params?: MainStackParamList[keyof MainStackParamList];
+  };
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -17,4 +21,7 @@ export type AuthStackParamList = {
   createBoardingHouse: undefined;
 };
 
+export type MainStackParamList = {
+  blank: undefined;
+};
 export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;
