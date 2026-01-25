@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import {
     COLORS,
     SPACING,
@@ -17,9 +18,15 @@ import {
     FONT_SIZE,
     IMAGE_SIZE,
 } from "../../constants/theme";
+import { BoardingHouseNavigationProp } from "../../navigation/navigation.type";
 
 export const ViewBoardingHousePage: React.FC = () => {
+    const navigation = useNavigation<BoardingHouseNavigationProp>();
     const [searchText, onChangeSearchText] = useState("");
+
+    const handleCreateBoardingHouse = () => {
+        navigation.navigate("createBoardingHouse");
+    };
 
     return (
         <SafeAreaProvider style={styles.container}>
@@ -401,8 +408,6 @@ export const ViewBoardingHousePage: React.FC = () => {
                                 </View>
                             </View>
 
-                            {/* Floating Button */}
-
                             {/* Boarding House 3 */}
                             <View style={styles.boardingHouseCard}>
                                 <View style={styles.cardHeader}>
@@ -547,7 +552,8 @@ export const ViewBoardingHousePage: React.FC = () => {
                     </View>
                 </View>
             </ScrollView>
-            <TouchableOpacity>
+            {/* Floating Button */}
+            <TouchableOpacity onPress={handleCreateBoardingHouse}>
                 <Image
                     source={{
                         uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ollwsyj9_expires_30_days.png",

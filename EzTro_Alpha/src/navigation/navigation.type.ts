@@ -32,6 +32,7 @@ export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 export type BoardingHouseStackParamList = {
   viewBoardingHousePage: undefined;
+  createBoardingHouse: undefined;
 };
 
 export type BoardingHouseNavigationProp = NativeStackNavigationProp<BoardingHouseStackParamList>;
