@@ -14,15 +14,11 @@ export class houseController extends GenericController<IHouse> {
 
     createNewHouse = async (req: Request, res: Response) => {
         try {
-
-            console.log("body: " + req.body)
-
             const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
                 id: string;
             };
             req.body.landlordId = id;
             const result = await this.HouseService.createNewHouse(req.body)
-            console.log(result)
             return res
                 .status(201)
                 .json(responseWrapper("success", "Tạo Cụm Trọ Thành Công", result))

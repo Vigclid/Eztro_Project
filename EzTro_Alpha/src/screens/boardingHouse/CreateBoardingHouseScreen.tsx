@@ -50,10 +50,7 @@ export const CreateBoardingHouseScreen: React.FC = () => {
       roomCount,
       status: 'Còn Phòng',
     }) as ApiResponse<IHouse>
-    // khi backend trả lên nó sẽ có kiểu dữ lieuyej như sau
-    console.log("res is: " + res.message)
     if (res.status === 'success') {
-      
       Alert.alert("Thành Công", "Tạo Cụm Trọ Thành Công");
       navigate.navigate("boardingHouse", { screen: "viewBoardingHousePage" });
     }
