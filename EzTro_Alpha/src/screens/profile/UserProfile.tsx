@@ -14,7 +14,6 @@ import { UserProfileStyle } from "./styles/UserProfileStyle";
 export const UserProfile: React.FC = () => {
   const theme = useContext(ThemeContext);
   const styles = UserProfileStyle(theme.theme);
-  const a = 4;
   const navigation = useNavigation<AuthNavigationProp>();
   const { user } = useSelector((state: RootState) => state.auth);
   useEffect(() => {
@@ -69,10 +68,10 @@ export const UserProfile: React.FC = () => {
                 }}
                 resizeMode="stretch"
                 style={styles.walletIcon}
-              />{" "}
+              />
               <View style={styles.walletInfo}>
-                <Text style={styles.walletLabel}>{"Số dư ví"}</Text>
-                <Text style={styles.walletValue}>{"5.000.000 đ"}</Text>
+                <Text style={styles.walletLabel}>Số dư ví</Text>
+                <Text style={styles.walletValue}>5.000.000 đ</Text>
               </View>
             </View>
             <TouchableOpacity>
@@ -87,7 +86,7 @@ export const UserProfile: React.FC = () => {
           </View>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{"Tài khoản"}</Text>
+              <Text style={styles.sectionTitle}>Tài khoản</Text>
             </View>
             <View style={[styles.sectionCard, SHADOW.CARD]}>
               <View style={styles.sectionItem}>
@@ -101,22 +100,15 @@ export const UserProfile: React.FC = () => {
                 <View style={styles.sectionItemContent}>
                   <View style={styles.sectionItemTitleContainer}>
                     <Text style={styles.sectionItemTitle}>
-                      {"Thông tin cá nhân"}
+                      Thông tin cá nhân
                     </Text>
                   </View>
                   <View>
                     <Text style={styles.sectionItemDescription}>
-                      {"Chỉnh sửa tên, email, số điện thoại"}
+                      Chỉnh sửa tên, email, số điện thoại
                     </Text>
                   </View>
                 </View>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/cd9kht3o_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.arrowIcon}
-                />
               </View>
               <View style={styles.sectionItemRow}>
                 <Image
@@ -128,19 +120,14 @@ export const UserProfile: React.FC = () => {
                 />
                 <View style={styles.sectionItemContent}>
                   <View style={styles.sectionItemTitleContainer}>
-                    <Text style={styles.sectionItemTitle}>{"Email"}</Text>
+                    <Text style={styles.sectionItemTitle}>Email</Text>
                   </View>
                   <View style={styles.sectionItemDescriptionContainer}>
-                    <Text style={styles.sectionItemDescription}>{"3"}</Text>
+                    <Text style={styles.sectionItemDescription}>
+                      {user?.email || "Chưa cập nhật"}
+                    </Text>
                   </View>
                 </View>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/hm8s9fu1_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.arrowIcon}
-                />
               </View>
               <View style={styles.sectionItemRow}>
                 <Image
@@ -152,23 +139,14 @@ export const UserProfile: React.FC = () => {
                 />
                 <View style={styles.sectionItemContent}>
                   <View style={styles.sectionItemTitleContainer}>
-                    <Text style={styles.sectionItemTitle}>
-                      {"Số điện thoại"}
-                    </Text>
+                    <Text style={styles.sectionItemTitle}>Số điện thoại</Text>
                   </View>
                   <View>
                     <Text style={styles.sectionItemDescription}>
-                      {"Chưa cập nhật"}
+                      {user?.phoneNumber || "Chưa cập nhật"}
                     </Text>
                   </View>
                 </View>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/pok953b3_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.arrowIcon}
-                />
               </View>
               <View style={styles.sectionItemLast}>
                 <Image
@@ -180,29 +158,20 @@ export const UserProfile: React.FC = () => {
                 />
                 <View style={styles.sectionItemContent}>
                   <View style={styles.sectionItemTitleContainer}>
-                    <Text style={styles.sectionItemTitle}>
-                      {"Đổi mật khẩu"}
-                    </Text>
+                    <Text style={styles.sectionItemTitle}>Đổi mật khẩu</Text>
                   </View>
                   <View>
                     <Text style={styles.sectionItemDescription}>
-                      {"Cập nhật mật khẩu bảo mật"}
+                      Cập nhật mật khẩu bảo mật
                     </Text>
                   </View>
                 </View>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/bepnddj4_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.arrowIcon}
-                />
               </View>
             </View>
           </View>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{"Cài đặt"}</Text>
+              <Text style={styles.sectionTitle}>Cài đặt</Text>
             </View>
             <View style={[styles.sectionCardSettings, SHADOW.CARD]}>
               <View style={styles.sectionItem}>
@@ -215,21 +184,14 @@ export const UserProfile: React.FC = () => {
                 />
                 <View style={styles.sectionItemContent}>
                   <View style={styles.sectionItemTitleContainer}>
-                    <Text style={styles.sectionItemTitle}>{"Thông báo"}</Text>
+                    <Text style={styles.sectionItemTitle}>Thông báo</Text>
                   </View>
                   <View>
                     <Text style={styles.sectionItemDescription}>
-                      {"Quản lý thông báo ứng dụng"}
+                      Quản lý thông báo ứng dụng
                     </Text>
                   </View>
                 </View>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/gsx0zkf2_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.arrowIcon}
-                />
               </View>
               <View style={styles.sectionItemRow}>
                 <Image
@@ -242,22 +204,15 @@ export const UserProfile: React.FC = () => {
                 <View style={styles.sectionItemContent}>
                   <View style={styles.sectionItemTitleContainerLarge}>
                     <Text style={styles.sectionItemTitle}>
-                      {"Trợ giúp & Hỗ trợ"}
+                      Trợ giúp & Hỗ trợ
                     </Text>
                   </View>
                   <View>
                     <Text style={styles.sectionItemDescription}>
-                      {"Câu hỏi thường gặp, liên hệ"}
+                      Câu hỏi thường gặp, liên hệ
                     </Text>
                   </View>
                 </View>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ey8nqlhy_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.arrowIcon}
-                />
               </View>
             </View>
           </View>
@@ -282,10 +237,10 @@ export const UserProfile: React.FC = () => {
               resizeMode="stretch"
               style={styles.logoutIcon}
             />
-            <Text style={styles.logoutText}>{"Đăng xuất"}</Text>
+            <Text style={styles.logoutText}>Đăng xuất</Text>
           </TouchableOpacity>
           <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>{"Phiên bản 1.0.0"}</Text>
+            <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
           </View>
         </View>
       </ScrollView>
