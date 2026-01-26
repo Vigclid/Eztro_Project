@@ -1,4 +1,4 @@
-import { useNavigation } from "@react-navigation/native";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -176,13 +176,15 @@ export const LoginScreen = () => {
     try {
       // Execute Redux Action
       const result = await dispatch(loginAsync({ email, password }));
-
       if (loginAsync.fulfilled.match(result)) {
-        // Success
         Alert.alert("Thành công", "Đăng nhập thành công");
-        navigation_main.navigate("mainscreen", { screen: "blank" });
+        navigation_main.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: "mainscreen", params: { screen: "blank" } }],
+          }),
+        );
       } else {
-        // Failure
         setError(
           typeof result.payload === "string"
             ? result.payload

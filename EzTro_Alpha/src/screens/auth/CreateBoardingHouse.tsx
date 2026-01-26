@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { AppButton } from "../../components/AppButton";
+import { AppButton } from "../../components/misc/AppButton";
 import {
   BORDER_RADIUS,
   COLORS,

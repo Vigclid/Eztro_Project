@@ -1,7 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import AuthStack from "./stack/AuthStack";
-import MainTab from "./stack/MainTab";
+import MainTab from "./tab/MainTab";
 
 const Stack = createNativeStackNavigator();
 

@@ -23,5 +23,6 @@ export type AuthStackParamList = {
 
 export type MainStackParamList = {
   blank: undefined;
+  userProfile: undefined;
 };
 export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;
