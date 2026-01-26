@@ -21,7 +21,7 @@ export const UserProfile: React.FC = () => {
     if (!user) {
       navigation.reset({
         index: 0,
-        routes: [{ name: "authscreen" as never }],
+        routes: [{ name: "auth" as never }],
       });
     }
   }, [user]);
@@ -31,7 +31,7 @@ export const UserProfile: React.FC = () => {
     if (logoutAsync.fulfilled.match(result)) {
       navigation.reset({
         index: 0,
-        routes: [{ name: "authscreen" as never }],
+        routes: [{ name: "auth" as never }],
       });
     }
   };
@@ -57,7 +57,7 @@ export const UserProfile: React.FC = () => {
                   resizeMode="stretch"
                   style={styles.badgeIcon}
                 />
-                <Text style={styles.badgeText}>{"Chủ trọ"}</Text>
+                <Text style={styles.badgeText}>Chủ trọ</Text>
               </TouchableOpacity>
             </View>
           </View>
