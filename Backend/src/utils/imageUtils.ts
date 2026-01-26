@@ -19,7 +19,7 @@ const FOLDER_MAP: { [key: string]: string } = {
  * Upload ảnh (avatar, background, artwork)
  * Nếu Artwork → lưu 2 bản (Artwork, previews)
  */
-async function uploadImage(base64: String, type: number, isBuy: boolean) {
+async function uploadImage(base64: string, type: number, isBuy: boolean) {
   const folderName = FOLDER_MAP[String(type)];
   if (!folderName) throw new Error("Invalid type");
 
