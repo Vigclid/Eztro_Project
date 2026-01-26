@@ -181,7 +181,12 @@ export const LoginScreen = () => {
         navigation_main.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: "mainscreen", params: { screen: "blank" } }],
+            routes: [
+              {
+                name: "mainscreen",
+                params: { screen: "viewBoardingHousePage" },
+              },
+            ],
           }),
         );
       } else {
