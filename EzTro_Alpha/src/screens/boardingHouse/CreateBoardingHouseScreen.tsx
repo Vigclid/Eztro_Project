@@ -1,33 +1,32 @@
+import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-  View,
-  ScrollView,
+  Alert,
   Image,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
   TouchableOpacity,
-  Alert,
+  View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import { AppButton } from "../../components/AppButton";
+import { postHouseApi } from "../../api/house/house";
+import { AppButton } from "../../components/misc/AppButton";
 import {
-  COLORS,
-  SPACING,
   BORDER_RADIUS,
+  COLORS,
   FONT_SIZE,
   IMAGE_SIZE,
+  SPACING,
 } from "../../constants/theme";
-import { BoardingHouseNavigationProp, RootStackParamList } from "../../navigation/navigation.type";
-import { postHouseApi } from "../../api/house/house";
+import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export const CreateBoardingHouseScreen: React.FC = () => {
-  const navigation = useNavigation<BoardingHouseNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const [name, onChangeName] = useState("");
   const [address, onChangeAddress] = useState("");
   const [roomCount, onChangeRoomCount] = useState("");
@@ -36,23 +35,20 @@ export const CreateBoardingHouseScreen: React.FC = () => {
   const [paymentDay, onChangePaymentDay] = useState("");
 
   const { createHouse } = postHouseApi;
-  const navigate = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
   const handleCancel = () => {
     navigation.goBack();
   };
 
   const handleSave = async () => {
-
-    const res = await createHouse({
+    const res = (await createHouse({
       houseName: name,
       address,
       roomCount,
-      status: 'Còn Phòng',
-    }) as ApiResponse<IHouse>
-    if (res.status === 'success') {
+      status: "Còn Phòng",
+    })) as ApiResponse<IHouse>;
+    if (res.status === "success") {
       Alert.alert("Thành Công", "Tạo Cụm Trọ Thành Công");
-      navigate.navigate("boardingHouse", { screen: "viewBoardingHousePage" });
+      navigation.navigate("mainscreen", { screen: "viewBoardingHousePage" });
     }
   };
 
@@ -63,7 +59,10 @@ export const CreateBoardingHouseScreen: React.FC = () => {
           <LinearGradient
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            colors={[COLORS.EMERALD_GRADIENT_START, COLORS.EMERALD_GRADIENT_END]}
+            colors={[
+              COLORS.EMERALD_GRADIENT_START,
+              COLORS.EMERALD_GRADIENT_END,
+            ]}
             style={styles.headerGradient}
           >
             <Image
@@ -82,7 +81,10 @@ export const CreateBoardingHouseScreen: React.FC = () => {
           <LinearGradient
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            colors={[COLORS.WHITE_SEMI_TRANSPARENT, COLORS.WHITE_MORE_TRANSPARENT]}
+            colors={[
+              COLORS.WHITE_SEMI_TRANSPARENT,
+              COLORS.WHITE_MORE_TRANSPARENT,
+            ]}
             style={styles.imageContainer}
           >
             <Image
@@ -303,7 +305,6 @@ export const CreateBoardingHouseScreen: React.FC = () => {
             </View>
           </View>
         </View>
-
       </ScrollView>
       <View style={styles.footerContainer}>
         <View style={styles.footerButtons}>
@@ -313,7 +314,10 @@ export const CreateBoardingHouseScreen: React.FC = () => {
             variant="secondary"
             style={styles.cancelButton}
           />
-          <TouchableOpacity onPress={handleSave} style={styles.saveButtonContainer}>
+          <TouchableOpacity
+            onPress={handleSave}
+            style={styles.saveButtonContainer}
+          >
             <LinearGradient
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
@@ -352,13 +356,13 @@ const styles = StyleSheet.create({
   headerLogo: {
     width: IMAGE_SIZE.CREATE_HEADER_LOGO,
     height: IMAGE_SIZE.CREATE_HEADER_LOGO,
-    marginTop: 30
+    marginTop: 30,
   },
   headerTitle: {
     color: COLORS.WHITE,
     fontSize: FONT_SIZE.HEADER_TITLE,
     fontWeight: "bold",
-    paddingTop: 30
+    paddingTop: 30,
   },
   headerSpacer: {
     width: IMAGE_SIZE.CREATE_HEADER_LOGO,
@@ -419,7 +423,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.CREATE_INPUT,
     borderWidth: 1,
     paddingVertical: SPACING.CREATE_INPUT_PADDING_VERTICAL,
-    paddingHorizontal: SPACING.CREATE_INPUT_PADDING_HORIZONTAL
+    paddingHorizontal: SPACING.CREATE_INPUT_PADDING_HORIZONTAL,
   },
   addressInputContainer: {
     backgroundColor: COLORS.WHITE_SEMI_TRANSPARENT,
@@ -481,7 +485,7 @@ const styles = StyleSheet.create({
     // shadowRadius: SPACING.CREATE_FORM_CARD,
     // elevation: SPACING.CREATE_FORM_CARD,
     shadowRadius: 10,
-    elevation: 10
+    elevation: 10,
   },
   footerButtons: {
     paddingRight: 20,

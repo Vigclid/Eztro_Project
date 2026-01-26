@@ -1,6 +1,11 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, ViewStyle } from "react-native";
-import { BORDER_RADIUS, COLORS, FONT_SIZE, SPACING } from "../constants/theme";
+import {
+  BORDER_RADIUS,
+  COLORS,
+  FONT_SIZE,
+  SPACING,
+} from "../../constants/theme";
 
 interface AppButtonProps {
   title: string;

@@ -1,9 +1,8 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Sparkles } from "lucide-react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import {
-  Dimensions,
   Image,
   SafeAreaView,
   ScrollView,
@@ -13,11 +12,24 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { AuthNavigationProp } from "../../navigation/navigation.type";
-
-const { width } = Dimensions.get("window");
+import { useSelector } from "react-redux";
+import {
+  AuthNavigationProp,
+  NavigationProp,
+} from "../../navigation/navigation.type";
+import { RootState } from "../../stores/store";
 
 const WelcomeScreen = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
+  const mainNavigation = useNavigation<NavigationProp>();
+  useEffect(() => {
+    if (user) {
+      mainNavigation.reset({
+        index: 0,
+        routes: [{ name: "mainscreen" }],
+      });
+    }
+  }, []);
   const navigation = useNavigation<AuthNavigationProp>();
 
   const handleLoginPress = () => {

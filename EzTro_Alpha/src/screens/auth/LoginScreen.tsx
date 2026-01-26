@@ -1,4 +1,4 @@
-import { useNavigation } from "@react-navigation/native";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -24,10 +24,8 @@ import { loginAsync } from "../../features/auth/authSlice";
 import {
   AuthNavigationProp,
   NavigationProp,
-  RootStackParamList,
 } from "../../navigation/navigation.type";
 import { AppDispatch } from "../../stores/store";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 // SET UP GOOGLE LOGIN
 import * as AuthSession from "expo-auth-session";
@@ -68,7 +66,6 @@ const FacebookIcon = () => (
 
 export const LoginScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
-  const navigate = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const navigation_main = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const redirectUri = AuthSession.makeRedirectUri({
@@ -179,15 +176,20 @@ export const LoginScreen = () => {
     try {
       // Execute Redux Action
       const result = await dispatch(loginAsync({ email, password }));
-
       if (loginAsync.fulfilled.match(result)) {
-        // Success
         Alert.alert("Thành công", "Đăng nhập thành công");
-        // navigation.navigate("createBoardingHouse");
-        // navigation_main.navigate("mainscreen", { screen: "blank" });
-        navigate.navigate("boardingHouse", { screen: "viewBoardingHousePage" });
+        navigation_main.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: "mainscreen",
+                params: { screen: "viewBoardingHousePage" },
+              },
+            ],
+          }),
+        );
       } else {
-        // Failure
         setError(
           typeof result.payload === "string"
             ? result.payload
@@ -209,15 +211,15 @@ export const LoginScreen = () => {
         translucent
       />
 
-  {/* Background Gradient */ }
-  <LinearGradient
-    colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
-    style={styles.background}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-  />
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
+        style={styles.background}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
-  {/* Decorative Blob */ }
+      {/* Decorative Blob */}
       <View style={styles.blob} />
 
       <SafeAreaView style={styles.safeArea}>
@@ -385,7 +387,7 @@ export const LoginScreen = () => {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View >
+    </View>
   );
 };
 

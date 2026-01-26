@@ -1,7 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import ChangePasswordSuccessfulPage from "../../screens/auth/ChangePasswordSuccessfulPage";
-import CreateBoardingHouse from "../../screens/auth/CreateBoardingHouse";
 import CreateNewPasswordScreen from "../../screens/auth/CreateNewPasswordScreen";
 import ForgotPasswordScreen from "../../screens/auth/ForgotPasswordScreen";
 import LoginScreen from "../../screens/auth/LoginScreen";
@@ -29,7 +28,6 @@ const AuthStack = () => (
       name="changePasswordSuccessful"
       component={ChangePasswordSuccessfulPage}
     />
-    <Stack.Screen name="createBoardingHouse" component={CreateBoardingHouse} />
   </Stack.Navigator>
 );
 

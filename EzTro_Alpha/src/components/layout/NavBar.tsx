@@ -35,7 +35,7 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
     await dispatch(logoutAsync());
     navigation.reset({
       index: 0,
-      routes: [{ name: "authscreen" as never }],
+      routes: [{ name: "auth" as never }],
     });
   };
 
@@ -52,7 +52,10 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
         },
       ]}
     >
-      <TouchableOpacity style={styles.item}>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => navigation.navigate("viewBoardingHousePage")}
+      >
         <Icon name="home" size={36} color={theme.color} />
         <Text style={{ color: theme.color }}>Trang chủ</Text>
       </TouchableOpacity>
@@ -68,7 +71,10 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
         <Icon name="history" size={36} color={theme.color3} />
         <Text style={{ color: theme.color3 }}>Lịch sử</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.item}>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => navigation.navigate("userProfile")}
+      >
         <Icon name="person" size={36} color={theme.color3} />
         <Text style={{ color: theme.color3 }}>Cá nhân</Text>
       </TouchableOpacity>
