@@ -4,6 +4,7 @@ import { IUser } from "../users/user.model";
 export interface IHouse extends Document {
     landlordId: Types.ObjectId | IUser,
     houseName: string,
+    description: string,
     defaultElectricityCharge: number,
     defaultWaterCharge: number,
     defaultUtilitesCharge: {
@@ -12,14 +13,13 @@ export interface IHouse extends Document {
     }[],
     address: string,
     status: string,
-    createDate: Date,
-    roomCount: number,
-    houseImgs: string[]
+    createDate: Date
 }
 
 export const HouseSchema = new mongoose.Schema<IHouse>({
     landlordId: { type: Types.ObjectId, ref: 'users', required: true },
     houseName: { type: String, required: true },
+    description: {type: String, required: true},
     defaultElectricityCharge: { type: Number },
     defaultWaterCharge: { type: Number },
     defaultUtilitesCharge: {
@@ -33,9 +33,7 @@ export const HouseSchema = new mongoose.Schema<IHouse>({
     },
     address: { type: String, required: true },
     status: { type: String, enum: ['Còn Phòng', 'Hết Phòng'], required: true },
-    createDate: { type: Date, default: Date.now },
-    roomCount: { type: Number, required: true },
-    houseImgs: [{ type: String }]
+    createDate: { type: Date, default: Date.now }
 })
 
 export default mongoose.model<IHouse>('houses', HouseSchema)

@@ -19,6 +19,7 @@ export type MainTabParamList = {
 
 export type MainStackParamList = {
   createBoardingHousePage: undefined;
+  boardingHouseDetailsScreen: {_id: string | undefined};
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

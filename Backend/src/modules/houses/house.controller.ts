@@ -12,6 +12,32 @@ export class houseController extends GenericController<IHouse> {
         this.HouseService = houseService
     }
 
+    getHouseById = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            const result = await this.HouseService.getHouseById(id)
+            return res
+                .status(200)
+                .json(responseWrapper("success", "Thanh cong", result))
+        } catch (err: any) {
+            res.status(500).json(responseWrapper("error", "Internal Server Error", err))
+        }
+    }
+
+    getAllHousesByLandlordId = async (req: Request, res: Response) => {
+        try {
+            const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
+                id: string;
+            };
+            const result = await this.HouseService.getAllHousesByLandlordId(id)
+            return res
+                .status(200)
+                .json(responseWrapper("success", "Thanh cong", result))
+        } catch (err: any) {
+            res.status(500).json(responseWrapper("error", "Internal Server Error", err))
+        }
+    }
+
     createNewHouse = async (req: Request, res: Response) => {
         try {
             const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {

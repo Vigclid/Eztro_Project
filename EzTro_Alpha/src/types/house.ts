@@ -3,6 +3,8 @@ import { IUser } from './users'
 export interface IHouse {
     _id: string | undefined
     landlordId: IUser | undefined,
+    houseName: string | undefined,
+    description: string | undefined,
     defaultElectricityCharge: number | undefined,
     defaultWaterCharge: number | undefined,
     defaultUtilitesCharge: {
