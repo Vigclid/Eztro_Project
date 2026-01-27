@@ -19,7 +19,13 @@ export type MainTabParamList = {
 
 export type MainStackParamList = {
   createBoardingHousePage: undefined;
-  boardingHouseDetailsScreen: {_id: string | undefined};
+  boardingHouseDetailsScreen: { _id: string | undefined };
+  createNewRoomScreen:
+    | {
+        houseId: string | undefined;
+        room?: import("../types/room").IRoom;
+      }
+    | undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

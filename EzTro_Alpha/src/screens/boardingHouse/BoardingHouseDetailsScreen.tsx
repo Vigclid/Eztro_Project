@@ -56,10 +56,10 @@ const AmenityChip = ({ label, isLast }: { label: string; isLast?: boolean }) => 
     </TouchableOpacity>
 );
 
-const RoomCard = ({ item }: { item: IRoom }) => {
+const RoomCard = ({ item, onPress }: { item: IRoom; onPress: () => void }) => {
     const isRented = item.status === 'rented';
     return (
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onPress}>
             <View style={styles.cardContainer}>
                 <View style={styles.roomHeader}>
                     <View style={styles.roomTitleWrapper}>
@@ -289,7 +289,19 @@ export const BoardingHouseDetailsScreen = () => {
                                             </LinearGradient>
                                         </TouchableOpacity>
 
-                                        <TouchableOpacity style={{ flex: 1 }} onPress={() => alert('Add Room')}>
+                                        <TouchableOpacity
+                                            style={{ flex: 1 }}
+                                            onPress={() =>
+                                                // Điều hướng sang màn thêm phòng, chỉ truyền houseId
+                                                navigation.navigate(
+                                                    // @ts-ignore do dùng chung stack
+                                                    "createNewRoomScreen" as never,
+                                                    {
+                                                        houseId: _id,
+                                                    } as never,
+                                                )
+                                            }
+                                        >
                                             <LinearGradient
                                                 colors={COLORS.primaryGradient}
                                                 style={styles.actionBtnGreen}
@@ -302,7 +314,21 @@ export const BoardingHouseDetailsScreen = () => {
                                 </View>
 
                                 {ROOMS_DATA.map((room) => (
-                                    <RoomCard key={room._id} item={room} />
+                                    <RoomCard
+                                        key={room._id}
+                                        item={room}
+                                        onPress={() =>
+                                            // Điều hướng sang màn tạo/sửa phòng, truyền kèm houseId và room
+                                            navigation.navigate(
+                                                // @ts-ignore do dùng chung stack
+                                                "createNewRoomScreen" as never,
+                                                {
+                                                    houseId: _id,
+                                                    room,
+                                                } as never,
+                                            )
+                                        }
+                                    />
                                 ))}
                             </View>
                         ) : (
