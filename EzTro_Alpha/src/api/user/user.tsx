@@ -25,7 +25,7 @@ export const getUserApi = {
   async createUser(userData: any) {
     try {
       const response = await apiService.post(userApi, userData);
-      return response?.data;
+      return response.data;
     } catch (error: any) {
       if (error.response?.data) {
         return error.response.data;

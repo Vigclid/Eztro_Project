@@ -44,6 +44,7 @@ export const CreateBoardingHouseScreen: React.FC = () => {
       houseName: name,
       address,
       roomCount,
+      description,
       status: "Còn Phòng",
     })) as ApiResponse<IHouse>;
     if (res.status === "success") {

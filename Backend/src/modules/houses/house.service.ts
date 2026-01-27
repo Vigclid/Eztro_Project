@@ -7,10 +7,19 @@ export class houseService extends GenericService<IHouse> {
         super(houseModel)
     }
 
+    getHouseById = async (id: string) => {
+        return await houseModel.findById(id)
+    }
+
+    getAllHousesByLandlordId = async (landlordId: string) => {
+        return await houseModel.find({ landlordId })
+    }
+    
     createNewHouse = async (data: Partial<IHouse>) => {
         const newHouse = new houseModel({
             ...data,
         })
         return (await houseModel.create(newHouse))
     };
+
 }
