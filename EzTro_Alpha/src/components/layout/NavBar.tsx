@@ -78,7 +78,14 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
         <Icon name="apartment" size={36} color={theme.color3} />
         <Text style={{ color: theme.color3 }}>Nhà trọ</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.item}>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() =>
+          (navigation.getParent() as any)?.navigate("mainstack", {
+            screen: "createInvoicesScreen",
+          })
+        }
+      >
         <Icon name="credit-card" size={36} color={theme.color3} />
         <Text style={{ color: theme.color3 }}>Hóa đơn</Text>
       </TouchableOpacity>
