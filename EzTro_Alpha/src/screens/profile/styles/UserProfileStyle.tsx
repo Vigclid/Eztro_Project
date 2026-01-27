@@ -132,8 +132,7 @@ export const UserProfileStyle = (theme: any) =>
     sectionCardSettings: {
       backgroundColor: COLORS.WHITE,
       borderRadius: BORDER_RADIUS.PROFILE_CARD,
-      paddingVertical: SPACING.INPUT_VERTICAL_PADDING,
-      paddingLeft: SPACING.PROFILE_SECTION_CARD_PADDING_LEFT,
+      paddingTop: SPACING.INPUT_VERTICAL_PADDING,
     },
     sectionItem: {
       flexDirection: "row",

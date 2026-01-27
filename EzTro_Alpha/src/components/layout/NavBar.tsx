@@ -15,6 +15,9 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { theme } = useContext(ThemeContext);
   const insets = useSafeAreaInsets();
+  const currentRouteName = state.routes[state.index].name;
+  const isActive = (routeName: string) => currentRouteName === routeName;
+
   // const isRootScreen = () => {
   //   const currentRouteName = state.routes[state.index].name;
   //   const rootScreens = ["home", "forum-list", "ArtHubAI"];
@@ -56,8 +59,20 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
         style={styles.item}
         onPress={() => navigation.navigate("viewBoardingHousePage")}
       >
-        <Icon name="home" size={36} color={theme.color} />
-        <Text style={{ color: theme.color }}>Trang chủ</Text>
+        <Icon
+          name="home"
+          size={36}
+          color={isActive("viewBoardingHousePage") ? theme.color : theme.color3}
+        />
+        <Text
+          style={{
+            color: isActive("viewBoardingHousePage")
+              ? theme.color
+              : theme.color3,
+          }}
+        >
+          Trang chủ
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.item}>
         <Icon name="apartment" size={36} color={theme.color3} />
@@ -75,8 +90,18 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
         style={styles.item}
         onPress={() => navigation.navigate("userProfile")}
       >
-        <Icon name="person" size={36} color={theme.color3} />
-        <Text style={{ color: theme.color3 }}>Cá nhân</Text>
+        <Icon
+          name="person"
+          size={36}
+          color={isActive("userProfile") ? theme.color : theme.color3}
+        />
+        <Text
+          style={{
+            color: isActive("userProfile") ? theme.color : theme.color3,
+          }}
+        >
+          Cá nhân
+        </Text>
       </TouchableOpacity>
     </LinearGradient>
   );
