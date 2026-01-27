@@ -55,6 +55,32 @@ export const COLORS = {
   EMERALD_SOLID: "#10B981",
   TEAL_SOLID: "#14B8A6",
   SHADOW_COLOR_LIGHT: "#00000012",
+
+  // Boarding House Details Screen Colors
+  primaryGradient: ["#00BC7C", "#00BBA6"] as const,
+  secondaryGradient: ["#EBFCF4", "#F0FDFA", "#EBFCF4"] as const,
+  orangeGradient: ["#FD9900", "#FF6800"] as const,
+  blueGradient: ["#2B7FFF", "#615EFF"] as const,
+  grayGradient: ["#F8FAFB", "#F2F4F6"] as const,
+
+  background: "#F9FAFB",
+  white: "#FFFFFF",
+
+  textMain: "#101727",
+  textSecondary: "#495565",
+  textInput: "#354152",
+  textWhite: "#FFFFFF",
+
+  successText: "#009865",
+  successDark: "#007955",
+  successBg: "#ECFDF5",
+  successBorder: "#A4F3CF",
+
+  warningText: "#BA4C00",
+  warningBg: "#FEF3C6",
+  warningBorder: "#FDE585",
+
+  shadow: "#0000001A",
 } as const;
 
 export const SPACING = {

@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -19,10 +19,28 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
+import BoardingHouseStatsCard from "../../components/boardingHouse/BoardingHouseStatsCard";
+import { IHouse } from "../../types/house";
+import { getHouseApi } from "../../api/house/house";
+import { ApiResponse } from "../../types/app.common";
+import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
 
 export const ViewBoardingHousePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [searchText, onChangeSearchText] = useState("");
+
+  const { getAllHousesByLandlordId } = getHouseApi
+  const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null)
+
+  useEffect(() => {
+    const getAllHouses = async () => {
+      const res = await getAllHousesByLandlordId() as ApiResponse<IHouse[]>
+      if (res.status === "success") {
+        setBoardingHouses(res.data as IHouse[])
+      }
+    }
+    getAllHouses()
+  }, [])
 
   const handleCreateBoardingHouse = () => {
     navigation.navigate("mainstack", { screen: "createBoardingHousePage" });
@@ -40,13 +58,15 @@ export const ViewBoardingHousePage: React.FC = () => {
           >
             <View style={styles.headerDivider} />
             <View style={styles.headerContent}>
-              <Image
-                source={{
-                  uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/e693ktri_expires_30_days.png",
-                }}
-                resizeMode="stretch"
-                style={styles.headerLogo}
-              />
+              <TouchableOpacity>
+                <Image
+                  source={{
+                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/e693ktri_expires_30_days.png",
+                  }}
+                  resizeMode="stretch"
+                  style={styles.headerLogo}
+                />
+              </TouchableOpacity>
               <View>
                 <Text style={styles.headerTitle}>{"Quản lý Nhà trọ"}</Text>
               </View>
@@ -80,492 +100,15 @@ export const ViewBoardingHousePage: React.FC = () => {
               />
             </View>
 
-            <View style={styles.statsContainer}>
-              <View style={styles.statCard}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/5yfeh1st_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.statIcon}
-                />
-                <View style={styles.statTextContainer}>
-                  <View style={styles.statLabelContainer}>
-                    <Text style={styles.statLabel}>{"Tổng cụm trọ"}</Text>
-                  </View>
-                  <View style={styles.statValueContainer}>
-                    <Text style={styles.statValue}>{"3"}</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.statCard}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/y1mirkee_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.statIcon}
-                />
-                <View style={styles.statTextContainer}>
-                  <View style={styles.statLabelContainer}>
-                    <Text style={styles.statLabel}>{"Tổng cộng phòng"}</Text>
-                  </View>
-                  <View style={styles.statLabelContainer}>
-                    <Text style={styles.statValue}>{"4"}</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
+            <BoardingHouseStatsCard totalBoardingHouse={7} />
             <View style={styles.boardingHousesContainer}>
-              {/* Boarding House 1 */}
-              <View style={styles.boardingHouseCard}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{"Nhà trọ Hòa Bình"}</Text>
-                  <TouchableOpacity
-                    style={styles.statusBadgeAvailable}
-                    onPress={() => alert("Pressed!")}
-                  >
-                    <Text style={styles.statusBadgeText}>{"Còn phòng"}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.addressContainer}>
-                  <Image
-                    source={{
-                      uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/7d8w1i7n_expires_30_days.png",
-                    }}
-                    resizeMode="stretch"
-                    style={styles.addressIcon}
-                  />
-                  <View>
-                    <Text style={styles.addressText}>
-                      {"123 Nguyễn Văn Linh"}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.districtContainer}>
-                  <Text style={styles.districtText}>{"Quận 7"}</Text>
-                </View>
-
-                <View style={styles.roomStatsContainer}>
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItem}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/a7pleg90_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainer}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"3"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Tổng phòng"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItem}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/z4dttm2t_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainerAlt}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"2"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Đang thuê"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItemLast}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/wrezapz8_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainerAlt2}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"1"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Còn trống"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-                </View>
-
-                <View style={styles.priceContainer}>
-                  <Text style={styles.priceText}>{"3.000.000 đ"}</Text>
-                  <View style={styles.priceUnitContainer}>
-                    <Text style={styles.priceUnitText}>{"/tháng"}</Text>
-                  </View>
-                  <View style={styles.priceSpacer} />
-                </View>
-
-                <View style={styles.featuresContainer}>
-                  <View style={styles.featureRow}>
-                    <TouchableOpacity
-                      style={styles.featureBadge}
-                      onPress={() => alert("Pressed!")}
-                    >
-                      <Text style={styles.featureBadgeText}>
-                        {"Wifi miễn phí"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.featureBadge}
-                      onPress={() => alert("Pressed!")}
-                    >
-                      <Text style={styles.featureBadgeText}>
-                        {"Máy giặt chung"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.featureRow}>
-                    <TouchableOpacity
-                      style={styles.featureBadge}
-                      onPress={() => alert("Pressed!")}
-                    >
-                      <Text style={styles.featureBadgeText}>
-                        {"Bảo vệ 24/7"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.featureBadgeGray}
-                      onPress={() => alert("Pressed!")}
-                    >
-                      <Text style={styles.featureBadgeGrayText}>{"+1"}</Text>
-                    </TouchableOpacity>
-                    <View style={styles.featureSpacer} />
-                  </View>
-                </View>
-              </View>
-              {/* Boarding House 2 */}
-              <View style={styles.boardingHouseCard}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{"Phòng trọ An Khang"}</Text>
-                  <TouchableOpacity
-                    style={styles.statusBadgeAvailable}
-                    onPress={() => alert("Pressed!")}
-                  >
-                    <Text style={styles.statusBadgeText}>{"Còn phòng"}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.addressContainer}>
-                  <Image
-                    source={{
-                      uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/1jbp2vfx_expires_30_days.png",
-                    }}
-                    resizeMode="stretch"
-                    style={styles.addressIcon}
-                  />
-                  <View>
-                    <Text style={styles.addressText}>{"456 Lê Văn Việt"}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.districtContainer}>
-                  <Text style={styles.districtText}>{"Quận 9"}</Text>
-                </View>
-
-                <View style={styles.roomStatsContainer}>
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItem}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/i39y6kyv_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainer}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"1"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Tổng phòng"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItem}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/9w68gzb2_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainerAlt}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"0"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Đang thuê"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItemLast}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/pqxaax5g_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainerAlt2}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"1"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Còn trống"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-                </View>
-
-                <View style={styles.priceContainer}>
-                  <Text style={styles.priceText}>{"2.500.000 đ"}</Text>
-                  <View style={styles.priceUnitContainer}>
-                    <Text style={styles.priceUnitText}>{"/tháng"}</Text>
-                  </View>
-                  <View style={styles.priceSpacer} />
-                </View>
-
-                <View style={styles.featuresContainer}>
-                  <View style={styles.featureRow}>
-                    <TouchableOpacity
-                      style={styles.featureBadge}
-                      onPress={() => alert("Pressed!")}
-                    >
-                      <Text style={styles.featureBadgeText}>
-                        {"Wifi miễn phí"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.featureBadge}
-                      onPress={() => alert("Pressed!")}
-                    >
-                      <Text style={styles.featureBadgeText}>{"Thang máy"}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.featureBadgeSingle}
-                    onPress={() => alert("Pressed!")}
-                  >
-                    <Text style={styles.featureBadgeText}>
-                      {"Gửi xe miễn phí"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Boarding House 3 */}
-              <View style={styles.boardingHouseCard}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{"Nhà trọ Sinh Viên"}</Text>
-                  <TouchableOpacity
-                    style={styles.statusBadgeFull}
-                    onPress={() => alert("Pressed!")}
-                  >
-                    <Text style={styles.statusBadgeFullText}>
-                      {"Hết phòng"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.addressContainer}>
-                  <Image
-                    source={{
-                      uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/igutppbz_expires_30_days.png",
-                    }}
-                    resizeMode="stretch"
-                    style={styles.addressIcon}
-                  />
-                  <View>
-                    <Text style={styles.addressText}>{"789 Võ Văn Ngân"}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.districtContainer}>
-                  <Text style={styles.districtText}>{"Thủ Đức"}</Text>
-                </View>
-
-                <View style={styles.roomStatsContainer}>
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItem}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/my2bcvoc_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainer}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"0"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Tổng phòng"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItem}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/juzfs9dx_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainerAlt}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"0"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Đang thuê"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    colors={[
-                      COLORS.GRAY_LIGHT_GRADIENT_START,
-                      COLORS.GRAY_LIGHT_GRADIENT_END,
-                    ]}
-                    style={styles.roomStatItemLast}
-                  >
-                    <Image
-                      source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/j7pyxdas_expires_30_days.png",
-                      }}
-                      resizeMode="stretch"
-                      style={styles.roomStatIcon}
-                    />
-                    <View style={styles.roomStatTextContainerAlt2}>
-                      <View style={styles.roomStatValueContainer}>
-                        <Text style={styles.roomStatValue}>{"0"}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.roomStatLabel}>{"Còn trống"}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-                </View>
-
-                <View style={styles.priceContainer}>
-                  <Text style={styles.priceText}>{"2.000.000 đ"}</Text>
-                  <View style={styles.priceUnitContainer}>
-                    <Text style={styles.priceUnitText}>{"/tháng"}</Text>
-                  </View>
-                  <View style={styles.priceSpacer} />
-                </View>
-
-                <View style={styles.featuresContainer}>
-                  <View style={styles.featureRow}>
-                    <TouchableOpacity
-                      style={styles.featureBadge}
-                      onPress={() => alert("Pressed!")}
-                    >
-                      <Text style={styles.featureBadgeText}>
-                        {"Wifi miễn phí"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.featureBadge}
-                      onPress={() => alert("Pressed!")}
-                    >
-                      <Text style={styles.featureBadgeText}>{"Bếp chung"}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.featureBadgeSingleAlt}
-                    onPress={() => alert("Pressed!")}
-                  >
-                    <Text style={styles.featureBadgeText}>
-                      {"Giờ giấc tự do"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              {boardingHouses && (
+                <>
+                  {boardingHouses.map((boardingHouse: IHouse, index: number) => (
+                    <BoardingHouseCard key={index} {...boardingHouse} />
+                  ))}
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -588,7 +131,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.WHITE,
-    marginTop: 9,
+    paddingTop: 0
   },
   scrollView: {
     flex: 1,

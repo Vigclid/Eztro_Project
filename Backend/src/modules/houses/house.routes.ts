@@ -7,7 +7,12 @@ import { houseService } from "./house.service";
 const router = Router();
 const HouseController = new houseController(new houseService())
 
+router.route('/:id')
+    .get(authenticate, HouseController.getHouseById)
+
+
 router.route('/')
+    .get(authenticate, HouseController.getAllHousesByLandlordId)
     .post(authenticate, HouseController.createNewHouse)
 
 export default router
