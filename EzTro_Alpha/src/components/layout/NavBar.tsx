@@ -89,9 +89,24 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
         <Icon name="credit-card" size={36} color={theme.color3} />
         <Text style={{ color: theme.color3 }}>Hóa đơn</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.item}>
-        <Icon name="history" size={36} color={theme.color3} />
-        <Text style={{ color: theme.color3 }}>Lịch sử</Text>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => navigation.navigate("trackingPaymentStatus")}
+      >
+        <Icon
+          name="history"
+          size={36}
+          color={isActive("trackingPaymentStatus") ? theme.color : theme.color3}
+        />
+        <Text
+          style={{
+            color: isActive("trackingPaymentStatus")
+              ? theme.color
+              : theme.color3,
+          }}
+        >
+          Tra soát
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.item}

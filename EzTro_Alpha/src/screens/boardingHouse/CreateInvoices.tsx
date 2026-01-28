@@ -99,29 +99,29 @@ export const CreateInvoices = () => {
 
   return (
     <View style={styles.container}>
-                <LinearGradient
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-            style={styles.headerGradient}
-          >
-            <View style={styles.headerDivider} />
-            <View style={styles.headerContent}>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/e693ktri_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.headerLogo}
-                />
-              </TouchableOpacity>
-              <View>
-                <Text style={styles.headerTitle}>{"Tạo hóa đơn hàng loạt"}</Text>
-              </View>
-              <View style={styles.headerSpacer} />
-            </View>
-          </LinearGradient>
+      <LinearGradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
+        style={styles.headerGradient}
+      >
+        <View style={styles.headerDivider} />
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Image
+              source={{
+                uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/e693ktri_expires_30_days.png",
+              }}
+              resizeMode="stretch"
+              style={styles.headerLogo}
+            />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.headerTitle}>{"Tạo hóa đơn hàng loạt"}</Text>
+          </View>
+          <View style={styles.headerSpacer} />
+        </View>
+      </LinearGradient>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}

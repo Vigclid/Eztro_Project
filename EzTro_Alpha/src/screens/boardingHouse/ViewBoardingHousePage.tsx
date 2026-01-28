@@ -11,6 +11,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { getHouseApi } from "../../api/house/house";
+import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
+import BoardingHouseStatsCard from "../../components/boardingHouse/BoardingHouseStatsCard";
 import {
   BORDER_RADIUS,
   COLORS,
@@ -19,28 +22,25 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
-import BoardingHouseStatsCard from "../../components/boardingHouse/BoardingHouseStatsCard";
-import { IHouse } from "../../types/house";
-import { getHouseApi } from "../../api/house/house";
 import { ApiResponse } from "../../types/app.common";
-import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
+import { IHouse } from "../../types/house";
 
 export const ViewBoardingHousePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [searchText, onChangeSearchText] = useState("");
 
-  const { getAllHousesByLandlordId } = getHouseApi
-  const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null)
+  const { getAllHousesByLandlordId } = getHouseApi;
+  const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
 
   useEffect(() => {
     const getAllHouses = async () => {
-      const res = await getAllHousesByLandlordId() as ApiResponse<IHouse[]>
+      const res = (await getAllHousesByLandlordId()) as ApiResponse<IHouse[]>;
       if (res.status === "success") {
-        setBoardingHouses(res.data as IHouse[])
+        setBoardingHouses(res.data as IHouse[]);
       }
-    }
-    getAllHouses()
-  }, [])
+    };
+    getAllHouses();
+  }, []);
 
   const handleCreateBoardingHouse = () => {
     navigation.navigate("mainstack", { screen: "createBoardingHousePage" });
@@ -58,17 +58,12 @@ export const ViewBoardingHousePage: React.FC = () => {
           >
             <View style={styles.headerDivider} />
             <View style={styles.headerContent}>
-              <TouchableOpacity>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/e693ktri_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.headerLogo}
-                />
-              </TouchableOpacity>
+              <View style={styles.headerSpacer} />
+
               <View>
-                <Text style={styles.headerTitle}>{"Quản lý Nhà trọ"}</Text>
+                <Text style={styles.headerTitle}>
+                  {"Tạo hóa đơn hàng loạt"}
+                </Text>
               </View>
               <View style={styles.headerSpacer} />
             </View>
@@ -104,9 +99,11 @@ export const ViewBoardingHousePage: React.FC = () => {
             <View style={styles.boardingHousesContainer}>
               {boardingHouses && (
                 <>
-                  {boardingHouses.map((boardingHouse: IHouse, index: number) => (
-                    <BoardingHouseCard key={index} {...boardingHouse} />
-                  ))}
+                  {boardingHouses.map(
+                    (boardingHouse: IHouse, index: number) => (
+                      <BoardingHouseCard key={index} {...boardingHouse} />
+                    ),
+                  )}
                 </>
               )}
             </View>
@@ -131,7 +128,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.WHITE,
-    paddingTop: 0
+    paddingTop: 0,
   },
   scrollView: {
     flex: 1,
@@ -155,10 +152,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.HEADER_MARGIN_BOTTOM,
     marginHorizontal: SPACING.HEADER_HORIZONTAL_MARGIN,
   },
-  headerLogo: {
-    width: IMAGE_SIZE.HEADER_LOGO,
-    height: IMAGE_SIZE.HEADER_LOGO,
-  },
+
   headerTitle: {
     color: COLORS.WHITE,
     fontSize: FONT_SIZE.HEADER_TITLE,
