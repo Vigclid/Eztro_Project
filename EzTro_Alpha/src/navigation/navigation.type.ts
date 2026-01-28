@@ -15,11 +15,13 @@ export type MainTabParamList = {
   blank: undefined;
   userProfile: undefined;
   viewBoardingHousePage: undefined;
+  trackingPaymentStatus: undefined;
 };
 
 export type MainStackParamList = {
   createBoardingHousePage: undefined;
-  boardingHouseDetailsScreen: {_id: string | undefined};
+  boardingHouseDetailsScreen: { _id: string | undefined };
+  createInvoicesScreen: undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
