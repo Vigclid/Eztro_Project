@@ -15,6 +15,7 @@ export type MainTabParamList = {
   blank: undefined;
   userProfile: undefined;
   viewBoardingHousePage: undefined;
+  trackingPaymentStatus: undefined;
 };
 
 export type MainStackParamList = {
@@ -26,6 +27,7 @@ export type MainStackParamList = {
         room?: import("../types/room").IRoom;
       }
     | undefined;
+  createInvoicesScreen: undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
