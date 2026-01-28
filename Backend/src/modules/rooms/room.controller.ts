@@ -33,7 +33,7 @@ export class roomController extends GenericController<IRoom> {
     getAllRoomsByHouseId = async (req: Request, res: Response) => {
         try {
             const houseId = req.params.houseId;
-            const result = await this.RoomService.getAllRoomsByHouseId(houseId);
+            const result = (await this.RoomService.getAllRoomsByHouseId(houseId)).reverse();
 
             return res
                 .status(200)

@@ -26,6 +26,12 @@ export type MainStackParamList = {
         room?: import("../types/room").IRoom;
       }
     | undefined;
+  addTenantScreen:
+    | {
+        roomId: string;
+        room?: import("../types/room").IRoom;
+      }
+    | undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

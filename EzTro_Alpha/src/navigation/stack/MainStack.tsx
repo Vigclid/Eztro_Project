@@ -3,6 +3,7 @@ import React from "react";
 import { CreateBoardingHouseScreen } from "../../screens/boardingHouse/CreateBoardingHouseScreen";
 import BoardingHouseDetailsScreen from "../../screens/boardingHouse/BoardingHouseDetailsScreen";
 import CreateNewRoomScreen from "../../screens/room/CreateNewRoomScreen";
+import AddTenantScreen from "../../screens/room/AddTenantScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +20,10 @@ const MainStack = () => (
     <Stack.Screen
       name="createNewRoomScreen"
       component={CreateNewRoomScreen}
+    />
+    <Stack.Screen
+      name="addTenantScreen"
+      component={AddTenantScreen}
     />
   </Stack.Navigator>
 );

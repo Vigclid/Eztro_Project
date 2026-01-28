@@ -19,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MainStackParamList } from "../../navigation/navigation.type";
 import { postRoomApi } from "../../api/room/room";
 import { ApiResponse } from "../../types/app.common";
-import { IRoom } from "../../types/room";
+import { IRoom, IVirtualTenant } from "../../types/room";
 import {
   COLORS,
   SPACING,
@@ -93,6 +93,9 @@ const CreateNewRoomScreen = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tenants, setTenants] = useState<IVirtualTenant[]>(
+    editingRoom?.virtualTenants || [],
+  );
 
   // Khởi tạo dữ liệu nếu là chế độ sửa
   useEffect(() => {
@@ -108,6 +111,7 @@ const CreateNewRoomScreen = () => {
           ? new Date(editingRoom.rentDate).toISOString().slice(0, 10)
           : new Date().toISOString().slice(0, 10),
       });
+      setTenants(editingRoom.virtualTenants || []);
     } else {
       // Mặc định ngày tạo là hôm nay khi thêm mới
       setFormData((prev) => ({
@@ -163,6 +167,7 @@ const CreateNewRoomScreen = () => {
       rentalDate: formData.rentalDate
         ? new Date(formData.rentalDate)
         : new Date(),
+      virtualTenants: tenants,
     };
 
     setSubmitting(true);
@@ -373,6 +378,82 @@ const CreateNewRoomScreen = () => {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Danh sách người thuê của phòng (nếu có) */}
+          {tenants.length > 0 && (
+            <View style={styles.tenantsSection}>
+              <Text style={styles.tenantsTitle}>Người thuê hiện tại</Text>
+              {tenants.map((t, index) => (
+                <View key={`${t.tenantName}-${index}`} style={styles.tenantItem}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tenantName}>{t.tenantName}</Text>
+                    <Text style={styles.tenantText}>{t.phoneNumber}</Text>
+                    {t.joinDate && (
+                      <Text style={styles.tenantText}>
+                        Ngày vào ở:{" "}
+                        {new Date(t.joinDate).toISOString().slice(0, 10)}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={styles.tenantRemoveButton}
+                    onPress={() => {
+                      Alert.alert(
+                        "Xác nhận",
+                        `Xóa ${t.tenantName} khỏi phòng?`,
+                        [
+                          { text: "Hủy", style: "cancel" },
+                          {
+                            text: "Xóa",
+                            style: "destructive",
+                            onPress: async () => {
+                              const updated = tenants.filter(
+                                (_prev, i) => i !== index,
+                              );
+
+                              // Nếu đang sửa phòng thì cập nhật luôn DB
+                              if (isEditMode && editingRoom?._id) {
+                                try {
+                                  const raw = await postRoomApi.updateRoom(
+                                    editingRoom._id,
+                                    { virtualTenants: updated },
+                                  );
+                                  const res = raw as ApiResponse<IRoom>;
+                                  if (
+                                    res.status === "success" ||
+                                    res.status === true
+                                  ) {
+                                    setTenants(updated);
+                                  } else {
+                                    Alert.alert(
+                                      "Lỗi",
+                                      res.message ||
+                                        "Không thể xóa người thuê, vui lòng thử lại.",
+                                    );
+                                  }
+                                } catch (error: any) {
+                                  Alert.alert(
+                                    "Lỗi",
+                                    error?.message ||
+                                      "Không thể xóa người thuê, vui lòng thử lại.",
+                                  );
+                                }
+                              } else {
+                                // Trường hợp tạo mới phòng (chỉ cập nhật local)
+                                setTenants(updated);
+                              }
+                            },
+                          },
+                        ],
+                      );
+                    }}
+                  >
+                    <Text style={styles.tenantRemoveText}>X</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -544,6 +625,49 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: FONT_SIZE.CREATE_FORM_LABEL,
     fontWeight: "600",
+  },
+  tenantsSection: {
+    marginTop: SPACING.MEDIUM,
+  },
+  tenantsTitle: {
+    fontSize: FONT_SIZE.BOARDING_HOUSE_TITLE - 4,
+    fontWeight: "bold",
+    color: COLORS.TEXT_DARK,
+    marginBottom: SPACING.SMALL,
+  },
+  tenantItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER_GRAY,
+    paddingHorizontal: SPACING.MEDIUM,
+    marginBottom: SPACING.SMALL,
+    backgroundColor: COLORS.BACKGROUND_GRAY,
+  },
+  tenantName: {
+    fontSize: FONT_SIZE.BOARDING_HOUSE_TITLE - 6,
+    fontWeight: "bold",
+    color: COLORS.TEXT_DARK,
+  },
+  tenantText: {
+    fontSize: FONT_SIZE.ADDRESS,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  tenantRemoveButton: {
+    marginLeft: SPACING.SMALL,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.RED_LIGHT_BG,
+  },
+  tenantRemoveText: {
+    color: COLORS.RED_TEXT,
+    fontWeight: "bold",
+    fontSize: 12,
   },
   // Footer
   footer: {

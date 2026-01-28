@@ -1,5 +1,5 @@
 // components/BoardingHouseCard.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NavigationProp } from "../../navigation/navigation.type";
@@ -13,6 +13,9 @@ import {
 import RoomStats from "./RoomStats";
 import BoardingHouseFeatures from "./BoardingHouseFeature";
 import { IHouse } from "../../types/house";
+import { getRoomApi } from "../../api/room/room";
+import { ApiResponse } from "../../types/app.common";
+import { IRoom } from "../../types/room";
 const BoardingHouseCard = ({
     _id,
     houseName,
@@ -20,7 +23,40 @@ const BoardingHouseCard = ({
     status,
     defaultUtilitesCharge
 }: IHouse) => {
-    const navigation = useNavigation<NavigationProp>()
+    const navigation = useNavigation<NavigationProp>();
+    const [totalRooms, setTotalRooms] = useState<number>(0);
+    const [rentedRooms, setRentedRooms] = useState<number>(0);
+    const [availableRooms, setAvailableRooms] = useState<number>(0);
+
+    useEffect(() => {
+        const fetchRoomStats = async () => {
+            if (!_id) return;
+            try {
+                const res = await getRoomApi.getAllRoomsByHouseId(_id) as ApiResponse<IRoom[]>;
+                if (res.status === "success" && Array.isArray(res.data)) {
+                    const rooms = res.data as any as IRoom[];
+                    const total = rooms.length;
+                    const rented = rooms.filter(
+                        (r) => r.status === "Đang Thuê" || r.status === "rented",
+                    ).length;
+                    const available = total - rented;
+                    setTotalRooms(total);
+                    setRentedRooms(rented);
+                    setAvailableRooms(available);
+                } else {
+                    setTotalRooms(0);
+                    setRentedRooms(0);
+                    setAvailableRooms(0);
+                }
+            } catch {
+                setTotalRooms(0);
+                setRentedRooms(0);
+                setAvailableRooms(0);
+            }
+        };
+
+        fetchRoomStats();
+    }, [_id]);
     const handleViewDetails = () => {
         navigation.navigate('mainstack', {
             screen: 'boardingHouseDetailsScreen',
@@ -66,9 +102,9 @@ const BoardingHouseCard = ({
                 </View>
 
                 <RoomStats
-                    total={3}
-                    rented={5}
-                    available={7}
+                    total={totalRooms}
+                    rented={rentedRooms}
+                    available={availableRooms}
                 />
                 <BoardingHouseFeatures features={defaultUtilitesCharge ?? []} />
             </View>

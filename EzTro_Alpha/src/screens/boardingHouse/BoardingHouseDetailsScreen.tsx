@@ -46,7 +46,15 @@ const AmenityChip = ({ label, isLast }: { label: string; isLast?: boolean }) => 
     </TouchableOpacity>
 );
 
-const RoomCard = ({ item, onPress }: { item: IRoom; onPress: () => void }) => {
+const RoomCard = ({
+    item,
+    onPressTenant,
+    onPressRoom,
+}: {
+    item: IRoom;
+    onPressTenant: () => void;
+    onPressRoom: () => void;
+}) => {
     // Kiểm tra trạng thái
     const isRented = item.status === 'rented' || item.status === 'Đang Thuê';
 
@@ -66,7 +74,7 @@ const RoomCard = ({ item, onPress }: { item: IRoom; onPress: () => void }) => {
     };
 
     return (
-        <TouchableOpacity onPress={onPress}>
+        <TouchableOpacity onPress={onPressRoom}>
             <View style={styles.cardContainer}>
                 {/* Header Card (Tên phòng + Badge trạng thái cũ - Bạn có thể giữ hoặc bỏ nếu muốn) */}
                 <View style={styles.roomHeader}>
@@ -118,25 +126,32 @@ const RoomCard = ({ item, onPress }: { item: IRoom; onPress: () => void }) => {
                 {/* ------------------------- */}
 
                 {/* Footer (Người thuê / Button thêm) - Giữ nguyên logic cũ */}
-                {isRented ? (
-                    <>
-                        <View style={styles.tenantRow}>
-                            <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ev7746c0_expires_30_days.png", }} resizeMode="stretch" style={styles.iconSmall} />
-                            <Text style={styles.textBoldGray}>Người thuê: ...</Text>
-                        </View>
-                        <View style={styles.invoiceRow}>
-                            <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/cg6b2r7k_expires_30_days.png", }} resizeMode="stretch" style={styles.iconSmall} />
-                            <Text style={styles.textBoldBlack}>Chưa có hóa đơn</Text>
-                        </View>
-                    </>
-                ) : (
-                    <TouchableOpacity onPress={() => alert('Add Tenant')}>
-                        <LinearGradient colors={COLORS.blueGradient} style={styles.addTenantBtn}>
-                            <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/yfzfhesb_expires_30_days.png" }} resizeMode="stretch" style={styles.iconSmall} />
-                            <Text style={styles.textWhiteBtn}>Thêm người thuê</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
+                {/* Danh sách người thuê (nếu có) */}
+                {item.virtualTenants && item.virtualTenants.length > 0 && (
+                    <View style={styles.tenantList}>
+                        {item.virtualTenants.map((t, index) => (
+                            <View key={`${t.tenantName}-${index}`} style={styles.tenantRow}>
+                                <Image
+                                    source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ev7746c0_expires_30_days.png" }}
+                                    resizeMode="stretch"
+                                    style={styles.iconSmall}
+                                />
+                                <View>
+                                    <Text style={styles.textBoldGray}>{t.tenantName}</Text>
+                                    <Text style={styles.textGraySmall}>{t.phoneNumber}</Text>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
                 )}
+
+                {/* Nút thêm người thuê */}
+                <TouchableOpacity onPress={onPressTenant}>
+                    <LinearGradient colors={COLORS.blueGradient} style={styles.addTenantBtn}>
+                        <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/yfzfhesb_expires_30_days.png" }} resizeMode="stretch" style={styles.iconSmall} />
+                        <Text style={styles.textWhiteBtn}>Thêm người thuê</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
             </View>
         </TouchableOpacity>
     );
@@ -213,6 +228,7 @@ export const BoardingHouseDetailsScreen = () => {
                     rentalFee: room.rentalFee,
                     status: room.status,
                     rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
+                    virtualTenants: room.virtualTenants || [],
                 }));
                 setRooms(mappedRooms);
             }
@@ -381,13 +397,22 @@ export const BoardingHouseDetailsScreen = () => {
                                     <RoomCard
                                         key={room._id}
                                         item={room}
-                                        onPress={() =>
-                                            // Điều hướng sang màn tạo/sửa phòng, truyền kèm houseId và room
+                                        onPressRoom={() =>
                                             navigation.navigate(
-                                                // @ts-ignore do dùng chung stack
+                                                // @ts-ignore
                                                 "createNewRoomScreen" as never,
                                                 {
                                                     houseId: _id,
+                                                    room,
+                                                } as never,
+                                            )
+                                        }
+                                        onPressTenant={() =>
+                                            navigation.navigate(
+                                                // @ts-ignore
+                                                "addTenantScreen" as never,
+                                                {
+                                                    roomId: room._id!,
                                                     room,
                                                 } as never,
                                             )
@@ -787,6 +812,9 @@ const styles = StyleSheet.create({
         paddingVertical: 7,
         marginBottom: 12,
     },
+    tenantList: {
+        marginTop: 8,
+    },
     invoiceRow: {
         flexDirection: "row",
         alignItems: "center",
@@ -801,6 +829,10 @@ const styles = StyleSheet.create({
         color: "#354152",
         fontSize: 14,
         fontWeight: "bold",
+    },
+    textGraySmall: {
+        color: "#697282",
+        fontSize: 12,
     },
     textBoldBlack: {
         color: "#0A0A0A",
