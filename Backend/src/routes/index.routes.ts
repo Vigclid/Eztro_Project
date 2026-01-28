@@ -4,9 +4,10 @@ import v1RoleRoutes from "./v1/roles.routes";
 import authRouter from "../modules/auth/auth.route";
 import v1MailRoutes from "./v1/mail.routes";
 import v1HouseRoutes from './v1/house.routes'
+import v1RoomRoutes from './v1/room.routes'
 
 const router = Router();
 
 router.use(authRouter);
-router.use("/v1", v1UserRoutes, v1RoleRoutes, v1MailRoutes, v1HouseRoutes);
+router.use("/v1", v1UserRoutes, v1RoleRoutes, v1MailRoutes, v1HouseRoutes, v1RoomRoutes);
 export default router;

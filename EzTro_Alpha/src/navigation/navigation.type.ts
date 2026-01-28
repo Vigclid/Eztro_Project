@@ -21,6 +21,12 @@ export type MainTabParamList = {
 export type MainStackParamList = {
   createBoardingHousePage: undefined;
   boardingHouseDetailsScreen: { _id: string | undefined };
+  createNewRoomScreen:
+    | {
+        houseId: string | undefined;
+        room?: import("../types/room").IRoom;
+      }
+    | undefined;
   createInvoicesScreen: undefined;
 };
 
