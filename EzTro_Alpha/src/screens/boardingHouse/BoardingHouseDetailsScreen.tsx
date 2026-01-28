@@ -1,10 +1,9 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     View,
     ScrollView,
     Image,
     Text,
-    TextInput,
     TouchableOpacity,
     StyleSheet,
 } from "react-native";
@@ -15,19 +14,10 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { MainStackParamList } from "../../navigation/navigation.type";
 import { IHouse } from "../../types/house";
 import { getHouseApi } from "../../api/house/house";
+import { getRoomApi } from "../../api/room/room";
 import { ApiResponse } from "../../types/app.common";
 
 type DetailsRouteProps = RouteProp<MainStackParamList, 'boardingHouseDetailsScreen'>;
-
-// ============================================================================
-// DATA & TYPES
-// ============================================================================
-//m²
-const ROOMS_DATA: IRoom[] = [
-    { _id: '101', roomName: 'Phòng 101', status: 'rented', area: 25, floor: 1, rentalFee: 3000000, rentDate: new Date() },
-    { _id: '102', roomName: 'Phòng 102', status: 'empty', area: 20, floor: 1, rentalFee: 2000000, rentDate: new Date() },
-    { _id: '201', roomName: 'Phòng 201', status: 'rented', area: 30, floor: 2, rentalFee: 3500000, rentDate: new Date() },
-];
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -57,41 +47,82 @@ const AmenityChip = ({ label, isLast }: { label: string; isLast?: boolean }) => 
 );
 
 const RoomCard = ({ item, onPress }: { item: IRoom; onPress: () => void }) => {
-    const isRented = item.status === 'rented';
+    // Kiểm tra trạng thái
+    const isRented = item.status === 'rented' || item.status === 'Đang Thuê';
+
+    // Hàm format tiền tệ (Ví dụ: 3000000 => 3.000.000 đ)
+    const formatCurrency = (value: number | string) => {
+        if (!value) return '0 đ';
+        return Number(value).toLocaleString('vi-VN') + ' đ';
+    };
+
+    // Hàm format ngày (Ví dụ: 2024-01-28 => 28/01/2024)
+    // Lưu ý: Đảm bảo item có trường ngày tạo (ví dụ createdAt). 
+    // Nếu chưa có, bạn cần thêm vào lúc map dữ liệu ở useEffect.
+    // Ở đây tôi ví dụ dùng new Date() nếu không có dữ liệu, hoặc dùng rentDate.
+    const formatDate = (date?: Date | string) => {
+        if (!date) return "--/--/----";
+        return new Date(date).toLocaleDateString('vi-VN');
+    };
+
     return (
         <TouchableOpacity onPress={onPress}>
             <View style={styles.cardContainer}>
+                {/* Header Card (Tên phòng + Badge trạng thái cũ - Bạn có thể giữ hoặc bỏ nếu muốn) */}
                 <View style={styles.roomHeader}>
                     <View style={styles.roomTitleWrapper}>
                         <Text style={styles.roomTitle}>{item.roomName}</Text>
                     </View>
-                    <TouchableOpacity
-                        style={isRented ? styles.badgeWarning : styles.badgeSuccess}
-                        onPress={() => alert('Status pressed')}
-                    >
+                    {/* Badge nhỏ góc trên (giữ nguyên hoặc ẩn đi tùy bạn) */}
+                    <View style={isRented ? styles.badgeWarning : styles.badgeSuccess}>
                         <Text style={isRented ? styles.badgeWarningText : styles.badgeSuccessText}>
                             {isRented ? "Đang thuê" : "Trống"}
                         </Text>
-                    </TouchableOpacity>
+                    </View>
                 </View>
 
+                {/* --- PHẦN BẠN MUỐN SỬA --- */}
                 <LinearGradient colors={COLORS.grayGradient} style={styles.roomDetailsBox}>
-                    <View style={styles.mb9}>
-                        <Text style={styles.textGray}>Diện tích: {item.area}</Text>
-                    </View>
-                    <View style={styles.mb9}>
-                        <Text style={styles.textGray}>Tầng: {item.floor}</Text>
-                    </View>
-                    <View>
-                        <Text style={styles.priceText}>{item.rentalFee}</Text>
-                    </View>
-                </LinearGradient>
 
+                    {/* Dòng 1: Ngày tạo */}
+                    <View style={[styles.rowCenter, styles.mb9, { justifyContent: 'space-between' }]}>
+                        <Text style={styles.textGray}>Ngày tạo:</Text>
+                        <Text style={[styles.textBoldBlack, { fontSize: 14 }]}>
+                            {/* Thay item.createdAt bằng trường ngày thực tế từ API của bạn */}
+                            {formatDate(item.rentDate)}
+                        </Text>
+                    </View>
+
+                    {/* Dòng 2: Trạng thái */}
+                    {/* <View style={[styles.rowCenter, styles.mb9, { justifyContent: 'space-between' }]}>
+                        <Text style={styles.textGray}>Trạng thái:</Text>
+                        <Text style={{
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: isRented ? '#BA4C00' : '#007955' // Cam hoặc Xanh
+                        }}>
+                            {isRented ? "Đang thuê" : "Còn trống"}
+                        </Text>
+                    </View> */}
+
+                    {/* Dòng 3: Giá */}
+                    <View style={[styles.rowCenter, { justifyContent: 'space-between' }]}>
+                        <Text style={styles.textGray}>Giá thuê:</Text>
+                        <Text style={styles.priceText}>
+                            {/* Thêm ?? 0 vào đây */}
+                            {formatCurrency(item.rentalFee ?? 0)}
+                        </Text>
+                    </View>
+
+                </LinearGradient>
+                {/* ------------------------- */}
+
+                {/* Footer (Người thuê / Button thêm) - Giữ nguyên logic cũ */}
                 {isRented ? (
                     <>
                         <View style={styles.tenantRow}>
                             <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ev7746c0_expires_30_days.png", }} resizeMode="stretch" style={styles.iconSmall} />
-                            <Text style={styles.textBoldGray}>{ }</Text>
+                            <Text style={styles.textBoldGray}>Người thuê: ...</Text>
                         </View>
                         <View style={styles.invoiceRow}>
                             <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/cg6b2r7k_expires_30_days.png", }} resizeMode="stretch" style={styles.iconSmall} />
@@ -152,24 +183,43 @@ const TabButton = ({
 // ============================================================================
 
 export const BoardingHouseDetailsScreen = () => {
-    const [description, setDescription] = useState("");
     const [activeTab, setActiveTab] = useState<'roomList' | 'fixedFee'>('roomList');
     const [boardingHouse, setBoardingHouse] = useState<IHouse | null>(null);
+    const [rooms, setRooms] = useState<IRoom[]>([]);
     const navigation = useNavigation()
 
     const route = useRoute<DetailsRouteProps>();
     const { _id } = route.params;
     const { getHouseById } = getHouseApi
+    const { getAllRoomsByHouseId } = getRoomApi;
 
     useEffect(() => {
-        const getBoardingHouse = async () => {
-            const res = await getHouseById(_id) as ApiResponse<IHouse>
-            if (res.status === "success") {
-                setBoardingHouse(res.data as IHouse)
+        const fetchData = async () => {
+            // Lấy thông tin cụm trọ
+            const resHouse = await getHouseById(_id) as ApiResponse<IHouse>;
+            if (resHouse.status === "success") {
+                setBoardingHouse(resHouse.data as IHouse);
             }
-        }
-        getBoardingHouse()
-    }, [_id, getHouseById])
+
+            // Lấy danh sách phòng theo houseId
+            const resRooms = await getAllRoomsByHouseId(_id) as ApiResponse<IRoom[]>;
+            if (resRooms.status === "success" && Array.isArray(resRooms.data)) {
+                const mappedRooms: IRoom[] = (resRooms.data as any[]).map((room: any) => ({
+                    _id: room._id,
+                    houseId: room.houseId,
+                    area: undefined,
+                    floor: undefined,
+                    roomName: room.roomName,
+                    rentalFee: room.rentalFee,
+                    status: room.status,
+                    rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
+                }));
+                setRooms(mappedRooms);
+            }
+        };
+
+        fetchData();
+    }, [_id, getHouseById, getAllRoomsByHouseId]);
     const handleGoBack = () => {
         navigation.goBack();
     }
@@ -221,9 +271,23 @@ export const BoardingHouseDetailsScreen = () => {
                             </View>
 
                             <View style={styles.statsRow}>
-                                <StatBox value="3" label="Tổng phòng" />
-                                <StatBox value="2" label="Đang thuê" />
-                                <StatBox value="1" label="Còn trống" isLast />
+                                <StatBox value={rooms.length.toString()} label="Tổng phòng" />
+                                <StatBox
+                                    value={rooms.filter((r) =>
+                                        r.status === "Đang Thuê" || r.status === "rented"
+                                    ).length.toString()}
+                                    label="Đang thuê"
+                                />
+                                <StatBox
+                                    value={(
+                                        rooms.length -
+                                        rooms.filter((r) =>
+                                            r.status === "Đang Thuê" || r.status === "rented"
+                                        ).length
+                                    ).toString()}
+                                    label="Còn trống"
+                                    isLast
+                                />
                             </View>
 
                             <View>
@@ -313,7 +377,7 @@ export const BoardingHouseDetailsScreen = () => {
                                     </View>
                                 </View>
 
-                                {ROOMS_DATA.map((room) => (
+                                {rooms.map((room) => (
                                     <RoomCard
                                         key={room._id}
                                         item={room}

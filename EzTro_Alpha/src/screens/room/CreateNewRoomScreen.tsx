@@ -13,30 +13,67 @@ import {
   Alert,
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import { MainStackParamList } from "../../navigation/navigation.type";
 import { postRoomApi } from "../../api/room/room";
 import { ApiResponse } from "../../types/app.common";
 import { IRoom } from "../../types/room";
-
-// Định nghĩa màu sắc theo thiết kế
-const COLORS = {
-  primary: "#00C49F", // Màu xanh ngọc chủ đạo
-  white: "#FFFFFF",
-  text: "#333333",
-  textLight: "#666666",
-  border: "#E0E0E0",
-  inputBg: "#FFFFFF",
-  success: "#00C49F",
-  warning: "#FF8C42", // Màu cam cho trạng thái đang thuê/cọc
-  warningBg: "#FFF4E5",
-  successBg: "#E8FBF6",
-};
+import {
+  COLORS,
+  SPACING,
+  BORDER_RADIUS,
+  FONT_SIZE,
+  SHADOW,
+  IMAGE_SIZE,
+} from "../../constants/theme";
 
 type CreateRoomRouteProps = RouteProp<
   MainStackParamList,
   "createNewRoomScreen"
 >;
+
+// ----------------------------------------------------------------------
+// [SỬA TẠI ĐÂY] Đưa FormInput ra ngoài component CreateNewRoomScreen
+// Để tránh việc component này bị tạo lại mỗi lần render cha
+// ----------------------------------------------------------------------
+const FormInput = ({
+  label,
+  icon,
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType = "default",
+}: {
+  label: string;
+  icon: any;
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  keyboardType?: "default" | "numeric";
+}) => (
+  <View style={styles.inputWrapper}>
+    <View style={styles.labelContainer}>
+      <MaterialCommunityIcons
+        name={icon}
+        size={18}
+        color={COLORS.PRIMARY}
+        style={styles.inputIcon}
+      />
+      <Text style={styles.label}>{label}</Text>
+    </View>
+    <TextInput
+      style={styles.input}
+      placeholder={placeholder}
+      placeholderTextColor="#999"
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType={keyboardType}
+    />
+  </View>
+);
+// ----------------------------------------------------------------------
 
 const CreateNewRoomScreen = () => {
   const navigation = useNavigation();
@@ -46,36 +83,43 @@ const CreateNewRoomScreen = () => {
   const editingRoom = room as IRoom | undefined;
   const isEditMode = !!editingRoom?._id;
 
-  // State lưu trữ dữ liệu form
+  // State lưu trữ dữ liệu form (theo cấu trúc body API /v1/rooms)
   const [formData, setFormData] = useState({
     roomNumber: "",
-    floor: "",
-    area: "",
-    maxPeople: "",
     price: "",
-    deposit: "",
     status: "Trống" as "Trống" | "Đang thuê",
+    rentalDate: "", // yyyy-mm-dd
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Khởi tạo dữ liệu nếu là chế độ sửa
   useEffect(() => {
     if (editingRoom) {
       setFormData({
         roomNumber: editingRoom.roomName || "",
-        floor: String(editingRoom.floor ?? ""),
-        area: String(editingRoom.area ?? ""),
-        maxPeople: "",
         price: String(editingRoom.rentalFee ?? ""),
-        deposit: "",
         status:
           editingRoom.status === "Đang Thuê"
             ? "Đang thuê"
             : ("Trống" as "Trống" | "Đang thuê"),
+        rentalDate: editingRoom.rentDate
+          ? new Date(editingRoom.rentDate).toISOString().slice(0, 10)
+          : new Date().toISOString().slice(0, 10),
       });
+    } else {
+      // Mặc định ngày tạo là hôm nay khi thêm mới
+      setFormData((prev) => ({
+        ...prev,
+        rentalDate: new Date().toISOString().slice(0, 10),
+      }));
     }
   }, [editingRoom]);
+
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
 
   // Hàm xử lý thay đổi input
   const handleChange = (key: keyof typeof formData, value: string) => {
@@ -105,7 +149,7 @@ const CreateNewRoomScreen = () => {
     if (!effectiveHouseId && !isEditMode) {
       Alert.alert(
         "Lỗi",
-        "Thiếu thông tin cụm trọ (houseId). Vui lòng quay lại và thử lại.",
+        "Thiếu thông tin cụm trọ (houseId). Vui lòng quay lại và thử lại."
       );
       return;
     }
@@ -115,16 +159,10 @@ const CreateNewRoomScreen = () => {
       roomName: formData.roomNumber.trim(),
       rentalFee: Number(formData.price) || 0,
       status: mapStatusForBackend(formData.status),
-      rentalDate: editingRoom?.rentDate ?? undefined,
-      // Các field phụ nếu backend sau này hỗ trợ
-      area: formData.area ? Number(formData.area) : undefined,
-      floor: formData.floor ? Number(formData.floor) : undefined,
-      maxPeople: formData.maxPeople
-        ? Number(formData.maxPeople)
-        : undefined,
-      deposit: formData.deposit
-        ? Number(formData.deposit)
-        : undefined,
+      // Ngày tạo phòng (rentalDate) - nếu người dùng không chỉnh thì mặc định là hôm nay
+      rentalDate: formData.rentalDate
+        ? new Date(formData.rentalDate)
+        : new Date(),
     };
 
     setSubmitting(true);
@@ -143,15 +181,15 @@ const CreateNewRoomScreen = () => {
         Alert.alert(
           "Thành công",
           res.message ||
-            (isEditMode
-              ? "Cập nhật phòng thành công"
-              : "Tạo phòng thành công"),
+          (isEditMode
+            ? "Cập nhật phòng thành công"
+            : "Tạo phòng thành công"),
           [
             {
               text: "OK",
               onPress: () => navigation.goBack(),
             },
-          ],
+          ]
         );
       } else {
         Alert.alert("Lỗi", res.message || "Có lỗi xảy ra, vui lòng thử lại.");
@@ -159,67 +197,38 @@ const CreateNewRoomScreen = () => {
     } catch (error: any) {
       Alert.alert(
         "Lỗi",
-        error?.message || "Có lỗi xảy ra, vui lòng thử lại sau.",
+        error?.message || "Có lỗi xảy ra, vui lòng thử lại sau."
       );
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Component con: Một ô nhập liệu (Input)
-  const FormInput = ({
-    label,
-    icon,
-    placeholder,
-    value,
-    onChangeText,
-    keyboardType = "default",
-  }: {
-    label: string;
-    icon: any;
-    placeholder: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    keyboardType?: "default" | "numeric";
-  }) => (
-    <View style={styles.inputWrapper}>
-      <View style={styles.labelContainer}>
-        <MaterialCommunityIcons
-          name={icon}
-          size={18}
-          color={COLORS.primary}
-          style={styles.inputIcon}
-        />
-        <Text style={styles.label}>{label}</Text>
-      </View>
-      <TextInput
-        style={styles.input}
-        placeholder={placeholder}
-        placeholderTextColor="#999"
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-      />
-    </View>
-  );
+  // [ĐÃ XÓA] const FormInput = ... (Đã chuyển ra ngoài)
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY} />
 
-      {/* 1. Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+      {/* Header gradient đồng bộ boarding house */}
+      <LinearGradient
+        colors={COLORS.primaryGradient}
+        style={styles.headerGradient}
+      >
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+          <Ionicons
+            name="arrow-back"
+            size={IMAGE_SIZE.BACK_BUTTON_ICON_WIDTH}
+            color={COLORS.textWhite}
+          />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isEditMode ? "Cập nhật phòng" : "Thêm phòng mới"}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+        <View>
+          <Text style={styles.headerTitle}>
+            {isEditMode ? "Cập nhật phòng" : "Thêm phòng mới"}
+          </Text>
+        </View>
+        <View style={styles.headerRightPlaceholder} />
+      </LinearGradient>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -229,8 +238,8 @@ const CreateNewRoomScreen = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Hàng 1: Số phòng - Tầng */}
-          <View style={styles.row}>
+          {/* Số phòng */}
+          <View style={styles.singleRow}>
             <FormInput
               label="Số phòng"
               icon="home-outline"
@@ -238,40 +247,10 @@ const CreateNewRoomScreen = () => {
               value={formData.roomNumber}
               onChangeText={(text: string) => handleChange("roomNumber", text)}
             />
-            <View style={{ width: 15 }} />
-            <FormInput
-              label="Tầng"
-              icon="office-building-outline"
-              placeholder="1"
-              value={formData.floor}
-              keyboardType="numeric"
-              onChangeText={(text: string) => handleChange("floor", text)}
-            />
           </View>
 
-          {/* Hàng 2: Diện tích - Số người */}
-          <View style={styles.row}>
-            <FormInput
-              label="Diện tích (m²)"
-              icon="fullscreen"
-              placeholder="25"
-              value={formData.area}
-              keyboardType="numeric"
-              onChangeText={(text: string) => handleChange("area", text)}
-            />
-            <View style={{ width: 15 }} />
-            <FormInput
-              label="Số người tối đa"
-              icon="account-group-outline"
-              placeholder="2"
-              value={formData.maxPeople}
-              keyboardType="numeric"
-              onChangeText={(text: string) => handleChange("maxPeople", text)}
-            />
-          </View>
-
-          {/* Hàng 3: Giá thuê - Tiền cọc */}
-          <View style={styles.row}>
+          {/* Giá thuê */}
+          <View style={styles.singleRow}>
             <FormInput
               label="Giá thuê/tháng (đ)"
               icon="currency-usd"
@@ -280,15 +259,58 @@ const CreateNewRoomScreen = () => {
               keyboardType="numeric"
               onChangeText={(text: string) => handleChange("price", text)}
             />
-            <View style={{ width: 15 }} />
-            <FormInput
-              label="Tiền cọc (đ)"
-              icon="currency-usd"
-              placeholder="6000000"
-              value={formData.deposit}
-              keyboardType="numeric"
-              onChangeText={(text: string) => handleChange("deposit", text)}
-            />
+          </View>
+
+          {/* Ngày tạo phòng */}
+          <View style={styles.singleRow}>
+            <View style={styles.inputWrapper}>
+              <View style={styles.labelContainer}>
+                <MaterialCommunityIcons
+                  name="calendar-month-outline"
+                  size={18}
+                  color={COLORS.PRIMARY}
+                  style={styles.inputIcon}
+                />
+                <Text style={styles.label}>Ngày tạo phòng</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.dateInput}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text
+                  style={
+                    formData.rentalDate
+                      ? styles.dateText
+                      : styles.datePlaceholderText
+                  }
+                >
+                  {formData.rentalDate || "Chọn ngày"}
+                </Text>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={
+                    formData.rentalDate
+                      ? new Date(formData.rentalDate)
+                      : new Date()
+                  }
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(
+                    _event: any,
+                    selectedDate?: Date | undefined
+                  ) => {
+                    setShowDatePicker(false);
+                    if (selectedDate) {
+                      const iso = selectedDate.toISOString().slice(0, 10);
+                      handleChange("rentalDate", iso);
+                    }
+                  }}
+                />
+              )}
+            </View>
           </View>
 
           {/* Phần Trạng thái */}
@@ -297,7 +319,7 @@ const CreateNewRoomScreen = () => {
               <MaterialCommunityIcons
                 name="file-document-outline"
                 size={18}
-                color={COLORS.primary}
+                color={COLORS.PRIMARY}
                 style={styles.inputIcon}
               />
               <Text style={styles.label}>Trạng thái</Text>
@@ -318,8 +340,8 @@ const CreateNewRoomScreen = () => {
                   style={[
                     styles.statusText,
                     formData.status === "Trống"
-                      ? { color: COLORS.success, fontWeight: "bold" }
-                      : { color: COLORS.textLight },
+                      ? { color: COLORS.successText, fontWeight: "bold" }
+                      : { color: COLORS.TEXT_SECONDARY },
                   ]}
                 >
                   Trống
@@ -342,8 +364,8 @@ const CreateNewRoomScreen = () => {
                   style={[
                     styles.statusText,
                     formData.status === "Đang thuê"
-                      ? { color: COLORS.warning, fontWeight: "bold" }
-                      : { color: COLORS.textLight },
+                      ? { color: COLORS.warningText, fontWeight: "bold" }
+                      : { color: COLORS.TEXT_SECONDARY },
                   ]}
                 >
                   Đang thuê
@@ -357,7 +379,7 @@ const CreateNewRoomScreen = () => {
       {/* Footer Buttons */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.btnCancel}
+          style={[styles.btnCancel, { flex: 1 }]}
           onPress={() => navigation.goBack()}
           disabled={submitting}
         >
@@ -367,22 +389,24 @@ const CreateNewRoomScreen = () => {
         <View style={{ width: 15 }} />
 
         <TouchableOpacity
-          style={[
-            styles.btnSave,
-            submitting && { opacity: 0.7 },
-          ]}
+          style={[submitting && { opacity: 0.7 }, { flex: 1 }]}
           onPress={handleSave}
           disabled={submitting}
         >
-          <Text style={styles.btnSaveText}>
-            {submitting
-              ? isEditMode
-                ? "Đang lưu..."
-                : "Đang tạo..."
-              : isEditMode
-              ? "Lưu thay đổi"
-              : "Lưu phòng"}
-          </Text>
+          <LinearGradient
+            colors={COLORS.primaryGradient}
+            style={[styles.actionBtnGreen, { width: "100%" }]}
+          >
+            <Text style={styles.actionTextGreen}>
+              {submitting
+                ? isEditMode
+                  ? "Đang lưu..."
+                  : "Đang tạo..."
+                : isEditMode
+                  ? "Lưu thay đổi"
+                  : "Lưu phòng"}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -392,40 +416,50 @@ const CreateNewRoomScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: COLORS.background,
   },
-  // Header
-  header: {
-    backgroundColor: COLORS.primary,
-    height: 60,
+  actionTextGreen: {
+    color: COLORS.WHITE,
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  headerGradient: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? 0 : 0,
+    alignItems: "center",
+    paddingHorizontal: SPACING.HEADER_HORIZONTAL_MARGIN,
+    paddingTop: Platform.OS === "android" ? 50 : 50,
+    paddingBottom: SPACING.CREATE_HEADER_PADDING_VERTICAL,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: IMAGE_SIZE.BACK_BUTTON_ICON_WIDTH + 20,
+    height: IMAGE_SIZE.BACK_BUTTON_ICON_HEIGHT + 20,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 20,
+    backgroundColor: COLORS.WHITE_MORE_TRANSPARENT,
+    borderRadius: BORDER_RADIUS.BACK_BUTTON,
   },
   headerTitle: {
-    color: COLORS.white,
-    fontSize: 18,
+    color: COLORS.textWhite,
+    fontSize: FONT_SIZE.HEADER_TITLE,
     fontWeight: "bold",
+  },
+  headerRightPlaceholder: {
+    width: IMAGE_SIZE.BACK_BUTTON_ICON_WIDTH + 20,
   },
   // Body Layout
   scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
+    paddingHorizontal: SPACING.CONTENT_HORIZONTAL_PADDING,
+    paddingTop: SPACING.SCROLL_TOP_PADDING,
+    paddingBottom: SPACING.SCROLL_BOTTOM_PADDING + 60,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: SPACING.CREATE_FORM_SECTION_MARGIN_BOTTOM,
+  },
+  singleRow: {
+    marginBottom: SPACING.CREATE_FORM_SECTION_MARGIN_BOTTOM,
   },
   inputWrapper: {
     flex: 1,
@@ -433,56 +467,82 @@ const styles = StyleSheet.create({
   labelContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: SPACING.CREATE_LABEL_MARGIN_BOTTOM,
   },
   inputIcon: {
-    marginRight: 6,
+    marginRight: SPACING.ICON_MARGIN_RIGHT,
   },
   label: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.CREATE_FORM_LABEL,
     fontWeight: "600",
-    color: "#2D3436",
+    color: COLORS.TEXT_DARK,
   },
   input: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.INPUT_BACKGROUND,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.text,
+    borderColor: COLORS.BORDER_GRAY_ALPHA,
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
+    paddingHorizontal: SPACING.CREATE_INPUT_PADDING_HORIZONTAL,
+    paddingVertical: SPACING.CREATE_INPUT_PADDING_VERTICAL,
+    fontSize: FONT_SIZE.CREATE_FORM_INPUT,
+    color: COLORS.textInput,
+  },
+  dateInput: {
+    backgroundColor: COLORS.INPUT_BACKGROUND,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER_GRAY_ALPHA,
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
+    paddingHorizontal: SPACING.CREATE_INPUT_PADDING_HORIZONTAL,
+    paddingVertical: SPACING.CREATE_INPUT_PADDING_VERTICAL,
+    justifyContent: "center",
+  },
+  dateText: {
+    fontSize: FONT_SIZE.CREATE_FORM_INPUT,
+    color: COLORS.textInput,
+  },
+  datePlaceholderText: {
+    fontSize: FONT_SIZE.CREATE_FORM_INPUT,
+    color: COLORS.PLACEHOLDER_GRAY,
   },
   // Status Section
   statusSection: {
-    marginTop: 8,
+    marginTop: SPACING.SMALL,
   },
   statusRow: {
     flexDirection: "row",
-    marginTop: 4,
+    marginTop: SPACING.XS,
+  },
+  actionBtnGreen: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    flex: 1,
   },
   statusButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: SPACING.CREATE_INPUT_PADDING_VERTICAL,
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
   },
   statusInactive: {
-    backgroundColor: "#fff",
-    borderColor: "#E0E0E0",
+    backgroundColor: COLORS.WHITE,
+    borderColor: COLORS.BORDER_GRAY,
   },
   statusActiveEmpty: {
     backgroundColor: COLORS.successBg,
-    borderColor: COLORS.success,
+    borderColor: COLORS.successBorder,
   },
   statusActiveRented: {
     backgroundColor: COLORS.warningBg,
-    borderColor: COLORS.warning,
+    borderColor: COLORS.warningBorder,
   },
   statusText: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.CREATE_FORM_LABEL,
     fontWeight: "600",
   },
   // Footer
@@ -491,45 +551,44 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.WHITE,
     flexDirection: "row",
-    padding: 16,
+    paddingHorizontal: SPACING.CONTENT_HORIZONTAL_PADDING,
+    paddingVertical: SPACING.CREATE_FOOTER_PADDING_VERTICAL,
     borderTopWidth: 1,
-    borderTopColor: "#EEEEEE",
-    paddingBottom: Platform.OS === "ios" ? 34 : 16,
+    borderTopColor: COLORS.DIVIDER_GRAY,
+    paddingBottom:
+      Platform.OS === "ios"
+        ? SPACING.PROFILE_SCREEN_PADDING_BOTTOM
+        : SPACING.MEDIUM,
   },
   btnCancel: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 25,
+    paddingVertical: SPACING.CREATE_FOOTER_BUTTON_PADDING_VERTICAL,
+    borderRadius: BORDER_RADIUS.BUTTON,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: COLORS.BORDER,
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.WHITE,
   },
   btnCancelText: {
-    color: COLORS.text,
-    fontSize: 16,
+    color: COLORS.TEXT_SECONDARY,
+    fontSize: FONT_SIZE.BUTTON,
     fontWeight: "600",
   },
   btnSave: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 25,
+    paddingVertical: SPACING.CREATE_FOOTER_BUTTON_PADDING_VERTICAL,
+    borderRadius: BORDER_RADIUS.BUTTON,
     alignItems: "center",
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
+    backgroundColor: COLORS.PRIMARY,
+    ...SHADOW.CARD,
   },
   btnSaveText: {
-    color: COLORS.white,
-    fontSize: 16,
+    color: COLORS.WHITE,
+    fontSize: FONT_SIZE.CREATE_FOOTER_BUTTON,
     fontWeight: "bold",
   },
 });
 
 export default CreateNewRoomScreen;
-
