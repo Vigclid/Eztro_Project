@@ -294,6 +294,18 @@ export const apiService = {
     }
   },
 
+  async patch<T>(
+    endpoint: string,
+    data: Record<string, any> = {},
+  ): Promise<ApiResponse<T>> {
+    try {
+      const response = await apiClient.patch<T>(endpoint, data);
+      return handleResponse(response);
+    } catch (error: any) {
+      return error;
+    }
+  },
+
   async put<T>(
     endpoint: string,
     data: Record<string, any> = {},

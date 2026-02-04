@@ -1,11 +1,39 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export type RootStackParamList = {
-  authscreen: undefined;
+  auth: undefined;
   mainscreen: {
+    screen: keyof MainTabParamList;
+    params?: MainTabParamList[keyof MainTabParamList];
+  };
+  mainstack: {
     screen: keyof MainStackParamList;
     params?: MainStackParamList[keyof MainStackParamList];
   };
+};
+export type MainTabParamList = {
+  blank: undefined;
+  userProfile: undefined;
+  viewBoardingHousePage: undefined;
+  trackingPaymentStatus: undefined;
+};
+
+export type MainStackParamList = {
+  createBoardingHousePage: undefined;
+  boardingHouseDetailsScreen: { _id: string | undefined };
+  createNewRoomScreen:
+    | {
+        houseId: string | undefined;
+        room?: import("../types/room").IRoom;
+      }
+    | undefined;
+  addTenantScreen:
+    | {
+        roomId: string;
+        room?: import("../types/room").IRoom;
+      }
+    | undefined;
+  createInvoicesScreen: undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -21,7 +49,4 @@ export type AuthStackParamList = {
   createBoardingHouse: undefined;
 };
 
-export type MainStackParamList = {
-  blank: undefined;
-};
 export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;

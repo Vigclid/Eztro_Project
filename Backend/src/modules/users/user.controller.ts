@@ -20,18 +20,18 @@ export class userController extends GenericController<IUser> {
   createAccount = async (req: Request, res: Response) => {
     try {
       const emailExists = await this.UserService.getByEmail(req.body.email);
-
-      if (emailExists === null) {
+      if (!emailExists) {
         const result = await this.UserService.createAccount(req.body);
         return res
           .status(201)
           .json(responseWrapper("success", "Đăng ký tài khoản thành công", result));
+          
       } else {
-        return res.status(400).json(responseWrapper("error", "Email đã tồn tại", null));
+        return res.status(200).json(responseWrapper("error", "Email đã tồn tại"));
       }
     } catch (error: any) {
       if (error.code === 11000) {
-        return res.status(400).json(responseWrapper("error", "Email đã tồn tại"));
+        return res.status(200).json(responseWrapper("error", "Email đã tồn tại"));
       }
 
       res.status(500).json(responseWrapper("error", "Internal Server Error"));
@@ -49,20 +49,20 @@ export class userController extends GenericController<IUser> {
       await this.UserService.changePassword(id, password);
       res.json(responseWrapper("success", "Change password successfully"));
     } catch (error) {
-      res.status(404).json(responseWrapper("error", "Something wrongs!"));
+      res.status(404).json(responseWrapper("error", "Something wrongs!", error));
     }
   };
 
   checkExistEmail = async (req: Request, res: Response) => {
     try {
-      const email = String(req.params.email || "").trim();
+      const email = String(req.params.email || "").trim().toLowerCase();
       if (!email) return res.status(400).json(responseWrapper("error", "Email is required"));
       const user = await this.UserService.getByEmail(email);
       return res
         .status(200)
         .json(responseWrapper("success", "Checked successfully", { exists: !!user }));
     } catch (error) {
-      res.status(500).json(responseWrapper("error", "Internal Server Error"));
+      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
     }
   };
 
@@ -74,7 +74,7 @@ export class userController extends GenericController<IUser> {
         .status(200)
         .json(responseWrapper("success", "Password reset successfully", { user }));
     } catch (error) {
-      res.status(500).json(responseWrapper("error", "Internal Server Error"));
+      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
     }
   };
 
@@ -85,7 +85,7 @@ export class userController extends GenericController<IUser> {
       await this.UserService.lockAccount(userId);
       return res.status(200).json(responseWrapper("success", "Account locked successfully"));
     } catch (error) {
-      res.status(500).json(responseWrapper("error", "Internal Server Error"));
+      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
     }
   };
 
@@ -96,7 +96,7 @@ export class userController extends GenericController<IUser> {
       await this.UserService.unlockAccount(userId);
       return res.status(200).json(responseWrapper("success", "Account unlocked successfully"));
     } catch (error) {
-      res.status(500).json(responseWrapper("error", "Internal Server Error"));
+      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
     }
   };
   getUserIsActive = async (_req: Request, res: Response) => {

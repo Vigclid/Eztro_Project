@@ -15,6 +15,9 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { theme } = useContext(ThemeContext);
   const insets = useSafeAreaInsets();
+  const currentRouteName = state.routes[state.index].name;
+  const isActive = (routeName: string) => currentRouteName === routeName;
+
   // const isRootScreen = () => {
   //   const currentRouteName = state.routes[state.index].name;
   //   const rootScreens = ["home", "forum-list", "ArtHubAI"];
@@ -35,7 +38,7 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
     await dispatch(logoutAsync());
     navigation.reset({
       index: 0,
-      routes: [{ name: "authscreen" as never }],
+      routes: [{ name: "auth" as never }],
     });
   };
 
@@ -52,25 +55,75 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
         },
       ]}
     >
-      <TouchableOpacity style={styles.item}>
-        <Icon name="home" size={36} color={theme.color} />
-        <Text style={{ color: theme.color }}>Trang chủ</Text>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => navigation.navigate("viewBoardingHousePage")}
+      >
+        <Icon
+          name="home"
+          size={36}
+          color={isActive("viewBoardingHousePage") ? theme.color : theme.color3}
+        />
+        <Text
+          style={{
+            color: isActive("viewBoardingHousePage")
+              ? theme.color
+              : theme.color3,
+          }}
+        >
+          Trang chủ
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.item}>
         <Icon name="apartment" size={36} color={theme.color3} />
         <Text style={{ color: theme.color3 }}>Nhà trọ</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.item}>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() =>
+          (navigation.getParent() as any)?.navigate("mainstack", {
+            screen: "createInvoicesScreen",
+          })
+        }
+      >
         <Icon name="credit-card" size={36} color={theme.color3} />
         <Text style={{ color: theme.color3 }}>Hóa đơn</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.item}>
-        <Icon name="history" size={36} color={theme.color3} />
-        <Text style={{ color: theme.color3 }}>Lịch sử</Text>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => navigation.navigate("trackingPaymentStatus")}
+      >
+        <Icon
+          name="history"
+          size={36}
+          color={isActive("trackingPaymentStatus") ? theme.color : theme.color3}
+        />
+        <Text
+          style={{
+            color: isActive("trackingPaymentStatus")
+              ? theme.color
+              : theme.color3,
+          }}
+        >
+          Tra soát
+        </Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.item}>
-        <Icon name="person" size={36} color={theme.color3} />
-        <Text style={{ color: theme.color3 }}>Cá nhân</Text>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => navigation.navigate("userProfile")}
+      >
+        <Icon
+          name="person"
+          size={36}
+          color={isActive("userProfile") ? theme.color : theme.color3}
+        />
+        <Text
+          style={{
+            color: isActive("userProfile") ? theme.color : theme.color3,
+          }}
+        >
+          Cá nhân
+        </Text>
       </TouchableOpacity>
     </LinearGradient>
   );

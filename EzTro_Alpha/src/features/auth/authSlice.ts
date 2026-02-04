@@ -33,7 +33,6 @@ export const loginAsync = createAsyncThunk(
       const res = await authAxios
         .post(
           `${environments.SERVER_URI}login`,
-
           {
             email,
             password,

@@ -11,7 +11,7 @@ export class AuthController {
   static async login(req: Request, res: Response) {
     const { email, password } = req.body;
 
-    const tokens = await AuthService.login(email, password);
+    const tokens = await AuthService.login(email.toLowerCase(), password);
 
     if (tokens.status === 0) {
       return res.status(200).json(responseWrapper("error", tokens.message || "Login failed"));
@@ -43,7 +43,7 @@ export class AuthController {
       }
       res.json({ accessToken: newAccessToken });
     } catch (error) {
-      return res.status(403).json(responseWrapper("error", "Invalid refresh token"));
+      return res.status(403).json(responseWrapper("error", "Invalid refresh token", error));
     }
   }
 
@@ -67,7 +67,7 @@ export class AuthController {
       });
       res.json(responseWrapper("success", "Login successful", tokens));
     } catch (error) {
-      return res.status(500).json(responseWrapper("error", "Login failed"));
+      return res.status(500).json(responseWrapper("error", "Login failed", error));
     }
   };
 
@@ -80,7 +80,7 @@ export class AuthController {
       });
       return res.status(200).json(responseWrapper("success", "Logout successful"));
     } catch (err) {
-      return res.status(500).json(responseWrapper("error", "Logout failed"));
+      return res.status(500).json(responseWrapper("error", "Logout failed", err));
     }
   };
 }

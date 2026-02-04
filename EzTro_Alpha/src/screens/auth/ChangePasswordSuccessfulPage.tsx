@@ -28,8 +28,12 @@ export const ChangePasswordSuccessfulPage = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
       {/* Background Gradient (emerald-50 via white to teal-50) */}
       <LinearGradient
         colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
@@ -37,14 +41,13 @@ export const ChangePasswordSuccessfulPage = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-      
+
       {/* Decorative Blobs */}
       <View style={[styles.blob, styles.blobTop]} />
       <View style={[styles.blob, styles.blobBottom]} />
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.contentContainer}>
-          
           {/* Success Icon */}
           <View style={styles.iconWrapper}>
             <LinearGradient
@@ -64,8 +67,8 @@ export const ChangePasswordSuccessfulPage = () => {
           </Text>
 
           {/* Back to Login Button */}
-          <TouchableOpacity 
-            style={styles.buttonShadow} 
+          <TouchableOpacity
+            style={styles.buttonShadow}
             onPress={handleBackToLogin}
             activeOpacity={0.8}
           >
@@ -78,7 +81,6 @@ export const ChangePasswordSuccessfulPage = () => {
               <Text style={styles.buttonText}>Quay lại đăng nhập</Text>
             </LinearGradient>
           </TouchableOpacity>
-
         </View>
       </SafeAreaView>
     </View>
@@ -117,7 +119,7 @@ const styles = StyleSheet.create({
 
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 30 : 0,
+    marginTop: Platform.OS === "android" ? 30 : 0,
   },
   contentContainer: {
     flex: 1,
