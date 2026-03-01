@@ -24,6 +24,11 @@ import {
 import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
+import {
+  Plus,
+  Funnel,
+  Search
+} from "lucide-react-native";
 
 export const ViewBoardingHousePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -72,13 +77,9 @@ export const ViewBoardingHousePage: React.FC = () => {
           <View style={styles.mainContent}>
             <View style={styles.searchContainer}>
               <View style={styles.searchInputContainer}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/n295p5iq_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.searchIcon}
-                />
+                <View style={styles.searchIcon}>
+                  <Search color={COLORS.GRAY_DARK} size={24} />
+                </View>
                 <TextInput
                   placeholder="Tìm kiếm cụm trọ..."
                   value={searchText}
@@ -86,13 +87,9 @@ export const ViewBoardingHousePage: React.FC = () => {
                   style={styles.searchInput}
                 />
               </View>
-              <Image
-                source={{
-                  uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/2ddkzfae_expires_30_days.png",
-                }}
-                resizeMode="stretch"
-                style={styles.filterIcon}
-              />
+              <TouchableOpacity style={styles.filterIcon}>
+                <Funnel color={COLORS.GRAY_DARK} size={24} />
+              </TouchableOpacity>
             </View>
 
             <BoardingHouseStatsCard totalBoardingHouse={7} />
@@ -111,13 +108,16 @@ export const ViewBoardingHousePage: React.FC = () => {
         </View>
       </ScrollView>
       {/* Floating Button */}
-      <TouchableOpacity onPress={handleCreateBoardingHouse}>
-        <Image
-          source={{
-            uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ollwsyj9_expires_30_days.png",
-          }}
-          resizeMode="stretch"
-          style={styles.floatingButton}
+      <TouchableOpacity
+        onPress={handleCreateBoardingHouse}
+        style={styles.floatingButton}
+      // Giữ style cũ để giữ vị trí và hình dạng nút
+      >
+        <Plus
+          color={COLORS.WHITE} // Màu dấu cộng (thường là trắng)
+          size={40}       // Kích thước dấu cộng
+          strokeWidth={2.5} // Độ dày (tùy chỉnh để trông hiện đại hơn)
+
         />
       </TouchableOpacity>
     </SafeAreaProvider>
@@ -184,6 +184,8 @@ const styles = StyleSheet.create({
     marginRight: SPACING.SEARCH_INPUT_MARGIN_RIGHT,
   },
   searchIcon: {
+    alignItems: "center",
+    justifyContent: "center",
     width: IMAGE_SIZE.SEARCH_ICON,
     height: IMAGE_SIZE.SEARCH_ICON,
     marginLeft: SPACING.SEARCH_ICON_MARGIN_LEFT,
@@ -197,6 +199,10 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.SEARCH_INPUT_PADDING_VERTICAL,
   },
   filterIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 0.2,
+    borderRadius: 10,
     width: IMAGE_SIZE.FILTER_ICON,
     height: IMAGE_SIZE.FILTER_ICON,
   },
@@ -474,11 +480,15 @@ const styles = StyleSheet.create({
   },
   floatingButton: {
     position: "absolute",
-    bottom: 50,
-    left: 280,
+    alignItems: "center",
+    justifyContent: "center",
+    bottom: 100,
+    right: 30,
     // top: SPACING.FLOATING_BUTTON_TOP,
     // right: SPACING.FLOATING_BUTTON_RIGHT,
-    width: IMAGE_SIZE.FLOATING_BUTTON,
-    height: IMAGE_SIZE.FLOATING_BUTTON,
+    width: 70,
+    height: 70,
+    backgroundColor: COLORS.GREEN_PRIMARY,
+    borderRadius: 100,
   },
 });
