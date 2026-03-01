@@ -9,6 +9,10 @@ import {
     IMAGE_SIZE,
     SPACING,
 } from "../../constants/theme";
+import {
+    DoorOpen,
+    Users
+} from "lucide-react-native";
 
 interface RoomStatsProps {
     total: number;
@@ -25,13 +29,12 @@ const RoomStats = ({ total = 1, rented = 2, available = 3, }: RoomStatsProps) =>
                 colors={[COLORS.GRAY_LIGHT_GRADIENT_START, COLORS.GRAY_LIGHT_GRADIENT_END]}
                 style={styles.roomStatItem}
             >
-                <Image
-                    source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/a7pleg90_expires_30_days.png",
-                    }}
-                    resizeMode="stretch"
-                    style={styles.roomStatIcon}
-                />
+                <View style={[styles.roomStatIcon, styles.bgBlue]}>
+                    <DoorOpen
+                        color={COLORS.WHITE}
+                        size={18}
+                    />
+                </View>
                 <View style={styles.roomStatTextContainer}>
                     <View style={styles.roomStatValueContainer}>
                         <Text style={styles.roomStatValue}>{total}</Text>
@@ -48,13 +51,12 @@ const RoomStats = ({ total = 1, rented = 2, available = 3, }: RoomStatsProps) =>
                 colors={[COLORS.GRAY_LIGHT_GRADIENT_START, COLORS.GRAY_LIGHT_GRADIENT_END]}
                 style={styles.roomStatItem}
             >
-                <Image
-                    source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/z4dttm2t_expires_30_days.png",
-                    }}
-                    resizeMode="stretch"
-                    style={styles.roomStatIcon}
-                />
+                <View style={[styles.roomStatIcon, styles.bgGreen]}>
+                    <Users
+                        color={COLORS.WHITE}
+                        size={18}
+                    />
+                </View>
                 <View style={styles.roomStatTextContainerAlt}>
                     <View style={styles.roomStatValueContainer}>
                         <Text style={styles.roomStatValue}>{rented}</Text>
@@ -71,13 +73,12 @@ const RoomStats = ({ total = 1, rented = 2, available = 3, }: RoomStatsProps) =>
                 colors={[COLORS.GRAY_LIGHT_GRADIENT_START, COLORS.GRAY_LIGHT_GRADIENT_END]}
                 style={styles.roomStatItemLast}
             >
-                <Image
-                    source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/wrezapz8_expires_30_days.png",
-                    }}
-                    resizeMode="stretch"
-                    style={styles.roomStatIcon}
-                />
+                <View style={[styles.roomStatIcon, styles.bgOrange]}>
+                    <DoorOpen
+                        color={COLORS.WHITE}
+                        size={18}
+                    />
+                </View>
                 <View style={styles.roomStatTextContainerAlt2}>
                     <View style={styles.roomStatValueContainer}>
                         <Text style={styles.roomStatValue}>{available}</Text>
@@ -116,10 +117,21 @@ const styles = StyleSheet.create({
         paddingVertical: SPACING.STAT_ITEM_PADDING_VERTICAL,
     },
     roomStatIcon: {
-        borderRadius: BORDER_RADIUS.STAT_ITEM,
-        width: IMAGE_SIZE.STAT_ITEM_ICON,
-        height: IMAGE_SIZE.STAT_ITEM_ICON,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 50,
+        width: 40,
+        height: 40,
         marginBottom: SPACING.STAT_ITEM_ICON_MARGIN_BOTTOM,
+    },
+    bgBlue: {
+        backgroundColor: "#3a8dff",
+    },
+    bgGreen: {
+        backgroundColor: "#00c282",
+    },
+    bgOrange: {
+        backgroundColor: "#ff7301",
     },
     roomStatTextContainer: {
         marginHorizontal: SPACING.STAT_ITEM_TEXT_MARGIN_HORIZONTAL,
