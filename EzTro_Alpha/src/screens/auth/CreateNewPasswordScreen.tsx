@@ -1,4 +1,4 @@
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import React, { useState } from "react";
@@ -18,13 +18,9 @@ import {
 
 // Types
 import { getUserApi } from "../../api/user/user";
-import {
-  AuthStackParamList,
-  NavigationProp,
-} from "../../navigation/navigation.type";
+import { AuthStackParamList } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 export const CreateNewPasswordScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<AuthStackParamList, "createNewPassword">>();
   const email = route.params?.email || "";
 

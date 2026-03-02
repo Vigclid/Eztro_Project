@@ -1,4 +1,4 @@
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { CheckCircle2 } from "lucide-react-native";
 import React from "react";
@@ -13,22 +13,19 @@ import {
 } from "react-native";
 
 // Types
-import {
-  AuthStackParamList,
-  NavigationProp,
-} from "../../navigation/navigation.type";
+import { appNavigator } from "../../navigation/appNavigator";
+import { AuthStackParamList } from "../../navigation/navigation.type";
 
 export const ChangePasswordSuccessfulPage = () => {
-  const mainNav = useNavigation<NavigationProp>();
   const route =
     useRoute<RouteProp<AuthStackParamList, "changePasswordSuccessful">>();
   const fromMain = route.params?.fromMain ?? false;
 
   const handleBackToLogin = () => {
     if (fromMain) {
-      mainNav.navigate("mainscreen", { screen: "userProfile" });
+      appNavigator.goToUserProfile;
     } else {
-      mainNav.navigate("auth", { screen: "login" });
+      appNavigator.goToLogin;
     }
   };
 
