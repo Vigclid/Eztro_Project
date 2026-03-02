@@ -7,18 +7,21 @@ import {
     IMAGE_SIZE,
     SPACING,
 } from "../../constants/theme";
+import {
+    DoorOpen,
+    Users
+} from "lucide-react-native";
 
 const BoardingHouseStatsCard = ({ totalBoardingHouse = 3, totalRooms = 4 }) => {
     return (
         <View style={styles.statsContainer}>
             <View style={styles.statCard}>
-                <Image
-                    source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/5yfeh1st_expires_30_days.png",
-                    }}
-                    resizeMode="stretch"
-                    style={styles.statIcon}
-                />
+                <View style={styles.statBoardingHouseIcon}>
+                    <DoorOpen
+                        color={COLORS.WHITE}
+                        size={28}
+                    />
+                </View>
                 <View style={styles.statTextContainer}>
                     <View style={styles.statLabelContainer}>
                         <Text style={styles.statLabel}>{"Tổng cụm trọ"}</Text>
@@ -30,13 +33,12 @@ const BoardingHouseStatsCard = ({ totalBoardingHouse = 3, totalRooms = 4 }) => {
             </View>
 
             <View style={styles.statCard}>
-                <Image
-                    source={{
-                        uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/y1mirkee_expires_30_days.png",
-                    }}
-                    resizeMode="stretch"
-                    style={styles.statIcon}
-                />
+                <View style={styles.statRoomIcon}>
+                    <Users
+                        color={COLORS.WHITE}
+                        size={28}
+                    />
+                </View>
                 <View style={styles.statTextContainer}>
                     <View style={styles.statLabelContainer}>
                         <Text style={styles.statLabel}>{"Tổng cộng phòng"}</Text>
@@ -71,8 +73,20 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 4,
     },
-    statIcon: {
-        borderRadius: BORDER_RADIUS.STAT_CARD,
+    statBoardingHouseIcon: {
+        backgroundColor: "#00ca99",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 10,
+        width: IMAGE_SIZE.STAT_ICON,
+        height: IMAGE_SIZE.STAT_ICON,
+        marginRight: SPACING.STAT_CARD_ICON_MARGIN_RIGHT,
+    },
+    statRoomIcon: {
+        backgroundColor: "#558eff",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 10,
         width: IMAGE_SIZE.STAT_ICON,
         height: IMAGE_SIZE.STAT_ICON,
         marginRight: SPACING.STAT_CARD_ICON_MARGIN_RIGHT,

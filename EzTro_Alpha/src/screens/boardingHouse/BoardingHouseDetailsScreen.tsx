@@ -16,12 +16,22 @@ import { IHouse } from "../../types/house";
 import { getHouseApi } from "../../api/house/house";
 import { getRoomApi } from "../../api/room/room";
 import { ApiResponse } from "../../types/app.common";
+import {
+    ArrowLeft,
+    Pen,
+    Building2,
+    Zap,
+    House,
+    DollarSign,
+    MapPin,
+    Plus,
+    Receipt,
+    Settings,
+    type LucideIcon,
+} from "lucide-react-native";
 
 type DetailsRouteProps = RouteProp<MainStackParamList, 'boardingHouseDetailsScreen'>;
 
-// ============================================================================
-// SUB-COMPONENTS
-// ============================================================================
 
 const StatBox = ({ value, label, isLast }: { value: string; label: string; isLast?: boolean }) => (
     <LinearGradient
@@ -55,19 +65,12 @@ const RoomCard = ({
     onPressTenant: () => void;
     onPressRoom: () => void;
 }) => {
-    // Kiểm tra trạng thái
     const isRented = item.status === 'rented' || item.status === 'Đang Thuê';
 
-    // Hàm format tiền tệ (Ví dụ: 3000000 => 3.000.000 đ)
     const formatCurrency = (value: number | string) => {
         if (!value) return '0 đ';
         return Number(value).toLocaleString('vi-VN') + ' đ';
     };
-
-    // Hàm format ngày (Ví dụ: 2024-01-28 => 28/01/2024)
-    // Lưu ý: Đảm bảo item có trường ngày tạo (ví dụ createdAt). 
-    // Nếu chưa có, bạn cần thêm vào lúc map dữ liệu ở useEffect.
-    // Ở đây tôi ví dụ dùng new Date() nếu không có dữ liệu, hoặc dùng rentDate.
     const formatDate = (date?: Date | string) => {
         if (!date) return "--/--/----";
         return new Date(date).toLocaleDateString('vi-VN');
@@ -76,12 +79,10 @@ const RoomCard = ({
     return (
         <TouchableOpacity onPress={onPressRoom}>
             <View style={styles.cardContainer}>
-                {/* Header Card (Tên phòng + Badge trạng thái cũ - Bạn có thể giữ hoặc bỏ nếu muốn) */}
                 <View style={styles.roomHeader}>
                     <View style={styles.roomTitleWrapper}>
                         <Text style={styles.roomTitle}>{item.roomName}</Text>
                     </View>
-                    {/* Badge nhỏ góc trên (giữ nguyên hoặc ẩn đi tùy bạn) */}
                     <View style={isRented ? styles.badgeWarning : styles.badgeSuccess}>
                         <Text style={isRented ? styles.badgeWarningText : styles.badgeSuccessText}>
                             {isRented ? "Đang thuê" : "Trống"}
@@ -100,18 +101,6 @@ const RoomCard = ({
                             {formatDate(item.rentDate)}
                         </Text>
                     </View>
-
-                    {/* Dòng 2: Trạng thái */}
-                    {/* <View style={[styles.rowCenter, styles.mb9, { justifyContent: 'space-between' }]}>
-                        <Text style={styles.textGray}>Trạng thái:</Text>
-                        <Text style={{
-                            fontSize: 14,
-                            fontWeight: 'bold',
-                            color: isRented ? '#BA4C00' : '#007955' // Cam hoặc Xanh
-                        }}>
-                            {isRented ? "Đang thuê" : "Còn trống"}
-                        </Text>
-                    </View> */}
 
                     {/* Dòng 3: Giá */}
                     <View style={[styles.rowCenter, { justifyContent: 'space-between' }]}>
@@ -157,18 +146,19 @@ const RoomCard = ({
     );
 };
 
-// Component Tab Button
+interface TabButtonProps {
+    isActive: boolean;
+    title: string;
+    iconUri: LucideIcon;
+    onPress: () => void;
+}
+
 const TabButton = ({
     isActive,
     title,
-    iconUri,
+    iconUri: Icon,
     onPress
-}: {
-    isActive: boolean;
-    title: string;
-    iconUri: string;
-    onPress: () => void;
-}) => {
+}: TabButtonProps) => {
     if (isActive) {
         return (
             <TouchableOpacity style={{ flex: 1 }} onPress={onPress}>
@@ -176,7 +166,9 @@ const TabButton = ({
                     colors={COLORS.primaryGradient}
                     style={styles.tabActive}
                 >
-                    <Image source={{ uri: iconUri }} resizeMode="stretch" style={styles.tabIconActive} />
+                    <View style={styles.tabIconActive}>
+                        <Icon size={16} color={COLORS.white} />
+                    </View>
                     <Text style={styles.tabTextActive}>{title}</Text>
                 </LinearGradient>
             </TouchableOpacity>
@@ -186,7 +178,9 @@ const TabButton = ({
     return (
         <TouchableOpacity style={{ flex: 1 }} onPress={onPress}>
             <View style={styles.tabInactive}>
-                <Image source={{ uri: iconUri }} resizeMode="stretch" style={styles.tabIconInactive} />
+                <View style={styles.tabIconInactive}>
+                    <Icon size={16} color={`#485565`} />
+                </View>
                 <Text style={styles.tabTextInactive}>{title}</Text>
             </View>
         </TouchableOpacity>
@@ -258,29 +252,43 @@ export const BoardingHouseDetailsScreen = () => {
                         style={styles.headerGradient}
                     >
                         <TouchableOpacity onPress={handleGoBack}>
-                            <Image
-                                source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/dxvz9uow_expires_30_days.png" }}
-                                resizeMode="stretch"
-                                style={styles.headerIcon}
-                            />
+                            <View style={styles.headerIcon}>
+                                <ArrowLeft
+                                    color={COLORS.WHITE}
+                                />
+                            </View>
                         </TouchableOpacity>
                         <View>
                             <Text style={styles.headerTitle}>Chi tiết cụm trọ</Text>
                         </View>
-                        <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/jxi4r78b_expires_30_days.png" }} resizeMode="stretch" style={styles.headerIcon} />
+                        <View style={styles.headerIcon}>
+                            <Pen
+                                color={COLORS.WHITE}
+                            />
+                        </View>
                     </LinearGradient>
 
                     <View style={styles.contentContainer}>
                         {/* --- House Info Card --- */}
                         <View style={styles.mainCard}>
                             <View style={styles.mb28}>
-                                <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/h3nkxcrm_expires_30_days.png" }} resizeMode="stretch" style={styles.mainImage} />
+                                <View style={styles.mainImage}>
+                                    <Building2
+                                        color={COLORS.WHITE}
+                                        size={50}
+                                    />
+                                </View>
                                 <View>
                                     <View style={styles.mb9}>
                                         <Text style={styles.houseName}>{boardingHouse?.houseName}</Text>
                                     </View>
                                     <View style={styles.rowCenter}>
-                                        <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/cfins1et_expires_30_days.png", }} resizeMode="stretch" style={styles.iconTiny} />
+                                        <View style={styles.iconTiny}>
+                                            <MapPin
+                                                size={15}
+                                                color={`#00c282`}
+                                            />
+                                        </View>
                                         <Text style={styles.addressText}>{boardingHouse?.address}</Text>
                                     </View>
                                 </View>
@@ -337,14 +345,14 @@ export const BoardingHouseDetailsScreen = () => {
                             <TabButton
                                 isActive={activeTab === 'roomList'}
                                 title="Danh sách phòng"
-                                iconUri="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/sp5wt3ou_expires_30_days.png"
+                                iconUri={House}
                                 onPress={() => setActiveTab('roomList')}
                             />
                             <View style={{ width: 4 }} />
                             <TabButton
                                 isActive={activeTab === 'fixedFee'}
                                 title="Phí cố định"
-                                iconUri="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/7r3tx5ka_expires_30_days.png"
+                                iconUri={DollarSign}
                                 onPress={() => setActiveTab('fixedFee')}
                             />
                         </View>
@@ -362,7 +370,12 @@ export const BoardingHouseDetailsScreen = () => {
                                                 colors={COLORS.orangeGradient}
                                                 style={styles.actionBtnOrange}
                                             >
-                                                <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/j3tfo06k_expires_30_days.png" }} resizeMode="stretch" style={styles.actionIconOrange} />
+                                                <View style={styles.actionIconOrange} >
+                                                    <Receipt
+                                                        size={15}
+                                                        color={COLORS.WHITE}
+                                                    />
+                                                </View>
                                                 <View style={styles.flex1} />
                                                 <Text style={styles.actionTextOrange}>Tạo hóa đơn hàng loạt</Text>
                                                 <View style={styles.flex1} />
@@ -386,7 +399,12 @@ export const BoardingHouseDetailsScreen = () => {
                                                 colors={COLORS.primaryGradient}
                                                 style={styles.actionBtnGreen}
                                             >
-                                                <Image source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/vlg522hs_expires_30_days.png" }} resizeMode="stretch" style={styles.actionIconGreen} />
+                                                <View style={styles.actionIconGreen}>
+                                                    <Plus
+                                                        size={15}
+                                                        color={COLORS.WHITE}
+                                                    />
+                                                </View>
                                                 <Text style={styles.actionTextGreen}>Thêm phòng</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
@@ -434,24 +452,24 @@ export const BoardingHouseDetailsScreen = () => {
                                         colors={COLORS.primaryGradient}
                                         style={styles.manageBadge}
                                     >
-                                        {/* Icon Gear (dùng tạm icon có sẵn hoặc thay icon gear thật) */}
-                                        <Image
-                                            source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/cfins1et_expires_30_days.png" }}
-                                            style={[styles.iconTiny, { tintColor: COLORS.WHITE }]}
-                                            resizeMode="contain"
-                                        />
+                                        <View style={[styles.iconTiny]}>
+                                            <Settings
+                                                size={15}
+                                                color={COLORS.WHITE}
+                                            />
+                                        </View>
                                         <Text style={styles.manageBadgeText}>Quản lý</Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
 
                                 {/* Empty State Card */}
                                 <View style={styles.emptyCard}>
-                                    <Image
-                                        source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/lightning_bolt_placeholder.png" }}
-                                        // Lưu ý: Bạn cần thay URL trên bằng URL icon tia sét thật, hiện tại dùng placeholder
-                                        style={styles.emptyIcon}
-                                        resizeMode="contain"
-                                    />
+                                    <View style={styles.emptyIcon}>
+                                        <Zap
+                                            color={`#d1d5dc`}
+                                            size={100}
+                                        />
+                                    </View>
                                     {/* Dùng Text icon tia sét nếu chưa có ảnh: ⚡ */}
                                     {/* <Text style={{fontSize: 50, marginBottom: 16, opacity: 0.3}}>⚡</Text> */}
 
@@ -518,8 +536,12 @@ const styles = StyleSheet.create({
         paddingTop: 50,
     },
     headerIcon: {
-        width: 43,
-        height: 43,
+        alignItems: "center",
+        justifyContent: "center",
+        width: 50,
+        height: 50,
+        backgroundColor: "#FFFFFF50",
+        borderRadius: 10,
     },
     headerTitle: {
         color: COLORS.WHITE,
@@ -564,6 +586,10 @@ const styles = StyleSheet.create({
 
     // Main Info
     mainImage: {
+        backgroundColor: "#00cb99",
+        borderRadius: 15,
+        alignItems: "center",
+        justifyContent: "center",
         width: 79,
         height: 79,
         marginBottom: 16,
@@ -578,6 +604,8 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     iconTiny: {
+        alignItems: "center",
+        justifyContent: "center",
         width: 15,
         height: 15,
         marginRight: 8,
@@ -610,6 +638,7 @@ const styles = StyleSheet.create({
 
     // Inputs & Amenity
     descriptionInput: {
+        backgroundColor: "#f4f5f7",
         color: "#354152",
         fontSize: 14,
         marginBottom: 17,
@@ -737,7 +766,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: "bold",
         textAlign: "center",
-        width: 71,
+        width: 70,
     },
     actionIconGreen: {
         borderRadius: 16,
@@ -886,8 +915,10 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     emptyIcon: {
-        width: 60,
-        height: 60,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 80,
+        height: 80,
         marginBottom: 16,
         tintColor: '#CBD5E1', // Màu xám nhạt cho icon
     },

@@ -79,30 +79,6 @@ export const CreateBoardingHouseScreen: React.FC = () => {
             <View style={styles.headerSpacer} />
           </LinearGradient>
 
-          <LinearGradient
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            colors={[
-              COLORS.WHITE_SEMI_TRANSPARENT,
-              COLORS.WHITE_MORE_TRANSPARENT,
-            ]}
-            style={styles.imageContainer}
-          >
-            <Image
-              source={{
-                uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/vpm3xxil_expires_30_days.png",
-              }}
-              resizeMode="stretch"
-              style={styles.imageIcon}
-            />
-            <View style={styles.imageTextContainer}>
-              <Text style={styles.imageTitle}>{"Thêm ảnh cụm trọ"}</Text>
-            </View>
-            <View>
-              <Text style={styles.imageSubtitle}>{"Tối đa 5 ảnh"}</Text>
-            </View>
-          </LinearGradient>
-
           <View style={styles.formSection}>
             <View style={styles.labelContainer}>
               <Image
@@ -399,6 +375,7 @@ const styles = StyleSheet.create({
   formSection: {
     marginBottom: SPACING.CREATE_FORM_SECTION_MARGIN_BOTTOM,
     marginHorizontal: SPACING.HEADER_HORIZONTAL_MARGIN,
+    marginTop: 10,
   },
   labelContainer: {
     flexDirection: "row",

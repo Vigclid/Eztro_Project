@@ -16,6 +16,9 @@ import { IHouse } from "../../types/house";
 import { getRoomApi } from "../../api/room/room";
 import { ApiResponse } from "../../types/app.common";
 import { IRoom } from "../../types/room";
+import {
+    MapPin
+} from "lucide-react-native";
 const BoardingHouseCard = ({
     _id,
     houseName,
@@ -89,13 +92,9 @@ const BoardingHouseCard = ({
                 </View>
 
                 <View style={styles.addressContainer}>
-                    <Image
-                        source={{
-                            uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/7d8w1i7n_expires_30_days.png", // thay đổi theo từng nhà trọ nếu cần
-                        }}
-                        resizeMode="stretch"
-                        style={styles.addressIcon}
-                    />
+                    <View style={styles.addressIcon}>
+                        <MapPin color={COLORS.GREEN_PRIMARY} size={16} />
+                    </View>
                     <View>
                         <Text style={styles.addressText}>{address}</Text>
                     </View>
@@ -172,6 +171,8 @@ const styles = StyleSheet.create({
         marginLeft: SPACING.BOARDING_HOUSE_CARD_MARGIN_LEFT,
     },
     addressIcon: {
+        alignItems: "center",
+        justifyContent: "center",
         width: IMAGE_SIZE.ADDRESS_ICON,
         height: IMAGE_SIZE.ADDRESS_ICON,
         marginRight: SPACING.ADDRESS_ICON_MARGIN_RIGHT,
