@@ -20,6 +20,7 @@ export type MainTabParamList = {
 
 export type MainStackParamList = {
   createBoardingHousePage: undefined;
+  editProfile: undefined;
   boardingHouseDetailsScreen: { _id: string | undefined };
   createNewRoomScreen:
     | {

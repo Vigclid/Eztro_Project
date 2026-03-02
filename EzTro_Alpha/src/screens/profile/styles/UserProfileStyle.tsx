@@ -59,10 +59,7 @@ export const UserProfileStyle = (theme: any) =>
       paddingHorizontal: SPACING.PROFILE_BADGE_PADDING_HORIZONTAL,
     },
     badgeIcon: {
-      borderRadius: BORDER_RADIUS.PROFILE_BADGE,
-      width: IMAGE_SIZE.PROFILE_BADGE_ICON_WIDTH,
-      height: IMAGE_SIZE.PROFILE_BADGE_ICON_HEIGHT,
-      marginRight: SPACING.PROFILE_BADGE_ICON_MARGIN_RIGHT,
+      marginRight: SPACING.SMALL,
     },
     badgeText: {
       color: COLORS.GREEN_TEXT,

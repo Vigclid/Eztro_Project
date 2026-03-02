@@ -1,21 +1,31 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useContext, useEffect } from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import { useDispatch, useSelector } from "react-redux";
 import { Avatar } from "../../components/misc/Avatar";
 import { COLORS, SHADOW } from "../../constants/theme";
 import { ThemeContext } from "../../context/ThemeContext";
 import { logoutAsync } from "../../features/auth/authSlice";
-import { AuthNavigationProp } from "../../navigation/navigation.type";
+import { NavigationProp } from "../../navigation/navigation.type";
 import { AppDispatch, RootState } from "../../stores/store";
 import { UserProfileStyle } from "./styles/UserProfileStyle";
 
 export const UserProfile: React.FC = () => {
   const theme = useContext(ThemeContext);
   const styles = UserProfileStyle(theme.theme);
-  const navigation = useNavigation<AuthNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const [refreshing, setRefreshing] = React.useState(false);
+
   useEffect(() => {
     if (!user) {
       navigation.reset({
@@ -35,9 +45,15 @@ export const UserProfile: React.FC = () => {
     }
   };
 
+  const fetchUser = {};
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => fetchUser} />
+        }
+      >
         <View style={styles.content}>
           <View style={styles.headerGradient} />
           <View style={styles.profileCard}>
@@ -49,13 +65,9 @@ export const UserProfile: React.FC = () => {
                 </Text>
               </View>
               <TouchableOpacity style={styles.badge}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/c1i9zv6k_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.badgeIcon}
-                />
+                <View style={styles.badgeIcon}>
+                  <Icon name="home" size={26} color={theme.theme.color} />
+                </View>
                 <Text style={styles.badgeText}>Chủ trọ</Text>
               </TouchableOpacity>
             </View>
@@ -89,7 +101,13 @@ export const UserProfile: React.FC = () => {
               <Text style={styles.sectionTitle}>Tài khoản</Text>
             </View>
             <View style={[styles.sectionCard, SHADOW.CARD]}>
-              <View style={styles.sectionItem}>
+              <TouchableOpacity
+                style={styles.sectionItem}
+                activeOpacity={0.7}
+                onPress={() =>
+                  navigation.navigate("mainstack", { screen: "editProfile" })
+                }
+              >
                 <Image
                   source={{
                     uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/coksd6pv_expires_30_days.png",
@@ -109,7 +127,7 @@ export const UserProfile: React.FC = () => {
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
               <View style={styles.sectionItemRow}>
                 <Image
                   source={{

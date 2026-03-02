@@ -1,7 +1,7 @@
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -79,12 +79,6 @@ export const LoginScreen = () => {
     scopes: ["profile", "email"],
   });
 
-  useEffect(() => {
-    if (response?.type === "success") {
-      const { authentication } = response;
-      console.log("Access Token:", authentication?.accessToken);
-    }
-  }, [response]);
   // State management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
