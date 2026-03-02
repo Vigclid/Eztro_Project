@@ -25,7 +25,7 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { getUserApi } from "../../api/user/user"; // Import từ file chức năng
-import { AuthNavigationProp } from "../../navigation/navigation.type";
+import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IUser } from "../../types/users";
 
@@ -61,7 +61,7 @@ const FacebookIcon = () => (
 );
 
 export const RegisterScreen = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const { createUser } = getUserApi;
 
   // --- States từ file UI ---
@@ -167,7 +167,7 @@ export const RegisterScreen = () => {
       const response = (await createUser(userData)) as ApiResponse<IUser>;
       if (response.status === "success") {
         Alert.alert("Thành công", "Đăng ký tài khoản thành công");
-        navigation.navigate("login");
+        navigation.navigate("auth", { screen: "login" });
       } else {
         Alert.alert("Lỗi", response.message || "Đăng ký thất bại");
       }
@@ -408,7 +408,11 @@ export const RegisterScreen = () => {
 
               <View style={styles.footerLink}>
                 <Text style={styles.footerText}>Đã có tài khoản? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate("login")}>
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("auth", { screen: "login" })
+                  }
+                >
                   <Text style={styles.linkText}>Đăng nhập ngay</Text>
                 </TouchableOpacity>
               </View>

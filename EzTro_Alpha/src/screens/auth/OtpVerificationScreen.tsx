@@ -1,7 +1,7 @@
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Shield } from "lucide-react-native";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -18,15 +18,18 @@ import {
 
 // Types
 import {
-  AuthNavigationProp,
   AuthStackParamList,
+  NavigationProp,
 } from "../../navigation/navigation.type";
 
 export const OtpVerificationScreen = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
 
   const route = useRoute<RouteProp<AuthStackParamList, "otpVerification">>();
-  const { email, tempToken } = route.params || { email: "người dùng", tempToken: "" }; // Fallback nếu không có params
+  const { email, tempToken } = route.params || {
+    email: "người dùng",
+    tempToken: "",
+  }; // Fallback nếu không có params
 
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [timer, setTimer] = useState(60); // Bộ đếm ngược 60s
@@ -80,8 +83,11 @@ export const OtpVerificationScreen = () => {
       return;
     }
 
-    if(otpCode === tempToken) {
-      navigation.navigate("createNewPassword", { email });
+    if (otpCode === tempToken) {
+      navigation.navigate("auth", {
+        screen: "createNewPassword",
+        params: { email },
+      });
     } else {
       Alert.alert("Lỗi", "Mã xác thực không hợp lệ");
     }

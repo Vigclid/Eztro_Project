@@ -18,11 +18,11 @@ import {
 
 // Types
 import { MailPostAPI } from "../../api/MailAPI/POST";
-import { AuthNavigationProp } from "../../navigation/navigation.type";
+import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 
 export const ForgotPasswordScreen = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const { sendMail } = MailPostAPI();
 
   // State
@@ -37,7 +37,7 @@ export const ForgotPasswordScreen = () => {
   };
 
   const handleLoginPress = () => {
-    navigation.navigate("login");
+    navigation.navigate("auth", { screen: "login" });
   };
 
   const handleSendCodePress = async () => {
@@ -66,9 +66,12 @@ export const ForgotPasswordScreen = () => {
           response.message || "Mã xác thực đã được gửi đến email của bạn",
         );
         setTimeout(() => {
-          navigation.navigate("otpVerification", {
-            email: email,
-            tempToken: response?.data?.token || "",
+          navigation.navigate("auth", {
+            screen: "otpVerification",
+            params: {
+              email: email,
+              tempToken: response?.data?.token || "",
+            },
           });
         }, 500);
       }
