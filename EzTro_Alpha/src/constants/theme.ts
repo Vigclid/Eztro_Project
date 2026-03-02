@@ -22,7 +22,6 @@ export const COLORS = {
   GREEN_TEXT: "#007955",
   WHITE_TEXT: "#FFFEFE",
   DIVIDER_GRAY: "#D0D5DB",
-  LIGHT_RED_BORDER: "#FFC9C9",
   RED_TEXT: "#E7000A",
   LIGHT_GRAY_TEXT: "#99A1AE",
   // Boarding house colors
