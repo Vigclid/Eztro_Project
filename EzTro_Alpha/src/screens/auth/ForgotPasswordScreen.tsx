@@ -17,8 +17,8 @@ import {
 } from "react-native";
 
 // Types
-import { AuthNavigationProp } from "../../navigation/navigation.type";
 import { MailPostAPI } from "../../api/MailAPI/POST";
+import { AuthNavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 
 export const ForgotPasswordScreen = () => {

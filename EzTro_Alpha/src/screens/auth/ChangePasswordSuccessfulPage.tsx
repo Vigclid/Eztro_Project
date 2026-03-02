@@ -1,9 +1,8 @@
-import { useNavigation } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { CheckCircle2 } from "lucide-react-native";
 import React from "react";
 import {
-  Dimensions,
   Platform,
   SafeAreaView,
   StatusBar,
@@ -14,16 +13,23 @@ import {
 } from "react-native";
 
 // Types
-import { AuthNavigationProp } from "../../navigation/navigation.type";
-
-const { width } = Dimensions.get("window");
+import {
+  AuthStackParamList,
+  NavigationProp,
+} from "../../navigation/navigation.type";
 
 export const ChangePasswordSuccessfulPage = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
+  const mainNav = useNavigation<NavigationProp>();
+  const route =
+    useRoute<RouteProp<AuthStackParamList, "changePasswordSuccessful">>();
+  const fromMain = route.params?.fromMain ?? false;
 
-  // Logic Handler (Preserved)
   const handleBackToLogin = () => {
-    navigation.navigate("login");
+    if (fromMain) {
+      mainNav.navigate("mainscreen", { screen: "userProfile" });
+    } else {
+      mainNav.navigate("auth", { screen: "login" });
+    }
   };
 
   return (

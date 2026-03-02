@@ -17,14 +17,14 @@ import {
 } from "react-native";
 
 // Types
-import {
-  AuthNavigationProp,
-  AuthStackParamList,
-} from "../../navigation/navigation.type";
 import { getUserApi } from "../../api/user/user";
+import {
+  AuthStackParamList,
+  NavigationProp,
+} from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 export const CreateNewPasswordScreen = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<AuthStackParamList, "createNewPassword">>();
   const email = route.params?.email || "";
 
@@ -74,7 +74,6 @@ export const CreateNewPasswordScreen = () => {
       )) as ApiResponse<null>;
       if (response?.status === "success") {
         Alert.alert("Thành công", "Đặt lại mật khẩu thành công");
-        navigation.navigate("changePasswordSuccessful");
       } else {
         setError(response?.message || "Đặt lại mật khẩu thất bại");
       }

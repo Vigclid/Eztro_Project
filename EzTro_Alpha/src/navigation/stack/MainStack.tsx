@@ -6,6 +6,8 @@ import AddTenantScreen from "../../screens/room/AddTenantScreen";
 import { CreateBoardingHouseScreen } from "../../screens/boardingHouse/CreateBoardingHouseScreen";
 import { CreateInvoices } from "../../screens/boardingHouse/CreateInvoices";
 import { EditProfilePage } from "../../screens/profile/EditProfilePage";
+import { ChangePasswordSuccessfulPage } from "../../screens/auth/ChangePasswordSuccessfulPage";
+import { CreateNewPasswordScreen } from "../../screens/auth/CreateNewPasswordScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +18,8 @@ const MainStack = () => (
       component={CreateBoardingHouseScreen}
     />
     <Stack.Screen name="editProfile" component={EditProfilePage} />
+    <Stack.Screen name="createNewPassword" component={CreateNewPasswordScreen} />
+    <Stack.Screen name="changePasswordSuccessful" component={ChangePasswordSuccessfulPage} />
     <Stack.Screen
       name="boardingHouseDetailsScreen"
       component={BoardingHouseDetailsScreen}

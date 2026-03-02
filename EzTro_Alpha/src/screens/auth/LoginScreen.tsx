@@ -21,10 +21,7 @@ import { useDispatch } from "react-redux";
 
 // Navigation & Store types
 import { loginAsync } from "../../features/auth/authSlice";
-import {
-  AuthNavigationProp,
-  NavigationProp,
-} from "../../navigation/navigation.type";
+import { NavigationProp } from "../../navigation/navigation.type";
 import { AppDispatch } from "../../stores/store";
 
 // SET UP GOOGLE LOGIN
@@ -65,8 +62,7 @@ const FacebookIcon = () => (
 );
 
 export const LoginScreen = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
-  const navigation_main = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const redirectUri = AuthSession.makeRedirectUri({
     scheme: "EzTro_Alpha",
@@ -95,8 +91,10 @@ export const LoginScreen = () => {
 
   // Navigation Handlers
   const handleBackPress = () => navigation.goBack();
-  const handleRegisterPress = () => navigation.navigate("register");
-  const handleForgotPasswordPress = () => navigation.navigate("forgotPassword");
+  const handleRegisterPress = () =>
+    navigation.navigate("auth", { screen: "register" });
+  const handleForgotPasswordPress = () =>
+    navigation.navigate("auth", { screen: "forgotPassword" });
 
   // Validation Handlers
   const validateEmail = (text: string) => {
@@ -172,7 +170,7 @@ export const LoginScreen = () => {
       const result = await dispatch(loginAsync({ email, password }));
       if (loginAsync.fulfilled.match(result)) {
         Alert.alert("Thành công", "Đăng nhập thành công");
-        navigation_main.dispatch(
+        navigation.dispatch(
           CommonActions.reset({
             index: 0,
             routes: [
