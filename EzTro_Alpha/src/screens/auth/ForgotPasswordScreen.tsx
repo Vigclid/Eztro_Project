@@ -1,4 +1,3 @@
-import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Mail } from "lucide-react-native";
 import React, { useState } from "react";
@@ -18,11 +17,10 @@ import {
 
 // Types
 import { MailPostAPI } from "../../api/MailAPI/POST";
-import { NavigationProp } from "../../navigation/navigation.type";
+import { appNavigator } from "../../navigation/appNavigator";
 import { ApiResponse } from "../../types/app.common";
 
 export const ForgotPasswordScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
   const { sendMail } = MailPostAPI();
 
   // State
@@ -33,11 +31,11 @@ export const ForgotPasswordScreen = () => {
 
   // Logic Handlers (Preserved from your code)
   const handleBackPress = () => {
-    navigation.goBack();
+    appNavigator.goBack();
   };
 
   const handleLoginPress = () => {
-    navigation.navigate("auth", { screen: "login" });
+    appNavigator.goToLogin();
   };
 
   const handleSendCodePress = async () => {
@@ -66,13 +64,7 @@ export const ForgotPasswordScreen = () => {
           response.message || "Mã xác thực đã được gửi đến email của bạn",
         );
         setTimeout(() => {
-          navigation.navigate("auth", {
-            screen: "otpVerification",
-            params: {
-              email: email,
-              tempToken: response?.data?.token || "",
-            },
-          });
+          appNavigator.goToOtpVerification(email, response?.data?.token || "");
         }, 500);
       }
     } catch (err: any) {

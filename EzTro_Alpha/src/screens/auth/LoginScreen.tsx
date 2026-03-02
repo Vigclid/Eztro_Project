@@ -28,6 +28,7 @@ import { AppDispatch } from "../../stores/store";
 import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import { appNavigator } from "../../navigation/appNavigator";
 WebBrowser.maybeCompleteAuthSession();
 
 // --- Social Icons (Google & Facebook) ---
@@ -91,10 +92,8 @@ export const LoginScreen = () => {
 
   // Navigation Handlers
   const handleBackPress = () => navigation.goBack();
-  const handleRegisterPress = () =>
-    navigation.navigate("auth", { screen: "register" });
-  const handleForgotPasswordPress = () =>
-    navigation.navigate("auth", { screen: "forgotPassword" });
+  const handleRegisterPress = () => appNavigator.goToRegister();
+  const handleForgotPasswordPress = () => appNavigator.goToForgotPassword();
 
   // Validation Handlers
   const validateEmail = (text: string) => {
