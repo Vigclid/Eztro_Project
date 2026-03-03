@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
     View,
     ScrollView,
@@ -227,6 +227,15 @@ export const BoardingHouseDetailsScreen = () => {
         }
     }, [_id, getHouseById, getAllRoomsByHouseId]);
 
+    // Lần đầu vào màn hình cũng load dữ liệu
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleRefreshRooms = useCallback(() => {
+        fetchData();
+    }, [fetchData]);
+
     // Refetch dữ liệu mỗi khi màn hình được focus (khi quay lại từ CreateNewRoomScreen/AddTenantScreen)
     useFocusEffect(
         useCallback(() => {
@@ -394,6 +403,7 @@ export const BoardingHouseDetailsScreen = () => {
                                                     "createNewRoomScreen" as never,
                                                     {
                                                         houseId: _id,
+                                                        onRefresh: handleRefreshRooms,
                                                     } as never,
                                                 )
                                             }
@@ -425,6 +435,7 @@ export const BoardingHouseDetailsScreen = () => {
                                                 {
                                                     houseId: _id,
                                                     room,
+                                                    onRefresh: handleRefreshRooms,
                                                 } as never,
                                             )
                                         }

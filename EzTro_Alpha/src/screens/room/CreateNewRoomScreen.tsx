@@ -75,7 +75,7 @@ const CreateNewRoomScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<CreateRoomRouteProps>();
 
-  const { houseId, room } = route.params || {};
+  const { houseId, room, onRefresh } = route.params || {};
   const editingRoom = room as IRoom | undefined;
   const isEditMode = !!editingRoom?._id;
 
@@ -182,7 +182,10 @@ const CreateNewRoomScreen = () => {
           [
             {
               text: "OK",
-              onPress: () => navigation.goBack(),
+              onPress: () => {
+                onRefresh?.();
+                navigation.goBack();
+              },
             },
           ]
         );
@@ -190,10 +193,24 @@ const CreateNewRoomScreen = () => {
         Alert.alert("Lỗi", res.message || "Có lỗi xảy ra, vui lòng thử lại.");
       }
     } catch (error: any) {
-      Alert.alert(
-        "Lỗi",
-        error?.message || "Có lỗi xảy ra, vui lòng thử lại sau."
-      );
+      // Hiển thị thông báo rõ ràng khi tên phòng bị trùng trong cùng cụm trọ
+      const backendMessage =
+        error?.response?.data?.message || error?.message || "";
+
+      if (
+        backendMessage.includes("đã tồn tại trong cụm trọ") ||
+        backendMessage.includes("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE")
+      ) {
+        Alert.alert(
+          "Thông báo",
+          "Tên phòng này đã tồn tại trong cụm trọ. Vui lòng nhập tên khác."
+        );
+      } else {
+        Alert.alert(
+          "Lỗi",
+          backendMessage || "Có lỗi xảy ra, vui lòng thử lại sau."
+        );
+      }
     } finally {
       setSubmitting(false);
     }
