@@ -377,7 +377,11 @@ export const BoardingHouseDetailsScreen = () => {
                                                     />
                                                 </View>
                                                 <View style={styles.flex1} />
-                                                <Text style={styles.actionTextOrange}>Tạo hóa đơn hàng loạt</Text>
+                                                <TouchableOpacity>
+                                                    <Text style={styles.actionTextOrange}>
+                                                        Tạo hóa đơn hàng loạt
+                                                    </Text>
+                                                </TouchableOpacity>
                                                 <View style={styles.flex1} />
                                             </LinearGradient>
                                         </TouchableOpacity>

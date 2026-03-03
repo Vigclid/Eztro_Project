@@ -1,6 +1,6 @@
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -37,15 +37,23 @@ export const ViewBoardingHousePage: React.FC = () => {
   const { getAllHousesByLandlordId } = getHouseApi;
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
 
-  useEffect(() => {
-    const getAllHouses = async () => {
-      const res = (await getAllHousesByLandlordId()) as ApiResponse<IHouse[]>;
-      if (res.status === "success") {
-        setBoardingHouses(res.data as IHouse[]);
-      }
-    };
-    getAllHouses();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const getAllHouses = async () => {
+        try {
+          const res = (await getAllHousesByLandlordId()) as ApiResponse<IHouse[]>;
+          if (res.status === "success") {
+            setBoardingHouses(res.data as IHouse[]);
+          }
+        } catch (err) {
+          console.error("Lỗi khi lấy danh sách nhà:", err);
+        }
+      };
+      getAllHouses();
+      return () => {
+      };
+    }, [getAllHousesByLandlordId]) 
+  );
 
   const handleCreateBoardingHouse = () => {
     navigation.navigate("mainstack", { screen: "createBoardingHousePage" });
@@ -71,7 +79,7 @@ export const ViewBoardingHousePage: React.FC = () => {
 
               <View>
                 <Text style={styles.headerTitle}>
-                  {"Tạo hóa đơn hàng loạt"}
+                  {"Quản Lý Cụm Trọ"}
                 </Text>
               </View>
               <View style={styles.headerSpacer} />
@@ -179,6 +187,7 @@ const styles = StyleSheet.create({
     color: COLORS.WHITE,
     fontSize: FONT_SIZE.HEADER_TITLE,
     fontWeight: "bold",
+    paddingTop: 20
   },
   headerSpacer: {
     width: IMAGE_SIZE.HEADER_LOGO,
