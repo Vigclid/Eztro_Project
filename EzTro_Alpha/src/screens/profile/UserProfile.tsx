@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Edit,
   HelpCircle,
-  Lock,
   LogOut,
   Mail,
   Phone,
@@ -148,30 +147,6 @@ export const UserProfile: React.FC = () => {
                   </View>
                 </View>
               </View>
-              <TouchableOpacity
-                style={styles.sectionItemLast}
-                activeOpacity={0.7}
-                onPress={() =>
-                  navigation.navigate("mainstack", {
-                    screen: "createNewPassword",
-                    params: { email: user?.email ?? "", fromMain: true },
-                  })
-                }
-              >
-                <View style={styles.sectionIcon}>
-                  <Lock size={26} color={COLORS.GRADIENT_START} />
-                </View>
-                <View style={styles.sectionItemContent}>
-                  <View style={styles.sectionItemTitleContainer}>
-                    <Text style={styles.sectionItemTitle}>Đổi mật khẩu</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.sectionItemDescription}>
-                      Cập nhật mật khẩu bảo mật
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
             </View>
           </View>
           <View style={styles.section}>
