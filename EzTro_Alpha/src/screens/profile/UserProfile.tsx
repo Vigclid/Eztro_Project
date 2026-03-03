@@ -21,6 +21,7 @@ import { COLORS, SHADOW } from "../../constants/theme";
 import { ThemeContext } from "../../context/ThemeContext";
 import { logoutAsync } from "../../features/auth/authSlice";
 import { NavigationProp } from "../../navigation/navigation.type";
+import { appNavigator } from "../../navigation/navigationActions";
 import { AppDispatch, RootState } from "../../stores/store";
 import { UserProfileStyle } from "./styles/UserProfileStyle";
 
@@ -50,7 +51,7 @@ export const UserProfile: React.FC = () => {
     }
   };
   const navigateToChangePasswordPage = () => {
-    navigation.navigate("auth", { screen: "forgotPassword" });
+    appNavigator.goToChangePasswordPage();
   };
   return (
     <View style={styles.container}>
