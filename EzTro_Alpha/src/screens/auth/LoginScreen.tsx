@@ -28,7 +28,7 @@ import { AppDispatch } from "../../stores/store";
 import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
-import { appNavigator } from "../../navigation/appNavigator";
+import { appNavigator } from "../../navigation/navigationActions";
 WebBrowser.maybeCompleteAuthSession();
 
 // --- Social Icons (Google & Facebook) ---

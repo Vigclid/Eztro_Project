@@ -19,6 +19,7 @@ import {
 // Types
 import { getUserApi } from "../../api/user/user";
 import { AuthStackParamList } from "../../navigation/navigation.type";
+import { appNavigator } from "../../navigation/navigationActions";
 import { ApiResponse } from "../../types/app.common";
 export const CreateNewPasswordScreen = () => {
   const route = useRoute<RouteProp<AuthStackParamList, "createNewPassword">>();
@@ -36,7 +37,7 @@ export const CreateNewPasswordScreen = () => {
 
   // Logic Handlers
   const handleBackPress = () => {
-    navigation.goBack();
+    appNavigator.goBack();
   };
 
   const handleResetPasswordPress = async () => {

@@ -61,24 +61,6 @@ export const getUserApi = {
     return res.data;
   },
 
-  changePassword: async (
-    oldPassword: string,
-    password: string,
-  ): Promise<void> => {
-    const res = await apiService.put<any>(`${userApi}/me/password`, {
-      oldPassword,
-      password,
-    });
-
-    if (res.data?.status === "error") {
-      throw new Error(res.data.message || "Đổi mật khẩu thất bại");
-    }
-
-    if (!res.status) {
-      throw new Error(res.message || "Lỗi mạng");
-    }
-  },
-
   uploadAvatar: async (avatarUri: string): Promise<IUser> => {
     try {
       const base64 = await FileSystem.readAsStringAsync(avatarUri, {
@@ -104,6 +86,26 @@ export const getUserApi = {
       return res.data.data as IUser;
     } catch (err: any) {
       throw err;
+    }
+  },
+};
+
+export const putUserApi = {
+  changePassword: async (
+    oldPassword: string,
+    password: string,
+  ): Promise<void> => {
+    const res = await apiService.put<any>(`${userApi}/me/password`, {
+      oldPassword,
+      password,
+    });
+
+    if (res.data?.status === "error") {
+      throw new Error(res.data.message || "Đổi mật khẩu thất bại");
+    }
+
+    if (!res.status) {
+      throw new Error(res.message || "Lỗi mạng");
     }
   },
 };
