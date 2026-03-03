@@ -31,6 +31,7 @@ export type MainStackParamList = {
     | {
         houseId: string | undefined;
         room?: import("../types/room").IRoom;
+        onRefresh?: () => void;
       }
     | undefined;
   addTenantScreen:

@@ -4,12 +4,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { getHouseApi } from "../../api/house/house";
+import { getRoomApi } from "../../api/room/room";
 import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
 import BoardingHouseStatsCard from "../../components/boardingHouse/BoardingHouseStatsCard";
 import { BORDER_RADIUS, COLORS, FONT_SIZE, IMAGE_SIZE, SPACING } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
+import { IRoom } from "../../types/room";
 import { Plus, Funnel, Search, Wrench } from "lucide-react-native";
 
 export const ViewBoardingHousePage: React.FC = () => {
@@ -18,6 +20,7 @@ export const ViewBoardingHousePage: React.FC = () => {
 
   const { getAllHousesByLandlordId } = getHouseApi;
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
+  const [totalAvailableRooms, setTotalAvailableRooms] = useState<number>(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -33,6 +36,45 @@ export const ViewBoardingHousePage: React.FC = () => {
       return () => {};
     }, [getAllHousesByLandlordId]),
   );
+
+  useEffect(() => {
+    const fetchRoomStats = async () => {
+      if (!boardingHouses || boardingHouses.length === 0) {
+        setTotalAvailableRooms(0);
+        return;
+      }
+
+      try {
+        const houseIds = boardingHouses
+          .map((house) => house._id)
+          .filter((id): id is string => typeof id === "string");
+
+        const responses = await Promise.all(
+          houseIds.map((id) =>
+            getRoomApi.getAllRoomsByHouseId(id) as Promise<ApiResponse<IRoom[]>>
+          )
+        );
+
+        let availableTotal = 0;
+
+        responses.forEach((res) => {
+          if (res.status === "success" && Array.isArray(res.data)) {
+            const rooms = res.data as any as IRoom[];
+            const rented = rooms.filter(
+              (r) => r.status === "Đang Thuê" || r.status === "rented"
+            ).length;
+            availableTotal += rooms.length - rented;
+          }
+        });
+
+        setTotalAvailableRooms(availableTotal);
+      } catch {
+        setTotalAvailableRooms(0);
+      }
+    };
+
+    fetchRoomStats();
+  }, [boardingHouses]);
 
   const handleCreateBoardingHouse = () => {
     navigation.navigate("mainstack", { screen: "createBoardingHousePage" });
@@ -80,7 +122,10 @@ export const ViewBoardingHousePage: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <BoardingHouseStatsCard totalBoardingHouse={7} />
+            <BoardingHouseStatsCard
+              totalBoardingHouse={boardingHouses?.length ?? 0}
+              totalRooms={totalAvailableRooms}
+            />
 
             {/* Maintenance Button */}
             <TouchableOpacity onPress={handleNavigateToMaintenance} style={styles.maintenanceCard}>
