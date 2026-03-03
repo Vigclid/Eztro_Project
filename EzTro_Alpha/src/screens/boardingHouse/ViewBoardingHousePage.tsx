@@ -2,7 +2,6 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -27,7 +26,8 @@ import { IHouse } from "../../types/house";
 import {
   Plus,
   Funnel,
-  Search
+  Search,
+  Wrench
 } from "lucide-react-native";
 
 export const ViewBoardingHousePage: React.FC = () => {
@@ -49,6 +49,10 @@ export const ViewBoardingHousePage: React.FC = () => {
 
   const handleCreateBoardingHouse = () => {
     navigation.navigate("mainstack", { screen: "createBoardingHousePage" });
+  };
+
+  const handleNavigateToMaintenance = () => {
+    navigation.navigate("mainstack", { screen: "ticketListScreen" });
   };
 
   return (
@@ -93,6 +97,24 @@ export const ViewBoardingHousePage: React.FC = () => {
             </View>
 
             <BoardingHouseStatsCard totalBoardingHouse={7} />
+            
+            {/* Maintenance Button */}
+            <TouchableOpacity
+              onPress={handleNavigateToMaintenance}
+              style={styles.maintenanceCard}
+            >
+              <View style={styles.maintenanceIconContainer}>
+                <Wrench size={24} color={COLORS.WHITE} />
+              </View>
+              <View style={styles.maintenanceContent}>
+                <Text style={styles.maintenanceTitle}>Bảo trì</Text>
+                <Text style={styles.maintenanceDesc}>Yêu cầu sửa chữa</Text>
+              </View>
+              <View style={styles.maintenanceArrow}>
+                <Text style={styles.maintenanceArrowText}>›</Text>
+              </View>
+            </TouchableOpacity>
+
             <View style={styles.boardingHousesContainer}>
               {boardingHouses && (
                 <>
@@ -490,5 +512,50 @@ const styles = StyleSheet.create({
     height: 70,
     backgroundColor: COLORS.GREEN_PRIMARY,
     borderRadius: 100,
+  },
+  maintenanceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  maintenanceIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#A855F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  maintenanceContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  maintenanceTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.TEXT_DARK,
+  },
+  maintenanceDesc: {
+    fontSize: 14,
+    color: COLORS.TEXT_SECONDARY,
+    marginTop: 4,
+  },
+  maintenanceArrow: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  maintenanceArrowText: {
+    fontSize: 24,
+    color: COLORS.PLACEHOLDER_GRAY,
   },
 });

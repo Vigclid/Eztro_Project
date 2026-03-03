@@ -62,6 +62,7 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = store.getState().auth?.accessToken; // lấy từ Redux
+    console.log('[API SERVICE] Token from Redux:', token ? 'EXISTS' : 'MISSING');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
@@ -275,9 +276,12 @@ export const apiService = {
     params: Record<string, any> = {},
   ): Promise<ApiResponse<T>> {
     try {
+      console.log('[API SERVICE] GET request to:', endpoint);
       const response = await apiClient.get<T>(endpoint, { params });
+      console.log('[API SERVICE] GET response:', response.status);
       return handleResponse(response);
     } catch (error: any) {
+      console.log('[API SERVICE] GET error:', error.message);
       return error;
     }
   },
@@ -287,9 +291,12 @@ export const apiService = {
     data: Record<string, any> = {},
   ): Promise<ApiResponse<T>> {
     try {
+      console.log('[API SERVICE] POST request to:', endpoint);
       const response = await apiClient.post<T>(endpoint, data);
+      console.log('[API SERVICE] POST response:', response.status);
       return handleResponse(response);
     } catch (error: any) {
+      console.log('[API SERVICE] POST error:', error.message);
       return error;
     }
   },
