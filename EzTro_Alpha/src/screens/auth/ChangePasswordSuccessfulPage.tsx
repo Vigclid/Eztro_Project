@@ -13,8 +13,8 @@ import {
 } from "react-native";
 
 // Types
-import { appNavigator } from "../../navigation/appNavigator";
 import { AuthStackParamList } from "../../navigation/navigation.type";
+import { appNavigator } from "../../navigation/navigationActions";
 
 export const ChangePasswordSuccessfulPage = () => {
   const route =
@@ -23,9 +23,9 @@ export const ChangePasswordSuccessfulPage = () => {
 
   const handleBackToLogin = () => {
     if (fromMain) {
-      appNavigator.goToUserProfile;
+      appNavigator.goToUserProfile();
     } else {
-      appNavigator.goToLogin;
+      appNavigator.goToLogin();
     }
   };
 
@@ -81,7 +81,9 @@ export const ChangePasswordSuccessfulPage = () => {
               end={{ x: 1, y: 0.5 }}
               style={styles.button}
             >
-              <Text style={styles.buttonText}>Quay lại đăng nhập</Text>
+              <Text style={styles.buttonText}>
+                {fromMain ? "Quay lại trang" : "Quay lại đăng nhập"}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>

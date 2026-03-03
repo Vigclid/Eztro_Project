@@ -38,14 +38,18 @@ export const appNavigator = {
     });
   },
 
-  goToChangePasswordSuccessful() {
-    navigate("auth", { screen: "changePasswordSuccessful" });
+  goToChangePasswordSuccessful(fromMain: any) {
+    navigate("auth", {
+      screen: "changePasswordSuccessful",
+      params: { fromMain },
+    });
   },
-
   goToCreateBoardingHouseAuth() {
     navigate("auth", { screen: "createBoardingHouse" });
   },
-
+  goToChangePasswordPage() {
+    navigate("auth", { screen: "changePasswordPage" });
+  },
   // ─── MAIN TAB ─────────────────────────────────────────────────────────────
 
   goToBlank() {
