@@ -33,6 +33,8 @@ export const CreateBoardingHouseScreen: React.FC = () => {
   const [defaultPrice, onChangeDefaultPrice] = useState("");
   const [description, onChangeDescription] = useState("");
   const [paymentDay, onChangePaymentDay] = useState("");
+  const [defaultElectricityCharge, onChangeDefaultElectricityCharge] = useState("");
+  const [defaultWaterCharge, onChangeDefaultWaterCharge] = useState("");
 
   const { createHouse } = postHouseApi;
   const handleCancel = () => {
@@ -46,6 +48,8 @@ export const CreateBoardingHouseScreen: React.FC = () => {
       roomCount,
       description,
       status: "Còn Phòng",
+      defaultElectricityCharge: Number(defaultElectricityCharge),
+      defaultWaterCharge: Number(defaultWaterCharge),
     })) as ApiResponse<IHouse>;
     if (res.status === "success") {
       Alert.alert("Thành Công", "Tạo Cụm Trọ Thành Công");
@@ -152,6 +156,47 @@ export const CreateBoardingHouseScreen: React.FC = () => {
                 placeholder="2000000"
                 value={defaultPrice}
                 onChangeText={onChangeDefaultPrice}
+                style={styles.textInput}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          <View style={styles.rowSection}>
+            <View style={styles.halfWidthSection}>
+              <View style={styles.labelContainer}>
+                <Image
+                  source={{
+                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/7enypng9_expires_30_days.png",
+                  }}
+                  resizeMode="stretch"
+                  style={styles.formIcon}
+                />
+                <Text style={styles.label}>{"Giá điện"}</Text>
+              </View>
+              <TextInput
+                placeholder="3000"
+                value={defaultElectricityCharge}
+                onChangeText={onChangeDefaultElectricityCharge}
+                style={styles.textInput}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.halfWidthSectionRight}>
+              <View style={styles.labelContainer}>
+                <Image
+                  source={{
+                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/qahzyy5n_expires_30_days.png",
+                  }}
+                  resizeMode="stretch"
+                  style={styles.formIcon}
+                />
+                <Text style={styles.label}>{"Giá Nước"}</Text>
+              </View>
+              <TextInput
+                placeholder="3000"
+                value={defaultWaterCharge}
+                onChangeText={onChangeDefaultWaterCharge}
                 style={styles.textInput}
                 keyboardType="numeric"
               />
