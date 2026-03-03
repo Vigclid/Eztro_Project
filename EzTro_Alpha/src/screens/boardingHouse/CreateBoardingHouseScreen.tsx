@@ -24,6 +24,23 @@ import {
 import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
+import {
+  Building2,
+  MapPin,
+  House,
+  DollarSign,
+  Newspaper,
+  Calendar,
+  Zap,
+  Waves,
+  Toolbox,
+  Wifi,
+  AirVent,
+  ThermometerSun,
+  Car,
+  LockKeyhole,
+  Tv,
+} from "lucide-react-native"
 
 export const CreateBoardingHouseScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -33,6 +50,9 @@ export const CreateBoardingHouseScreen: React.FC = () => {
   const [defaultPrice, onChangeDefaultPrice] = useState("");
   const [description, onChangeDescription] = useState("");
   const [paymentDay, onChangePaymentDay] = useState("");
+  const [defaultElectricityCharge, onChangeDefaultElectricityCharge] = useState("");
+  const [defaultWaterCharge, onChangeDefaultWaterCharge] = useState("");
+
 
   const { createHouse } = postHouseApi;
   const handleCancel = () => {
@@ -46,6 +66,8 @@ export const CreateBoardingHouseScreen: React.FC = () => {
       roomCount,
       description,
       status: "Còn Phòng",
+      defaultElectricityCharge: Number(defaultElectricityCharge),
+      defaultWaterCharge: Number(defaultWaterCharge),
     })) as ApiResponse<IHouse>;
     if (res.status === "success") {
       Alert.alert("Thành Công", "Tạo Cụm Trọ Thành Công");
@@ -66,13 +88,9 @@ export const CreateBoardingHouseScreen: React.FC = () => {
             ]}
             style={styles.headerGradient}
           >
-            <Image
-              source={{
-                uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/n14hpujo_expires_30_days.png",
-              }}
-              resizeMode="stretch"
-              style={styles.headerLogo}
-            />
+            <View style={styles.headerLogo}>
+              <Building2 size={32} color={COLORS.WHITE} />
+            </View>
             <View>
               <Text style={styles.headerTitle}>{"Thêm cụm trọ mới"}</Text>
             </View>
@@ -81,13 +99,9 @@ export const CreateBoardingHouseScreen: React.FC = () => {
 
           <View style={styles.formSection}>
             <View style={styles.labelContainer}>
-              <Image
-                source={{
-                  uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ecywcwv6_expires_30_days.png",
-                }}
-                resizeMode="stretch"
-                style={styles.formIcon}
-              />
+              <View style={styles.formIcon}>
+                <Building2 size={20} color={COLORS.GREEN_PRIMARY} />
+              </View>
               <Text style={styles.label}>{"Tên cụm trọ"}</Text>
             </View>
             <TextInput
@@ -100,13 +114,9 @@ export const CreateBoardingHouseScreen: React.FC = () => {
 
           <View style={styles.formSection}>
             <View style={styles.labelContainer}>
-              <Image
-                source={{
-                  uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/3ka1u3tw_expires_30_days.png",
-                }}
-                resizeMode="stretch"
-                style={styles.formIcon}
-              />
+              <View style={styles.formIcon}>
+                <MapPin size={20} color={COLORS.GREEN_PRIMARY} />
+              </View>
               <Text style={styles.label}>{"Địa chỉ"}</Text>
             </View>
             <TextInput
@@ -120,13 +130,9 @@ export const CreateBoardingHouseScreen: React.FC = () => {
           <View style={styles.rowSection}>
             <View style={styles.halfWidthSection}>
               <View style={styles.labelContainer}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/7enypng9_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.formIcon}
-                />
+                <View style={styles.formIcon}>
+                  <House size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.label}>{"Số phòng"}</Text>
               </View>
               <TextInput
@@ -139,13 +145,9 @@ export const CreateBoardingHouseScreen: React.FC = () => {
             </View>
             <View style={styles.halfWidthSectionRight}>
               <View style={styles.labelContainer}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/qahzyy5n_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.formIcon}
-                />
+                <View style={styles.formIcon}>
+                  <DollarSign size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.label}>{"Giá mặc định"}</Text>
               </View>
               <TextInput
@@ -158,15 +160,44 @@ export const CreateBoardingHouseScreen: React.FC = () => {
             </View>
           </View>
 
+          <View style={styles.rowSection}>
+            <View style={styles.halfWidthSection}>
+              <View style={styles.labelContainer}>
+                <View style={styles.formIcon}>
+                  <Zap size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
+                <Text style={styles.label}>{"Giá điện"}</Text>
+              </View>
+              <TextInput
+                placeholder="3000"
+                value={defaultElectricityCharge}
+                onChangeText={onChangeDefaultElectricityCharge}
+                style={styles.textInput}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.halfWidthSectionRight}>
+              <View style={styles.labelContainer}>
+                <View style={styles.formIcon}>
+                  <Waves size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
+                <Text style={styles.label}>{"Giá Nước"}</Text>
+              </View>
+              <TextInput
+                placeholder="3000"
+                value={defaultWaterCharge}
+                onChangeText={onChangeDefaultWaterCharge}
+                style={styles.textInput}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
           <View style={styles.formSection}>
             <View style={styles.labelContainer}>
-              <Image
-                source={{
-                  uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/l41wbews_expires_30_days.png",
-                }}
-                resizeMode="stretch"
-                style={styles.formIcon}
-              />
+              <View style={styles.formIcon}>
+                <Newspaper size={20} color={COLORS.GREEN_PRIMARY} />
+              </View>
               <Text style={styles.label}>{"Mô tả"}</Text>
             </View>
             <View style={styles.descriptionContainer}>
@@ -183,78 +214,50 @@ export const CreateBoardingHouseScreen: React.FC = () => {
 
           <View style={styles.formSection}>
             <View style={styles.labelContainer}>
-              <Image
-                source={{
-                  uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/l41wbews_expires_30_days.png",
-                }}
-                resizeMode="stretch"
-                style={styles.formIcon}
-              />
+              <View style={styles.formIcon}>
+                <Toolbox size={20} color={COLORS.GREEN_PRIMARY} />
+              </View>
               <Text style={styles.label}>{"Tiện ích"}</Text>
             </View>
             <View style={styles.featureRow}>
               <TouchableOpacity style={styles.featureButton}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/lp13fn3h_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.featureIcon}
-                />
+                <View style={styles.formIcon}>
+                  <Wifi size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.featureText}>{"WiFi"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.featureButtonRight}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/bv0qaygl_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.featureIcon}
-                />
+                <View style={styles.formIcon}>
+                  <AirVent size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.featureText}>{"Điều hòa"}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.featureRow}>
               <TouchableOpacity style={styles.featureButton}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/7rl8oxgv_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.featureIcon}
-                />
+                <View style={styles.formIcon}>
+                  <ThermometerSun size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.featureText}>{"Nước nóng"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.featureButtonRight}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/hktkfpkf_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.featureIcon}
-                />
+                <View style={styles.formIcon}>
+                  <Car size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.featureText}>{"Bãi đỗ xe"}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.featureRow}>
               <TouchableOpacity style={styles.featureButton}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/497ns7ok_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.featureIcon}
-                />
+                <View style={styles.formIcon}>
+                  <LockKeyhole size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.featureText}>{"An ninh 24/7"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.featureButtonRight}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/rqulbotf_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.featureIcon}
-                />
+                <View style={styles.formIcon}>
+                  <Tv size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.featureText}>{"Truyền hình"}</Text>
               </TouchableOpacity>
             </View>
@@ -263,13 +266,9 @@ export const CreateBoardingHouseScreen: React.FC = () => {
           <View style={{ marginBottom: 100 }}>
             <View style={styles.formSection}>
               <View style={styles.labelContainer}>
-                <Image
-                  source={{
-                    uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/7x4ai4pk_expires_30_days.png",
-                  }}
-                  resizeMode="stretch"
-                  style={styles.formIcon}
-                />
+                <View style={styles.formIcon}>
+                  <Calendar size={20} color={COLORS.GREEN_PRIMARY} />
+                </View>
                 <Text style={styles.label}>{"Ngày thanh toán"}</Text>
               </View>
               <TextInput
@@ -383,6 +382,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.CREATE_LABEL_MARGIN_BOTTOM,
   },
   formIcon: {
+    alignItems: "center",
+    justifyContent: "center",
     width: IMAGE_SIZE.CREATE_FORM_ICON,
     height: IMAGE_SIZE.CREATE_FORM_ICON,
     marginRight: SPACING.ADDRESS_ICON_MARGIN_RIGHT,

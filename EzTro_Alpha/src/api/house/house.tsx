@@ -16,7 +16,7 @@ export const getHouseApi = {
 
     async getAllHousesByLandlordId() {
         try {
-            const res = await apiService.get(houseApi)
+            const res = await apiService.get(`${houseApi}landlord/all`)
             return res.data
         } catch (err: any) {
             throw err
