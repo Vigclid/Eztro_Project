@@ -12,7 +12,7 @@ import {
     Users
 } from "lucide-react-native";
 
-const BoardingHouseStatsCard = ({ totalBoardingHouse = 3, totalRooms = 4 }) => {
+const BoardingHouseStatsCard = ({ totalBoardingHouse = 0, totalRooms = 0 }) => {
     return (
         <View style={styles.statsContainer}>
             <View style={styles.statCard}>
@@ -41,7 +41,7 @@ const BoardingHouseStatsCard = ({ totalBoardingHouse = 3, totalRooms = 4 }) => {
                 </View>
                 <View style={styles.statTextContainer}>
                     <View style={styles.statLabelContainer}>
-                        <Text style={styles.statLabel}>{"Tổng cộng phòng"}</Text>
+                        <Text style={styles.statLabel}>{"Phòng còn trống"}</Text>
                     </View>
                     <View style={styles.statLabelContainer}>
                         <Text style={styles.statValue}>{totalRooms}</Text>
