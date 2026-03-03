@@ -1,14 +1,19 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { responseWrapper } from "../interfaces/wrapper/ApiResponseWrapper";
 
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: number;
+    role: string;
+  };
+}
+
 export function authorize(roles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const { role } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
-      role: string;
-    };
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const role = req.user?.role;
+    
     if (!role || !roles.includes(role)) {
-      return res.status(200).json(responseWrapper("error", "Unauthorized"));
+      return res.status(403).json(responseWrapper("error", "Unauthorized"));
     }
     next();
   };

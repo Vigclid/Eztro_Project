@@ -47,7 +47,7 @@ const PORT = process.env.PORT || 8080;
 const server = http.createServer(app);
 // WEBSOCKET
 initSocketServer(server);
-server.listen(PORT);
+server.listen(PORT, () => {});
 // https.createServer(httpsOptions, app).listen(PORT, () => {
 //   console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
 // });

@@ -40,6 +40,9 @@ export type MainStackParamList = {
       }
     | undefined;
   createInvoicesScreen: undefined;
+  ticketListScreen: undefined;
+  createTicketScreen: undefined;
+  ticketDetailScreen: { ticketId: string };
 };
 export type AuthStackParamList = {
   welcome: undefined;
