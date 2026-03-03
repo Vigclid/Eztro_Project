@@ -41,12 +41,16 @@ export type MainStackParamList = {
       }
     | undefined;
   createInvoicesScreen: undefined;
+  ticketListScreen: undefined;
+  createTicketScreen: undefined;
+  ticketDetailScreen: { ticketId: string };
 };
 export type AuthStackParamList = {
   welcome: undefined;
   login: undefined;
   register: undefined;
   forgotPassword: undefined;
+  changePasswordPage: undefined;
   otpVerification: { email: string; tempToken: string } | undefined;
   createNewPassword: { email: string } | undefined;
   changePasswordSuccessful: { fromMain?: boolean } | undefined;

@@ -8,7 +8,7 @@ export interface IVirtualTenant {
 
 export interface IRoom {
   _id: string | undefined;
-  houseId?: IHouse | string | undefined;
+  houseId?: IHouse | undefined;
   area?: number | undefined;
   floor?: number | undefined;
   roomName: string | undefined;

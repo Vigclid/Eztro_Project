@@ -1,536 +1,294 @@
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useMemo, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, FlatList } from "react-native";
 import { AppButton } from "../../components/misc/AppButton";
-import {
-  BORDER_RADIUS,
-  COLORS,
-  FONT_SIZE,
-  IMAGE_SIZE,
-  SPACING,
-} from "../../constants/theme";
-
-type PaymentStatusFilter = "all" | "unpaid" | "paid" | "overdue";
-
-interface PaymentItem {
-  id: string;
-  tenantName: string;
-  monthLabel: string;
-  status: "paid" | "unpaid";
-  paidAt?: string;
-  items: Array<{
-    id: string;
-    label: string;
-    amount: string;
-  }>;
-  total: string;
-}
-
-const demoPayments: PaymentItem[] = [
-  {
-    id: "p1",
-    tenantName: "Nguyễn Văn A",
-    monthLabel: "Tháng 2024-12",
-    status: "paid",
-    paidAt: "Đã thanh toán: 3/12/2024",
-    items: [
-      { id: "rent", label: "Tiền phòng", amount: "3.000.000 đ" },
-      { id: "electric", label: "Tiền điện", amount: "245.000 đ" },
-      { id: "water", label: "Tiền nước", amount: "60.000 đ" },
-      { id: "other", label: "Internet & Khác", amount: "200.000 đ" },
-    ],
-    total: "3.505.000 đ",
-  },
-  {
-    id: "p2",
-    tenantName: "Nguyễn Văn A",
-    monthLabel: "Tháng 2025-01",
-    status: "unpaid",
-    items: [
-      { id: "rent", label: "Tiền phòng", amount: "3.000.000 đ" },
-      { id: "electric", label: "Tiền điện", amount: "280.000 đ" },
-      { id: "water", label: "Tiền nước", amount: "75.000 đ" },
-      { id: "other", label: "Internet & Khác", amount: "200.000 đ" },
-    ],
-    total: "3.555.000 đ",
-  },
-  {
-    id: "p3",
-    tenantName: "Trần Thị C",
-    monthLabel: "Tháng 2024-12",
-    status: "paid",
-    paidAt: "Đã thanh toán: 4/12/2026",
-    items: [
-      { id: "rent", label: "Tiền phòng", amount: "3.500.000 đ" },
-      { id: "electric", label: "Tiền điện", amount: "210.000 đ" },
-      { id: "water", label: "Tiền nước", amount: "45.000 đ" },
-      { id: "other", label: "Internet & Khác", amount: "200.000 đ" },
-    ],
-    total: "3.955.000 đ",
-  },
-  {
-    id: "p4",
-    tenantName: "Trần Thị C",
-    monthLabel: "Tháng 2025-01",
-    status: "unpaid",
-    items: [
-      { id: "rent", label: "Tiền phòng", amount: "3.500.000 đ" },
-      { id: "electric", label: "Tiền điện", amount: "0 đ" },
-      { id: "water", label: "Tiền nước", amount: "0 đ" },
-      { id: "other", label: "Internet & Khác", amount: "200.000 đ" },
-    ],
-    total: "3.700.000 đ",
-  },
-  {
-    id: "p5",
-    tenantName: "Trần Thị D",
-    monthLabel: "Tháng 2026-01",
-    status: "paid",
-    items: [
-      { id: "rent", label: "Tiền phòng", amount: "3.250.000 đ" },
-      { id: "electric", label: "Tiền điện", amount: "10.000 đ" },
-      { id: "water", label: "Tiền nước", amount: "10.000 đ" },
-      { id: "other", label: "Internet & Khác", amount: "200.000 đ" },
-    ],
-    total: "3.470.000 đ",
-  },
-];
+import { COLORS } from "../../constants/theme";
+import { getInvoiceApi } from "../../api/invoice/invoice";
+import { IInvoice } from "../../types/invoice";
+import { ApiResponse } from "../../types/app.common";
+import { useFocusEffect } from "@react-navigation/native";
+import { getHouseApi } from "../../api/house/house";
+import { IHouse } from "../../types/house";
 
 export const TrackingPaymentStatus: React.FC = () => {
-  const [filter, setFilter] = useState<PaymentStatusFilter>("all");
+  const now = new Date();
 
-  const collectedAmountLabel = "7.5M";
-  const uncollectedAmountLabel = "7.3M";
+  // States UI
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedHouse, setSelectedHouse] = useState({ id: "all", name: "Tất cả nhà" });
+  const [selMonth, setSelMonth] = useState<number | null>(now.getMonth() + 1);
+  const [selYear, setSelYear] = useState<number | null>(now.getFullYear());
+  const [activePicker, setActivePicker] = useState<"house" | "month" | "year" | null>(null);
 
-  const filteredPayments = useMemo(() => {
-    if (filter === "all") {
-      return demoPayments;
-    }
-    if (filter === "paid") {
-      return demoPayments.filter((p) => p.status === "paid");
-    }
-    if (filter === "unpaid" || filter === "overdue") {
-      return demoPayments.filter((p) => p.status === "unpaid");
-    }
-    return demoPayments;
-  }, [filter]);
+  // States Data (Xóa dữ liệu mẫu, khởi tạo mảng rỗng)
+  const [invoices, setInvoices] = useState<IInvoice[]>([]); // Dùng any tạm thời vì Backend trả về kèm roomDetail/houseDetail
+  const [boardingHouses, setBoardingHouses] = useState<IHouse[]>([]);
 
-  const handleConfirmPaid = (paymentId: string) => {
-    // Placeholder for future API integration.
-    void paymentId;
-  };
+  const { getInvoicesByFilter } = getInvoiceApi;
+  const { getAllHousesByLandlordId } = getHouseApi;
+
+  // Lấy danh sách nhà trọ thực tế từ API
+  useFocusEffect(
+    useCallback(() => {
+      const getAllHouses = async () => {
+        try {
+          const res = (await getAllHousesByLandlordId()) as ApiResponse<IHouse[]>;
+          if (res.status === "success") {
+            setBoardingHouses(res.data || []);
+          }
+        } catch (err) {}
+      };
+      getAllHouses();
+    }, [getAllHousesByLandlordId]),
+  );
+
+  // Lấy danh sách hóa đơn theo Filter từ Backend
+  useFocusEffect(
+    useCallback(() => {
+      const fetchInvoices = async () => {
+        try {
+          const filterBody = {
+            houseId: selectedHouse.id !== "all" ? selectedHouse.id : undefined,
+            month: selMonth || undefined,
+            year: selYear || undefined,
+          };
+          const res = (await getInvoicesByFilter(filterBody)) as ApiResponse<IInvoice[]>;
+
+          if (res.status === "success") {
+            setInvoices(res.data || []);
+          }
+        } catch (err) {}
+      };
+
+      fetchInvoices();
+    }, [selectedHouse.id, selMonth, selYear, getInvoicesByFilter]),
+  );
+
+  // Danh sách nhà cho Modal dựa trên dữ liệu thật
+  const houseOptions = useMemo(() => {
+    const list = boardingHouses.map((h) => ({ id: h._id, name: h.houseName }));
+    return [{ id: "all", name: "Tất cả nhà" }, ...list];
+  }, [boardingHouses]);
+
+  const months = [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const years = [null, now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2];
+
+  // Lọc trạng thái tại Client dựa trên state 'invoices'
+  const displayInvoices = useMemo(() => {
+    if (statusFilter === "all") return invoices;
+    return invoices.filter((inv) =>
+      statusFilter === "paid" ? inv.status === "completed" : inv.status === "processing",
+    );
+  }, [invoices, statusFilter]);
+
+  const formatCurrency = (amount: number | undefined) => (amount || 0).toLocaleString("vi-VN") + " đ";
+
+  const FilterColumn = ({ label, value, onPress }: any) => (
+    <TouchableOpacity style={styles.filterCol} onPress={onPress}>
+      <Text style={styles.filterLabel}>{label}</Text>
+      <View style={styles.valueBox}>
+        <Text style={styles.valueText} numberOfLines={1}>
+          {value}
+        </Text>
+        <Text style={styles.arrow}>▼</Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-        style={styles.headerGradient}
-      >
-        <View style={styles.headerDivider} />
-        <View style={styles.headerContent}>
-          <View style={styles.headerSpacer} />
-          <View>
-            <Text style={styles.headerTitle}>{"Trạng thái thu chi"}</Text>
-          </View>
-          <View style={styles.headerSpacer} />
-        </View>
+      <LinearGradient colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]} style={styles.header}>
+        <Text style={styles.headerTitle}>Quản lý Thu Chi Phòng</Text>
       </LinearGradient>
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryCardCollected}>
-          <Text style={styles.summaryLabelCollected}>Đã thu</Text>
-          <Text style={styles.summaryValueCollected}>
-            {collectedAmountLabel}
-          </Text>
-        </View>
-        <View style={styles.summaryCardUncollected}>
-          <Text style={styles.summaryLabelUncollected}>Chưa thu</Text>
-          <Text style={styles.summaryValueUncollected}>
-            {uncollectedAmountLabel}
-          </Text>
-        </View>
-      </View>
+
       <View style={styles.filterRow}>
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            filter === "all" && styles.filterChipPrimary,
-          ]}
-          activeOpacity={0.8}
-          onPress={() => setFilter("all")}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              filter === "all" && styles.filterChipTextPrimary,
-            ]}
-          >
-            Tất cả
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            filter === "unpaid" && styles.filterChipActiveGray,
-          ]}
-          activeOpacity={0.8}
-          onPress={() => setFilter("unpaid")}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              filter === "unpaid" && styles.filterChipTextDark,
-            ]}
-          >
-            Chưa TT
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            filter === "paid" && styles.filterChipActiveGray,
-          ]}
-          activeOpacity={0.8}
-          onPress={() => setFilter("paid")}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              filter === "paid" && styles.filterChipTextDark,
-            ]}
-          >
-            Đã TT
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            filter === "overdue" && styles.filterChipActiveGray,
-          ]}
-          activeOpacity={0.8}
-          onPress={() => setFilter("overdue")}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              filter === "overdue" && styles.filterChipTextDark,
-            ]}
-          >
-            Quá hạn
-          </Text>
-        </TouchableOpacity>
+        <FilterColumn label="Nhà trọ" value={selectedHouse.name} onPress={() => setActivePicker("house")} />
+        <FilterColumn
+          label="Tháng"
+          value={selMonth === null ? "Tất cả" : `Tháng ${selMonth}`}
+          onPress={() => setActivePicker("month")}
+        />
+        <FilterColumn
+          label="Năm"
+          value={selYear === null ? "Tất cả" : selYear}
+          onPress={() => setActivePicker("year")}
+        />
       </View>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {filteredPayments.map((payment) => (
-          <View key={payment.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardHeaderLeft}>
-                <View style={styles.avatarPlaceholder} />
-                <View>
-                  <Text style={styles.tenantName}>{payment.tenantName}</Text>
-                  <Text style={styles.monthLabel}>{payment.monthLabel}</Text>
-                </View>
-              </View>
 
-              <View
-                style={
-                  payment.status === "paid"
-                    ? styles.badgePaid
-                    : styles.badgeUnpaid
-                }
-              >
-                <Text
-                  style={
-                    payment.status === "paid"
-                      ? styles.badgePaidText
-                      : styles.badgeUnpaidText
-                  }
-                >
-                  {payment.status === "paid"
-                    ? "Đã thanh toán"
-                    : "Chưa thanh toán"}
+      <View style={styles.tabContainer}>
+        {["all", "unpaid", "paid"].map((t) => (
+          <TouchableOpacity
+            key={t}
+            style={[styles.tab, statusFilter === t && styles.activeTab]}
+            onPress={() => setStatusFilter(t)}>
+            <Text style={[styles.tabText, statusFilter === t && styles.activeTabText]}>
+              {t === "all" ? "Tất cả" : t === "paid" ? "Đã thu" : "Chưa thu"}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView contentContainerStyle={styles.list}>
+        {displayInvoices.map((inv) => (
+          <View key={inv._id} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={{ flex: 1 }}>
+                {/* Lấy roomName từ roomDetail do Backend Aggregate trả về */}
+                <Text style={styles.roomName}>{inv.roomId?.roomName || "N/A"}</Text>
+                <Text style={styles.houseNameSub}>{inv.roomId?.houseId?.houseName || "Cơ sở nhà trọ"}</Text>
+                <Text style={styles.rentalDateText}>
+                  Ngày tạo: {inv.createDate ? new Date(inv.createDate).toLocaleDateString("vi-VN") : "N/A"}
+                </Text>
+              </View>
+              <View style={inv.status === "completed" ? styles.badgePaid : styles.badgeUnpaid}>
+                <Text style={inv.status === "completed" ? styles.badgePaidText : styles.badgeUnpaidText}>
+                  {inv.status === "completed" ? "ĐÃ THU" : "CHỜ THU"}
                 </Text>
               </View>
             </View>
 
             <View style={styles.breakdownList}>
-              {payment.items.map((item) => (
-                <View key={item.id} style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>{item.label}</Text>
-                  <Text style={styles.breakdownAmount}>{item.amount}</Text>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Tiền phòng</Text>
+                <Text style={styles.breakdownAmount}>{formatCurrency(inv.roomId?.rentalFee)}</Text>
+              </View>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Tiền điện</Text>
+                <Text style={styles.breakdownAmount}>{formatCurrency(inv.electricityCharge)}</Text>
+              </View>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Tiền nước</Text>
+                <Text style={styles.breakdownAmount}>{formatCurrency(inv.waterCharge)}</Text>
+              </View>
+              {inv.utilities?.map((u: any, index: number) => (
+                <View key={index} style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>{u.key}</Text>
+                  <Text style={styles.breakdownAmount}>{formatCurrency(u.value)}</Text>
                 </View>
               ))}
             </View>
 
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Tổng cộng</Text>
-              <Text style={styles.totalValue}>{payment.total}</Text>
+              <Text style={styles.totalAmountText}>
+                {formatCurrency((inv.roomId?.rentalFee || 0) + (inv.electricityCharge || 0) + (inv.waterCharge || 0))}
+              </Text>
             </View>
 
-            {payment.paidAt ? (
-              <View style={styles.paidAtRow}>
-                <Text style={styles.paidAtText}>{payment.paidAt}</Text>
-              </View>
-            ) : (
-              <View style={styles.confirmButtonContainer}>
-                <AppButton
-                  title="Xác nhận đã thanh toán"
-                  onPress={() => handleConfirmPaid(payment.id)}
-                />
+            {inv.status === "processing" && (
+              <View style={styles.actionButtonContainer}>
+                <AppButton title="Xác nhận thanh toán" onPress={() => console.log("Confirm Payment", inv._id)} />
               </View>
             )}
           </View>
         ))}
       </ScrollView>
+
+      <Modal visible={!!activePicker} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setActivePicker(null)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Chọn {activePicker === "house" ? "Nhà" : activePicker === "month" ? "Tháng" : "Năm"}
+            </Text>
+            <FlatList
+              data={(activePicker === "house" ? houseOptions : activePicker === "month" ? months : years) as any[]}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => {
+                    if (activePicker === "house") setSelectedHouse(item);
+                    if (activePicker === "month") setSelMonth(item);
+                    if (activePicker === "year") setSelYear(item);
+                    setActivePicker(null);
+                  }}>
+                  <Text style={styles.modalItemText}>
+                    {activePicker === "house"
+                      ? item.name
+                      : item === null
+                        ? "Tất cả"
+                        : activePicker === "month"
+                          ? `Tháng ${item}`
+                          : item}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND_GRAY,
-  },
-  headerDivider: {
-    height: SPACING.HEADER_DIVIDER_HEIGHT,
-    marginBottom: SPACING.HEADER_DIVIDER_MARGIN_BOTTOM,
-  },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: SPACING.HEADER_MARGIN_BOTTOM,
-    marginTop: SPACING.HEADER_MARGIN_BOTTOM,
-  },
-  headerGradient: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SPACING.HEADER_HORIZONTAL_MARGIN,
-  },
-  headerTitle: {
-    color: COLORS.WHITE,
-    fontSize: FONT_SIZE.HEADER_TITLE,
-    fontWeight: "bold",
-    paddingTop: 30,
-  },
-
-  headerSpacer: {
-    width: IMAGE_SIZE.CREATE_HEADER_LOGO,
-    height: SPACING.XS,
-  },
-  backButtonPlaceholder: {
-    width: SPACING.SEARCH_ICON_MARGIN_LEFT,
-    height: SPACING.SEARCH_ICON_MARGIN_LEFT,
-    borderRadius: BORDER_RADIUS.STATUS_BADGE,
-    backgroundColor: COLORS.WHITE_SEMI_TRANSPARENT,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginHorizontal: SPACING.HEADER_HORIZONTAL_MARGIN,
-    marginTop: 12,
-  },
-  summaryCardCollected: {
-    flex: 1,
-    backgroundColor: "#ECFDF5",
-    borderRadius: BORDER_RADIUS.STAT_CARD,
-    paddingVertical: SPACING.STAT_CARD_PADDING_VERTICAL,
-    paddingHorizontal: SPACING.SEARCH_ICON_MARGIN_LEFT,
-    marginRight: SPACING.STAT_CARD_MARGIN_RIGHT,
-  },
-  summaryCardUncollected: {
-    flex: 1,
-    backgroundColor: "#FFFBEB",
-    borderRadius: BORDER_RADIUS.STAT_CARD,
-    paddingVertical: SPACING.STAT_CARD_PADDING_VERTICAL,
-    paddingHorizontal: SPACING.SEARCH_ICON_MARGIN_LEFT,
-  },
-  summaryLabelCollected: {
-    color: COLORS.successDark,
-    fontSize: FONT_SIZE.STAT_LABEL,
-  },
-  summaryValueCollected: {
-    color: COLORS.successText,
-    fontSize: FONT_SIZE.PRICE,
-    fontWeight: "bold",
-  },
-  summaryLabelUncollected: {
-    color: COLORS.warningText,
-    fontSize: FONT_SIZE.STAT_LABEL,
-  },
-  summaryValueUncollected: {
-    color: COLORS.warningText,
-    fontSize: FONT_SIZE.PRICE,
-    fontWeight: "bold",
-  },
+  container: { flex: 1, backgroundColor: "#F5F7FA" },
+  header: { paddingTop: 50, paddingBottom: 20, alignItems: "center" },
+  headerTitle: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
   filterRow: {
     flexDirection: "row",
+    backgroundColor: "#FFF",
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEE",
+    justifyContent: "space-between",
+  },
+  filterCol: { flex: 1, paddingHorizontal: 5 },
+  filterLabel: { fontSize: 11, color: "#999", fontWeight: "bold", marginBottom: 4 },
+  valueBox: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: SPACING.SEARCH_CONTAINER_MARGIN_BOTTOM / 2,
-    marginHorizontal: SPACING.HEADER_HORIZONTAL_MARGIN,
+    backgroundColor: "#F8F9FA",
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E9ECEF",
   },
-  filterChip: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: BORDER_RADIUS.FEATURE_BADGE,
-    backgroundColor: COLORS.GRAY_LIGHT,
-    paddingVertical: SPACING.STATUS_BADGE_PADDING_VERTICAL,
-    marginRight: SPACING.FEATURE_BADGE_MARGIN_RIGHT_SMALL,
-  },
-  filterChipPrimary: {
-    backgroundColor: COLORS.GREEN_PRIMARY,
-  },
-  filterChipActiveGray: {
-    backgroundColor: COLORS.GRAY_LIGHT,
-  },
-  filterChipText: {
-    fontSize: FONT_SIZE.STATUS_BADGE,
-    color: COLORS.TEXT_SECONDARY,
-    fontWeight: "bold",
-  },
-  filterChipTextPrimary: {
-    color: COLORS.WHITE,
-  },
-  filterChipTextDark: {
-    color: COLORS.TEXT_DARK,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.CONTENT_HORIZONTAL_PADDING,
-    paddingTop: SPACING.CONTENT_VERTICAL_PADDING,
-    paddingBottom: SPACING.CONTENT_BOTTOM_MARGIN,
-  },
+  valueText: { fontSize: 13, color: "#333", fontWeight: "600", flex: 1 },
+  arrow: { fontSize: 10, color: "#CCC" },
+  tabContainer: { flexDirection: "row", margin: 15, backgroundColor: "#E9ECEF", borderRadius: 10, padding: 3 },
+  tab: { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 8 },
+  activeTab: { backgroundColor: "#FFF", elevation: 2 },
+  tabText: { fontSize: 13, color: "#999", fontWeight: "bold" },
+  activeTabText: { color: COLORS.GREEN_PRIMARY },
+  list: { paddingHorizontal: 15, paddingBottom: 20 },
   card: {
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.STAT_CARD,
-    paddingVertical: SPACING.STAT_CARD_PADDING_VERTICAL,
-    paddingHorizontal: SPACING.CONTENT_HORIZONTAL_PADDING,
-    marginBottom: SPACING.STATS_CONTAINER_MARGIN_BOTTOM,
-    shadowColor: COLORS.SHADOW_COLOR,
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowRadius: 4,
-    elevation: 4,
+    shadowRadius: 10,
   },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.SEARCH_CONTAINER_MARGIN_BOTTOM / 2,
-  },
-  cardHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatarPlaceholder: {
-    width: SPACING.SEARCH_ICON_MARGIN_LEFT + SPACING.SMALL,
-    height: SPACING.SEARCH_ICON_MARGIN_LEFT + SPACING.SMALL,
-    borderRadius: BORDER_RADIUS.STAT_CARD,
-    backgroundColor: COLORS.GRAY_LIGHT,
-    marginRight: SPACING.SEARCH_ICON_MARGIN_RIGHT,
-  },
-  tenantName: {
-    color: COLORS.TEXT_DARK,
-    fontSize: FONT_SIZE.SEARCH_INPUT,
-    fontWeight: "bold",
-  },
-  monthLabel: {
-    color: COLORS.TEXT_SECONDARY,
-    fontSize: FONT_SIZE.LABEL,
-  },
-  badgePaid: {
-    backgroundColor: COLORS.successBg,
-    borderColor: COLORS.successBorder,
-    borderRadius: BORDER_RADIUS.STATUS_BADGE,
-    borderWidth: 1,
-    paddingHorizontal: SPACING.STATUS_BADGE_PADDING_HORIZONTAL,
-    paddingVertical: SPACING.STATUS_BADGE_PADDING_VERTICAL,
-  },
-  badgeUnpaid: {
-    backgroundColor: COLORS.warningBg,
-    borderColor: COLORS.warningBorder,
-    borderRadius: BORDER_RADIUS.STATUS_BADGE,
-    borderWidth: 1,
-    paddingHorizontal: SPACING.STATUS_BADGE_PADDING_HORIZONTAL,
-    paddingVertical: SPACING.STATUS_BADGE_PADDING_VERTICAL,
-  },
-  badgePaidText: {
-    color: COLORS.successDark,
-    fontSize: FONT_SIZE.STATUS_BADGE,
-    fontWeight: "bold",
-  },
-  badgeUnpaidText: {
-    color: COLORS.warningText,
-    fontSize: FONT_SIZE.STATUS_BADGE,
-    fontWeight: "bold",
-  },
-  breakdownList: {
-    marginTop: SPACING.LABEL_MARGIN_BOTTOM,
-    marginBottom: SPACING.LABEL_MARGIN_BOTTOM,
-  },
-  breakdownRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.STAT_ITEM_TEXT_MARGIN_BOTTOM + SPACING.XS,
-  },
-  breakdownLabel: {
-    color: COLORS.TEXT_MEDIUM,
-    fontSize: FONT_SIZE.LABEL,
-  },
-  breakdownAmount: {
-    color: COLORS.TEXT_DARK,
-    fontSize: FONT_SIZE.LABEL,
-    fontWeight: "bold",
-  },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 },
+  roomName: { fontSize: 20, fontWeight: "bold", color: "#1A1A1A" },
+  houseNameSub: { fontSize: 13, color: "#666", marginTop: 2 },
+  rentalDateText: { fontSize: 12, color: "#999", marginTop: 2 },
+  badgePaid: { backgroundColor: "#E8F5E9", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
+  badgeUnpaid: { backgroundColor: "#FFF3E0", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
+  badgePaidText: { color: "#2E7D32", fontSize: 11, fontWeight: "bold" },
+  badgeUnpaidText: { color: "#E65100", fontSize: 11, fontWeight: "bold" },
+  breakdownList: { borderTopWidth: 1, borderTopColor: "#F0F0F0", paddingTop: 12, marginBottom: 15 },
+  breakdownRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  breakdownLabel: { fontSize: 14, color: "#777" },
+  breakdownAmount: { fontSize: 14, color: "#333", fontWeight: "500" },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: COLORS.BORDER_GRAY,
-    paddingTop: SPACING.STAT_ITEM_TEXT_MARGIN_BOTTOM + SPACING.XS,
-    marginBottom: SPACING.LABEL_MARGIN_BOTTOM,
+    borderTopColor: "#F0F0F0",
+    paddingTop: 12,
   },
-  totalLabel: {
-    color: COLORS.TEXT_DARK,
-    fontSize: FONT_SIZE.SEARCH_INPUT,
-    fontWeight: "bold",
-  },
-  totalValue: {
-    color: COLORS.GREEN_PRIMARY,
-    fontSize: FONT_SIZE.PRICE,
-    fontWeight: "bold",
-  },
-  paidAtRow: {
-    alignItems: "flex-end",
-  },
-  paidAtText: {
-    color: COLORS.TEXT_SECONDARY,
-    fontSize: FONT_SIZE.STATUS_BADGE,
-  },
-  confirmButtonContainer: {
-    marginTop: SPACING.SEARCH_CONTAINER_MARGIN_BOTTOM / 2,
-  },
+  totalLabel: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  totalAmountText: { fontSize: 20, fontWeight: "bold", color: COLORS.GREEN_PRIMARY },
+  actionButtonContainer: { marginTop: 15 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
+  modalContent: { backgroundColor: "#FFF", width: "80%", maxHeight: "60%", borderRadius: 15, padding: 20 },
+  modalTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 15, textAlign: "center" },
+  modalItem: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: "#EEE" },
+  modalItemText: { fontSize: 15, color: "#444", textAlign: "center" },
 });

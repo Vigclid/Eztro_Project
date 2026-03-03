@@ -12,7 +12,7 @@ export function navigate<RouteName extends keyof RootStackParamList>(
   }
 }
 export function goBack() {
-  if (navigationRef.isReady() && navigationRef.canGoBack()) {
+  if (navigationRef.isReady()) {
     navigationRef.goBack();
   }
 }

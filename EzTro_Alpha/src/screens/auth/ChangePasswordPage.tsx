@@ -1,8 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowLeft, Mail } from "lucide-react-native";
+import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -16,61 +15,67 @@ import {
 } from "react-native";
 
 // Types
-import { MailPostAPI } from "../../api/MailAPI/POST";
+import { putUserApi } from "../../api/user/user";
 import { appNavigator } from "../../navigation/navigationActions";
-import { ApiResponse } from "../../types/app.common";
-
-export const ForgotPasswordScreen = () => {
-  const { sendMail } = MailPostAPI();
-
+export const ChangePasswordPage = () => {
   // State
-  const [email, onChangeEmail] = useState("");
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const { changePassword } = putUserApi;
+
+  // Logic Handlers
   const handleBackPress = () => {
     appNavigator.goBack();
   };
 
-  const handleLoginPress = () => {
-    appNavigator.goToLogin();
-  };
-
-  const handleSendCodePress = async () => {
+  const handleResetPasswordPress = async () => {
     setError("");
 
-    // 1. Validation Logic
-    if (!email) {
-      setError("Vui lòng nhập email");
+    // Logic from Figma Code
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setError("Vui lòng nhập đầy đủ thông tin");
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("Email không đúng định dạng");
+    if (oldPassword.length < 8) {
+      setError("Mật khẩu cũ phải có ít nhất 8 ký tự");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError("Mật khẩu mới phải có ít nhất 8 ký tự");
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      setError("Mật khẩu mới phải khác mật khẩu cũ");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Mật khẩu không khớp");
       return;
     }
 
     try {
       setLoading(true);
-      const response: ApiResponse = await sendMail(email);
-      if (response.status == "error") {
-        Alert.alert(response.message || "Lỗi hệ thống khi gửi mail");
-        return;
-      } else {
-        Alert.alert(
-          response.message || "Mã xác thực đã được gửi đến email của bạn",
-        );
-        setTimeout(() => {
-          appNavigator.goToOtpVerification(email, response?.data?.token || "");
-        }, 500);
-      }
+      await changePassword(oldPassword, newPassword);
+      appNavigator.goToChangePasswordSuccessful(true);
     } catch (err: any) {
-      setError(err?.message || "Lỗi hệ thống khi gửi mail");
+      setError(err?.message || "Lỗi hệ thống khi đổi mật khẩu");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <View style={styles.container}>
       <StatusBar
@@ -110,9 +115,9 @@ export const ForgotPasswordScreen = () => {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Main Content Area */}
+            {/* Main Content */}
             <View style={styles.contentContainer}>
-              {/* Mail Icon Box */}
+              {/* Lock Icon Box */}
               <View style={styles.iconBoxWrapper}>
                 <LinearGradient
                   colors={["#d1fae5", "#ccfbf1"]} // emerald-100 -> teal-100
@@ -120,38 +125,104 @@ export const ForgotPasswordScreen = () => {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  <Mail size={40} color="#059669" />
+                  <Lock size={40} color="#059669" />
                 </LinearGradient>
               </View>
 
               {/* Title & Description */}
-              <Text style={styles.title}>Quên mật khẩu?</Text>
+              <Text style={styles.title}>Thay đổi mật khẩu</Text>
               <Text style={styles.subtitle}>
-                Nhập email của bạn và chúng tôi sẽ gửi mã xác thực để đặt lại
-                mật khẩu
+                Mật khẩu mới phải khác với mật khẩu cũ
               </Text>
-
-              {/* Email Input */}
+              {/* Input 0: Old Password */}
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label}>Mật khẩu cũ</Text>
                 <View style={styles.inputWrapper}>
                   <View style={styles.iconContainer}>
-                    <Mail size={20} color="#9ca3af" />
+                    <Lock size={20} color="#9ca3af" />
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder="example@email.com"
+                    placeholder="••••••••"
                     placeholderTextColor="#9ca3af"
-                    value={email}
+                    value={oldPassword}
                     onChangeText={(text) => {
-                      onChangeEmail(text);
+                      setOldPassword(text);
                       setError("");
                     }}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    returnKeyType="done"
-                    onSubmitEditing={handleSendCodePress}
+                    secureTextEntry={!showOldPassword}
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowOldPassword(!showOldPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    {showOldPassword ? (
+                      <EyeOff size={20} color="#9ca3af" />
+                    ) : (
+                      <Eye size={20} color="#9ca3af" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {/* Input 1: New Password */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Mật khẩu mới</Text>
+                <View style={styles.inputWrapper}>
+                  <View style={styles.iconContainer}>
+                    <Lock size={20} color="#9ca3af" />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#9ca3af"
+                    value={newPassword}
+                    onChangeText={(text) => {
+                      setNewPassword(text);
+                      setError("");
+                    }}
+                    secureTextEntry={!showNewPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    {showNewPassword ? (
+                      <EyeOff size={20} color="#9ca3af" />
+                    ) : (
+                      <Eye size={20} color="#9ca3af" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Input 2: Confirm Password */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Xác nhận mật khẩu</Text>
+                <View style={styles.inputWrapper}>
+                  <View style={styles.iconContainer}>
+                    <Lock size={20} color="#9ca3af" />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#9ca3af"
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      setError("");
+                    }}
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} color="#9ca3af" />
+                    ) : (
+                      <Eye size={20} color="#9ca3af" />
+                    )}
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -162,10 +233,10 @@ export const ForgotPasswordScreen = () => {
                 </View>
               ) : null}
 
-              {/* Send Code Button */}
+              {/* Submit Button */}
               <TouchableOpacity
-                style={styles.sendBtnShadow}
-                onPress={handleSendCodePress}
+                style={styles.submitBtnShadow}
+                onPress={handleResetPasswordPress}
                 disabled={loading}
                 activeOpacity={0.8}
               >
@@ -173,20 +244,12 @@ export const ForgotPasswordScreen = () => {
                   colors={["#10b981", "#0d9488"]} // emerald-500 -> teal-600
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={styles.sendBtn}
+                  style={styles.submitBtn}
                 >
-                  <Text style={styles.sendBtnText}>
-                    {loading ? "Đang gửi..." : "Gửi mã xác thực"}
+                  <Text style={styles.submitBtnText}>
+                    {loading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
                   </Text>
                 </LinearGradient>
-              </TouchableOpacity>
-            </View>
-
-            {/* Bottom Login Link (Pushed to bottom via flex) */}
-            <View style={styles.footerLink}>
-              <Text style={styles.footerText}>Đã nhớ mật khẩu? </Text>
-              <TouchableOpacity onPress={handleLoginPress}>
-                <Text style={styles.linkText}>Quay lại đăng nhập</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -245,13 +308,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingBottom: 40,
-    justifyContent: "space-between", // Push footer to bottom
   },
   contentContainer: {
     flex: 1,
   },
 
-  /* Icon Box Styles */
+  /* Icon Box */
   iconBoxWrapper: {
     marginBottom: 24,
   },
@@ -265,7 +327,7 @@ const styles = StyleSheet.create({
 
   /* Text Styles */
   title: {
-    fontSize: 28, // ~text-3xl
+    fontSize: 28,
     fontWeight: "bold",
     color: "#111827", // gray-900
     marginBottom: 8,
@@ -274,12 +336,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#4b5563", // gray-600
     marginBottom: 40,
-    lineHeight: 24,
   },
 
   /* Input Styles */
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 16, // Reduced margin between inputs
   },
   label: {
     fontSize: 14,
@@ -308,6 +369,9 @@ const styles = StyleSheet.create({
     color: "#111827",
     paddingHorizontal: 12,
   },
+  eyeIcon: {
+    padding: 16,
+  },
 
   /* Error Box */
   errorBox: {
@@ -316,6 +380,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
+    marginTop: 8,
     marginBottom: 24,
     alignItems: "center",
   },
@@ -325,72 +390,26 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  /* Send Button */
-  sendBtnShadow: {
+  /* Submit Button */
+  submitBtnShadow: {
+    marginTop: 8,
     shadowColor: "#10b981", // emerald-500
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 8,
   },
-  sendBtn: {
+  submitBtn: {
     height: 56,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
-  sendBtnText: {
+  submitBtnText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
   },
-
-  /* Footer Link */
-  footerLink: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 40,
-    paddingBottom: 20,
-  },
-  footerText: {
-    color: "#4b5563", // gray-600
-    fontSize: 14,
-  },
-  linkText: {
-    color: "#059669", // emerald-600
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-
-  alertBoxSuccess: {
-    backgroundColor: "#d1fae5", // emerald-100
-    borderColor: "#10b981", // emerald-500
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    alignItems: "center",
-  },
-  alertTextSuccess: {
-    color: "#065f46", // emerald-800
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  alertBoxError: {
-    backgroundColor: "#fef2f2", // red-50
-    borderColor: "#dc2626", // red-600
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    alignItems: "center",
-  },
-  alertTextError: {
-    color: "#991b1b", // red-800
-    fontSize: 14,
-    fontWeight: "500",
-  },
 });
 
-export default ForgotPasswordScreen;
+export default ChangePasswordPage;
