@@ -118,6 +118,14 @@ export const EditProfilePage: React.FC = () => {
 
   const handleSave = async () => {
     if (isSaving) return;
+    if (!firstName.trim()) {
+      Alert.alert("Lỗi", "Tên không được để trống");
+      return;
+    }
+    if (!lastName.trim()) {
+      Alert.alert("Lỗi", "Họ không được để trống");
+      return;
+    }
     setIsSaving(true);
     try {
       let updatedUser: IUser = {
@@ -312,7 +320,7 @@ export const EditProfilePage: React.FC = () => {
                 <Text style={styles.required}>*</Text>
               </View>
               <TextInput
-                style={getInputStyle("email")}
+                style={[getInputStyle("email"), styles.inputDisabled]}
                 placeholder="example@email.com"
                 placeholderTextColor={COLORS.LIGHT_GRAY_TEXT}
                 value={email}
@@ -321,6 +329,7 @@ export const EditProfilePage: React.FC = () => {
                 autoCapitalize="none"
                 onFocus={() => setActiveField("email")}
                 onBlur={() => setActiveField(null)}
+                editable={false}
               />
             </View>
 
