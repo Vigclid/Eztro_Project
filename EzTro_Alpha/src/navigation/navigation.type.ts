@@ -1,7 +1,10 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export type RootStackParamList = {
-  auth: undefined;
+  auth: {
+    screen: keyof AuthStackParamList;
+    params?: AuthStackParamList[keyof AuthStackParamList];
+  };
   mainscreen: {
     screen: keyof MainTabParamList;
     params?: MainTabParamList[keyof MainTabParamList];
@@ -20,6 +23,9 @@ export type MainTabParamList = {
 
 export type MainStackParamList = {
   createBoardingHousePage: undefined;
+  editProfile: undefined;
+  createNewPassword: { email: string; fromMain: true } | undefined;
+  changePasswordSuccessful: { fromMain: true } | undefined;
   boardingHouseDetailsScreen: { _id: string | undefined };
   createNewRoomScreen:
     | {
@@ -38,18 +44,16 @@ export type MainStackParamList = {
   createTicketScreen: undefined;
   ticketDetailScreen: { ticketId: string };
 };
-
-export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
 export type AuthStackParamList = {
   welcome: undefined;
   login: undefined;
   register: undefined;
   forgotPassword: undefined;
+  changePasswordPage: undefined;
   otpVerification: { email: string; tempToken: string } | undefined;
   createNewPassword: { email: string } | undefined;
-  changePasswordSuccessful: undefined;
+  changePasswordSuccessful: { fromMain?: boolean } | undefined;
   createBoardingHouse: undefined;
 };
 
-export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;
+export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

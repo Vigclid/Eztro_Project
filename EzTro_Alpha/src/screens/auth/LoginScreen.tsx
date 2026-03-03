@@ -1,7 +1,7 @@
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,16 +21,14 @@ import { useDispatch } from "react-redux";
 
 // Navigation & Store types
 import { loginAsync } from "../../features/auth/authSlice";
-import {
-  AuthNavigationProp,
-  NavigationProp,
-} from "../../navigation/navigation.type";
+import { NavigationProp } from "../../navigation/navigation.type";
 import { AppDispatch } from "../../stores/store";
 
 // SET UP GOOGLE LOGIN
 import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import { appNavigator } from "../../navigation/navigationActions";
 WebBrowser.maybeCompleteAuthSession();
 
 // --- Social Icons (Google & Facebook) ---
@@ -65,8 +63,7 @@ const FacebookIcon = () => (
 );
 
 export const LoginScreen = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
-  const navigation_main = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const redirectUri = AuthSession.makeRedirectUri({
     scheme: "EzTro_Alpha",
@@ -79,12 +76,6 @@ export const LoginScreen = () => {
     scopes: ["profile", "email"],
   });
 
-  useEffect(() => {
-    if (response?.type === "success") {
-      const { authentication } = response;
-      console.log("Access Token:", authentication?.accessToken);
-    }
-  }, [response]);
   // State management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -101,8 +92,8 @@ export const LoginScreen = () => {
 
   // Navigation Handlers
   const handleBackPress = () => navigation.goBack();
-  const handleRegisterPress = () => navigation.navigate("register");
-  const handleForgotPasswordPress = () => navigation.navigate("forgotPassword");
+  const handleRegisterPress = () => appNavigator.goToRegister();
+  const handleForgotPasswordPress = () => appNavigator.goToForgotPassword();
 
   // Validation Handlers
   const validateEmail = (text: string) => {
@@ -178,7 +169,7 @@ export const LoginScreen = () => {
       const result = await dispatch(loginAsync({ email, password }));
       if (loginAsync.fulfilled.match(result)) {
         Alert.alert("Thành công", "Đăng nhập thành công");
-        navigation_main.dispatch(
+        navigation.dispatch(
           CommonActions.reset({
             index: 0,
             routes: [

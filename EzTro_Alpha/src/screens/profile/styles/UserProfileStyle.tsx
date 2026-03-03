@@ -59,10 +59,7 @@ export const UserProfileStyle = (theme: any) =>
       paddingHorizontal: SPACING.PROFILE_BADGE_PADDING_HORIZONTAL,
     },
     badgeIcon: {
-      borderRadius: BORDER_RADIUS.PROFILE_BADGE,
-      width: IMAGE_SIZE.PROFILE_BADGE_ICON_WIDTH,
-      height: IMAGE_SIZE.PROFILE_BADGE_ICON_HEIGHT,
-      marginRight: SPACING.PROFILE_BADGE_ICON_MARGIN_RIGHT,
+      marginRight: SPACING.SMALL,
     },
     badgeText: {
       color: COLORS.GREEN_TEXT,
@@ -87,6 +84,8 @@ export const UserProfileStyle = (theme: any) =>
       width: IMAGE_SIZE.PROFILE_WALLET_ICON_WIDTH,
       height: IMAGE_SIZE.PROFILE_WALLET_ICON_HEIGHT,
       marginRight: SPACING.PROFILE_WALLET_ICON_MARGIN_RIGHT,
+      alignItems: "center",
+      justifyContent: "center",
     },
     walletInfo: {
       marginRight: SPACING.PROFILE_WALLET_TEXT_MARGIN_RIGHT,
@@ -110,6 +109,8 @@ export const UserProfileStyle = (theme: any) =>
     walletArrow: {
       width: IMAGE_SIZE.PROFILE_WALLET_ARROW_WIDTH,
       height: IMAGE_SIZE.PROFILE_WALLET_ARROW_HEIGHT,
+      alignItems: "center",
+      justifyContent: "center",
     },
     section: {
       marginBottom: SPACING.PROFILE_WALLET_MARGIN_BOTTOM,
@@ -157,6 +158,8 @@ export const UserProfileStyle = (theme: any) =>
       width: IMAGE_SIZE.PROFILE_SECTION_ICON_WIDTH,
       height: IMAGE_SIZE.PROFILE_SECTION_ICON_HEIGHT,
       marginRight: SPACING.PROFILE_SECTION_ICON_MARGIN_RIGHT,
+      alignItems: "center",
+      justifyContent: "center",
     },
     sectionItemContent: {
       flex: 1,
@@ -197,24 +200,43 @@ export const UserProfileStyle = (theme: any) =>
       justifyContent: "center",
       alignItems: "center",
       backgroundColor: COLORS.WHITE,
-      borderColor: COLORS.LIGHT_RED_BORDER,
+      borderColor: COLORS.RED_TEXT,
       borderRadius: BORDER_RADIUS.PROFILE_LOGOUT_BUTTON,
       borderWidth: 1,
       paddingVertical: SPACING.PROFILE_LOGOUT_BUTTON_PADDING_VERTICAL,
       marginBottom: SPACING.PROFILE_LOGOUT_BUTTON_MARGIN_BOTTOM,
       marginHorizontal: SPACING.PROFILE_LOGOUT_BUTTON_MARGIN_HORIZONTAL,
     },
+    changePasswordButton: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: COLORS.WHITE,
+      borderColor: COLORS.HIGHLIGHT_TEXT,
+      borderRadius: BORDER_RADIUS.PROFILE_LOGOUT_BUTTON,
+      borderWidth: 1,
+      paddingVertical: SPACING.PROFILE_LOGOUT_BUTTON_PADDING_VERTICAL,
+      marginBottom: SPACING.MEDIUM_SMALL,
+      marginHorizontal: SPACING.PROFILE_LOGOUT_BUTTON_MARGIN_HORIZONTAL,
+    },
     logoutIcon: {
-      borderRadius: BORDER_RADIUS.PROFILE_LOGOUT_ICON,
       width: IMAGE_SIZE.PROFILE_LOGOUT_ICON_WIDTH,
       height: IMAGE_SIZE.PROFILE_LOGOUT_ICON_HEIGHT,
       marginRight: SPACING.PROFILE_LOGOUT_ICON_MARGIN_RIGHT,
+      alignItems: "center",
+      justifyContent: "center",
     },
     logoutText: {
       color: COLORS.RED_TEXT,
       fontSize: FONT_SIZE.PROFILE_LOGOUT_TEXT,
       fontWeight: "bold",
     },
+    changePasswordText: {
+      color: COLORS.HIGHLIGHT_TEXT,
+      fontSize: FONT_SIZE.PROFILE_LOGOUT_TEXT,
+      fontWeight: "bold",
+    },
+
     versionContainer: {
       alignItems: "center",
       marginBottom: SPACING.PROFILE_VERSION_MARGIN_BOTTOM,

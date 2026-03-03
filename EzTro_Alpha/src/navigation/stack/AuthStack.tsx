@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
+import ChangePasswordPage from "../../screens/auth/ChangePasswordPage";
 import ChangePasswordSuccessfulPage from "../../screens/auth/ChangePasswordSuccessfulPage";
 import CreateNewPasswordScreen from "../../screens/auth/CreateNewPasswordScreen";
 import ForgotPasswordScreen from "../../screens/auth/ForgotPasswordScreen";
@@ -20,6 +21,7 @@ const AuthStack = () => (
     <Stack.Screen name="register" component={RegisterScreen} />
     <Stack.Screen name="forgotPassword" component={ForgotPasswordScreen} />
     <Stack.Screen name="otpVerification" component={OtpVerificationScreen} />
+    <Stack.Screen name="changePasswordPage" component={ChangePasswordPage} />
     <Stack.Screen
       name="createNewPassword"
       component={CreateNewPasswordScreen}

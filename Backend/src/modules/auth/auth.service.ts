@@ -31,6 +31,10 @@ export class AuthService {
       return { status: 0, message: "Wrong password" };
     }
 
+    user.accessFailedCount = 0;
+    user.loginFailedTime = null;
+    await user.save();
+
     const accessToken = jwt.sign(
       { id: user.id, role: (user.roleId as IRole).name },
       jwtConfig.secret as Secret,

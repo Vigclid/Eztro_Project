@@ -1,4 +1,4 @@
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import React, { useState } from "react";
@@ -17,14 +17,11 @@ import {
 } from "react-native";
 
 // Types
-import {
-  AuthNavigationProp,
-  AuthStackParamList,
-} from "../../navigation/navigation.type";
 import { getUserApi } from "../../api/user/user";
+import { AuthStackParamList } from "../../navigation/navigation.type";
+import { appNavigator } from "../../navigation/navigationActions";
 import { ApiResponse } from "../../types/app.common";
 export const CreateNewPasswordScreen = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
   const route = useRoute<RouteProp<AuthStackParamList, "createNewPassword">>();
   const email = route.params?.email || "";
 
@@ -40,7 +37,7 @@ export const CreateNewPasswordScreen = () => {
 
   // Logic Handlers
   const handleBackPress = () => {
-    navigation.goBack();
+    appNavigator.goBack();
   };
 
   const handleResetPasswordPress = async () => {
@@ -74,7 +71,6 @@ export const CreateNewPasswordScreen = () => {
       )) as ApiResponse<null>;
       if (response?.status === "success") {
         Alert.alert("Thành công", "Đặt lại mật khẩu thành công");
-        navigation.navigate("changePasswordSuccessful");
       } else {
         setError(response?.message || "Đặt lại mật khẩu thất bại");
       }

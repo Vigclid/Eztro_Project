@@ -1,9 +1,8 @@
-import { useNavigation } from "@react-navigation/native";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { CheckCircle2 } from "lucide-react-native";
 import React from "react";
 import {
-  Dimensions,
   Platform,
   SafeAreaView,
   StatusBar,
@@ -14,16 +13,20 @@ import {
 } from "react-native";
 
 // Types
-import { AuthNavigationProp } from "../../navigation/navigation.type";
-
-const { width } = Dimensions.get("window");
+import { AuthStackParamList } from "../../navigation/navigation.type";
+import { appNavigator } from "../../navigation/navigationActions";
 
 export const ChangePasswordSuccessfulPage = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
+  const route =
+    useRoute<RouteProp<AuthStackParamList, "changePasswordSuccessful">>();
+  const fromMain = route.params?.fromMain ?? false;
 
-  // Logic Handler (Preserved)
   const handleBackToLogin = () => {
-    navigation.navigate("login");
+    if (fromMain) {
+      appNavigator.goToUserProfile();
+    } else {
+      appNavigator.goToLogin();
+    }
   };
 
   return (
@@ -78,7 +81,9 @@ export const ChangePasswordSuccessfulPage = () => {
               end={{ x: 1, y: 0.5 }}
               style={styles.button}
             >
-              <Text style={styles.buttonText}>Quay lại đăng nhập</Text>
+              <Text style={styles.buttonText}>
+                {fromMain ? "Quay lại trang" : "Quay lại đăng nhập"}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
