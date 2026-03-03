@@ -17,7 +17,8 @@ import {
   CheckCircle,
   Clock,
 } from 'lucide-react-native';
-import { getTicketApi } from '../../api/ticket/ticket';
+import { getTicketApi } from '../../api/ticket/ticketapi';
+import { putTicketApi } from '../../api/ticket/ticketapi';
 import { ITicket } from '../../types/ticket';
 import { COLORS } from '../../constants/theme';
 import { NavigationProp } from '../../navigation/navigation.type';
@@ -56,7 +57,6 @@ export const TicketListScreen: React.FC = () => {
         setTickets([]);
       }
     } catch (error) {
-      console.error('Error loading tickets:', error);
       setTickets([]);
     } finally {
       setLoading(false);
@@ -116,13 +116,11 @@ export const TicketListScreen: React.FC = () => {
 
   const handleUpdateStatus = async (ticketId: string, newStatus: 'processing' | 'completed') => {
     try {
-      await getTicketApi.updateStatus(ticketId, newStatus);
+      await putTicketApi.updateStatus(ticketId, newStatus);
       loadTickets();
     } catch (error) {
-      console.error('Error updating status:', error);
     }
   };
-
   const pendingCount = tickets.filter((t) => t.status === 'pending').length;
   const processingCount = tickets.filter((t) => t.status === 'processing').length;
   const completedCount = tickets.filter((t) => t.status === 'completed').length;

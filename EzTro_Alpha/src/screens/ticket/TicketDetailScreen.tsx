@@ -13,7 +13,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ArrowLeft, Send } from 'lucide-react-native';
-import { getTicketApi } from '../../api/ticket/ticket';
+import { getTicketApi } from '../../api/ticket/ticketapi';
+import { postTicketApi } from '../../api/ticket/ticketapi';
 import { ITicket } from '../../types/ticket';
 import { COLORS } from '../../constants/theme';
 import { NavigationProp, MainStackParamList } from '../../navigation/navigation.type';
@@ -44,7 +45,6 @@ export const TicketDetailScreen: React.FC = () => {
         setTicket(ticketData);
       }
     } catch (error) {
-      console.error('Error loading ticket:', error);
     } finally {
       setLoading(false);
     }
@@ -55,18 +55,16 @@ export const TicketDetailScreen: React.FC = () => {
 
     try {
       setSending(true);
-      const response: any = await getTicketApi.addReply(ticketId, replyText.trim());
+      const response: any = await postTicketApi.addReply(ticketId, replyText.trim());
       if (response.status && response.data) {
         setReplyText('');
         loadTicket(); // Reload to show new reply
       }
     } catch (error) {
-      console.error('Error sending reply:', error);
     } finally {
       setSending(false);
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -160,7 +158,7 @@ export const TicketDetailScreen: React.FC = () => {
         <ScrollView style={styles.content}>
           {/* Ticket Info */}
           <View style={styles.infoCard}>
-            <View style={styles.statusBadge} style={{ backgroundColor: getStatusColor(ticket.status) }}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) }]}>
               <Text style={styles.statusText}>{getStatusText(ticket.status)}</Text>
             </View>
             

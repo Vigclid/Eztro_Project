@@ -10,9 +10,8 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
 import { ArrowLeft, Home, Wrench, FileText } from 'lucide-react-native';
-import { getTicketApi } from '../../api/ticket/ticket';
+import { postTicketApi } from '../../api/ticket/ticketapi';
 import { getHouseApi } from '../../api/house/house';
 import { getRoomApi } from '../../api/room/room';
 import { IHouse } from '../../types/house';
@@ -29,14 +28,6 @@ type Category = {
 
 export const CreateTicketScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const auth = useSelector((state: any) => state.auth);
-  
-  useEffect(() => {
-    console.log('[CREATE TICKET SCREEN] Auth state:', {
-      isAuthenticated: !!auth?.accessToken,
-      user: auth?.user?.email || 'NO USER',
-    });
-  }, []);
   const [houses, setHouses] = useState<IHouse[]>([]);
   const [rooms, setRooms] = useState<IRoom[]>([]);
   const [formData, setFormData] = useState({
@@ -72,7 +63,6 @@ export const CreateTicketScreen: React.FC = () => {
   const loadHouses = async () => {
     try {
       const response: any = await getHouseApi.getAllHousesByLandlordId();
-      // Handle nested response structure from apiService
       if (response.status && response.data) {
         const housesData = Array.isArray(response.data) 
           ? response.data 
@@ -80,14 +70,12 @@ export const CreateTicketScreen: React.FC = () => {
         setHouses(housesData);
       }
     } catch (error) {
-      console.error('Error loading houses:', error);
     }
   };
 
   const loadRooms = async (houseId: string) => {
     try {
       const response: any = await getRoomApi.getAllRoomsByHouseId(houseId);
-      // Handle nested response structure from apiService
       if (response.status && response.data) {
         const roomsData = Array.isArray(response.data) 
           ? response.data 
@@ -95,7 +83,6 @@ export const CreateTicketScreen: React.FC = () => {
         setRooms(roomsData);
       }
     } catch (error) {
-      console.error('Error loading rooms:', error);
     }
   };
 
@@ -138,11 +125,9 @@ export const CreateTicketScreen: React.FC = () => {
         roomId: formData.roomId,
       };
       
-      console.log('[FRONTEND] Creating ticket with data:', requestData);
       
-      const response: any = await getTicketApi.createTicketByLandlord(requestData);
+      const response: any = await postTicketApi.createTicketByLandlord(requestData);
       
-      console.log('[FRONTEND] Response:', response);
 
       if (response.status && response.data) {
         Alert.alert('Thành công', 'Tạo yêu cầu bảo trì thành công', [
@@ -155,7 +140,6 @@ export const CreateTicketScreen: React.FC = () => {
         Alert.alert('Lỗi', response.error?.message || 'Không thể tạo yêu cầu. Vui lòng thử lại.');
       }
     } catch (error) {
-      console.error('[FRONTEND] Error creating ticket:', error);
       Alert.alert('Lỗi', 'Không thể tạo yêu cầu. Vui lòng thử lại.');
     }
   };

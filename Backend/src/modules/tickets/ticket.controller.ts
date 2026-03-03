@@ -49,14 +49,12 @@ export class TicketController {
   createByLandlord = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.id;
-      console.log('[CREATE TICKET] User ID:', userId);
-      
+
       if (!userId) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
 
       const { title, description, categories, houseId, roomId } = req.body;
-      console.log('[CREATE TICKET] Request body:', { title, description, categories, houseId, roomId });
 
       if (!title || !description || !categories || !houseId || !roomId) {
         return res
@@ -69,7 +67,6 @@ export class TicketController {
           );
       }
 
-      console.log('[CREATE TICKET] Calling service...');
       const ticket = await this.ticketService.createTicketByLandlord(userId.toString(), {
         title,
         description,
@@ -78,10 +75,8 @@ export class TicketController {
         roomId,
       });
 
-      console.log('[CREATE TICKET] Ticket created:', ticket);
       res.status(201).json(responseWrapper("success", "Tạo ticket thành công", ticket));
     } catch (error: any) {
-      console.error('[CREATE TICKET] Error:', error);
       next(error);
     }
   };
@@ -192,9 +187,7 @@ export class TicketController {
       if (!status || !["pending", "processing", "completed"].includes(status)) {
         return res
           .status(400)
-          .json(
-            responseWrapper("error", "Status phải là pending, processing hoặc completed")
-          );
+          .json(responseWrapper("error", "Status phải là pending, processing hoặc completed"));
       }
 
       const ticket = await this.ticketService.updateStatus(ticketId, status);

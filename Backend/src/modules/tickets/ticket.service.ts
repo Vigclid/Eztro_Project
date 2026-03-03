@@ -74,21 +74,15 @@ export class TicketService extends GenericService<ITicket> {
       roomId: string;
     }
   ) {
-    console.log('[SERVICE] Creating ticket for landlord:', landlordId);
-    console.log('[SERVICE] Data:', data);
-    
     // Convert landlordId string to ObjectId for comparison
     const landlordObjectId = new Types.ObjectId(landlordId);
-    console.log('[SERVICE] Landlord ObjectId:', landlordObjectId);
-    
+
     // Kiểm tra house có thuộc landlord không
     const house = await HouseModel.findOne({
       _id: data.houseId,
       landlordId: landlordObjectId,
     });
 
-    console.log('[SERVICE] House found:', house ? house._id : 'NOT FOUND');
-    
     if (!house) {
       throw new Error("Cụm trọ không tồn tại hoặc không thuộc quyền quản lý của bạn");
     }
@@ -99,15 +93,12 @@ export class TicketService extends GenericService<ITicket> {
       houseId: data.houseId,
     });
 
-    console.log('[SERVICE] Room found:', room ? room._id : 'NOT FOUND');
-    
     if (!room) {
       throw new Error("Phòng không tồn tại trong cụm trọ này");
     }
 
     // Tìm tenant trong room (lấy user đầu tiên nếu có nhiều)
     // Nếu không có tenant thực, có thể gửi cho chính landlord
-    console.log('[SERVICE] Creating ticket document...');
     const ticket = await TicketModel.create({
       title: data.title,
       description: data.description,
@@ -119,10 +110,8 @@ export class TicketService extends GenericService<ITicket> {
       status: "pending",
     });
 
-    console.log('[SERVICE] Ticket created with ID:', ticket._id);
     const populatedTicket = await this.getByIdPopulated(ticket._id.toString());
-    console.log('[SERVICE] Populated ticket:', populatedTicket ? 'SUCCESS' : 'FAILED');
-    
+
     return populatedTicket;
   }
 
@@ -177,11 +166,7 @@ export class TicketService extends GenericService<ITicket> {
 
   // Cập nhật status của ticket
   async updateStatus(ticketId: string, status: "pending" | "processing" | "completed") {
-    const ticket = await TicketModel.findByIdAndUpdate(
-      ticketId,
-      { status: status },
-      { new: true }
-    );
+    const ticket = await TicketModel.findByIdAndUpdate(ticketId, { status: status }, { new: true });
 
     if (!ticket) {
       throw new Error("Ticket không tồn tại");

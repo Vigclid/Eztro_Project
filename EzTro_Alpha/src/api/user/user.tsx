@@ -17,7 +17,6 @@ export const getUserApi = {
       const response = await apiService.get(`${userApi}`);
       return response.data;
     } catch (error) {
-      console.error(error);
       return { data: { data: [] } };
     }
   },
@@ -36,10 +35,9 @@ export const getUserApi = {
 
   async checkEmailExist(email: string) {
     try {
-      const response = await apiService.get(`${userApi}/exist/${email}`);
+      const response: any = await apiService.get(`${userApi}/exist/${email}`);
       return response?.data?.data?.exists ?? false;
     } catch (error: any) {
-      console.error("checkEmailExist error:", error);
       return false;
     }
   },
@@ -74,9 +72,7 @@ export const getUserApi = {
       });
 
       if (!res.status || res.error) {
-        throw new Error(
-          res.error?.message || res.message || "Upload avatar thất bại",
-        );
+        throw new Error(res.error?.message || res.message || "Upload avatar thất bại");
       }
 
       if (!res.data?.data) {
@@ -91,10 +87,7 @@ export const getUserApi = {
 };
 
 export const putUserApi = {
-  changePassword: async (
-    oldPassword: string,
-    password: string,
-  ): Promise<void> => {
+  changePassword: async (oldPassword: string, password: string): Promise<void> => {
     const res = await apiService.put<any>(`${userApi}/me/password`, {
       oldPassword,
       password,
