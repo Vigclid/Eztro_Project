@@ -18,7 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { getHouseApi } from "../../api/house/house";
 import { IHouse } from "../../types/house";
 
-export const TrackingPaymentStatus: React.FC = () => {
+export const TrackingInvoiceStatus: React.FC = () => {
   const now = new Date();
 
   // States UI

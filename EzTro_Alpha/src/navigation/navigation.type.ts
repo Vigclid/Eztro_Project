@@ -18,7 +18,7 @@ export type MainTabParamList = {
   blank: undefined;
   userProfile: undefined;
   viewBoardingHousePage: undefined;
-  trackingPaymentStatus: undefined;
+  trackingInvoiceStatus: undefined;
 };
 
 export type MainStackParamList = {
