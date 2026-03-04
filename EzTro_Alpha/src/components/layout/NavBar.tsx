@@ -91,16 +91,16 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.item}
-        onPress={() => navigation.navigate("trackingPaymentStatus")}
+        onPress={() => navigation.navigate("trackingInvoiceStatus")}
       >
         <Icon
           name="history"
           size={36}
-          color={isActive("trackingPaymentStatus") ? theme.color : theme.color3}
+          color={isActive("trackingInvoiceStatus") ? theme.color : theme.color3}
         />
         <Text
           style={{
-            color: isActive("trackingPaymentStatus")
+            color: isActive("trackingInvoiceStatus")
               ? theme.color
               : theme.color3,
           }}

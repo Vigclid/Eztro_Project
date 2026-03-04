@@ -64,8 +64,8 @@ export const appNavigator = {
     navigate("mainscreen", { screen: "viewBoardingHousePage" });
   },
 
-  goToTrackingPaymentStatus() {
-    navigate("mainscreen", { screen: "trackingPaymentStatus" });
+  goToTrackingInvoiceStatus() {
+    navigate("mainscreen", { screen: "trackingInvoiceStatus" });
   },
 
   // ─── MAIN STACK ───────────────────────────────────────────────────────────
