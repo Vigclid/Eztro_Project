@@ -26,6 +26,33 @@ export class roomController extends GenericController<IRoom> {
                 .status(201)
                 .json(responseWrapper("success", "Tạo Phòng Thành Công", result))
         } catch (error: any) {
+            // Trường hợp tên phòng đã tồn tại trong cùng cụm trọ
+            if (
+                error?.code === "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE" ||
+                error?.message === "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE"
+            ) {
+                return res
+                    .status(200)
+                    .json(
+                        responseWrapper(
+                            "error",
+                            "Tên phòng này đã tồn tại trong cụm trọ. Vui lòng chọn tên khác."
+                        )
+                    );
+            }
+
+            // Trường hợp vi phạm unique index ở MongoDB
+            if (error?.code === 11000) {
+                return res
+                    .status(200)
+                    .json(
+                        responseWrapper(
+                            "error",
+                            "Tên phòng này đã tồn tại trong cụm trọ. Vui lòng chọn tên khác."
+                        )
+                    );
+            }
+
             res.status(500).json(responseWrapper("error", "Internal Server Error", error))
         }
     }
@@ -48,16 +75,49 @@ export class roomController extends GenericController<IRoom> {
             const roomId = req.params.id;
             const updateData = req.body;
 
-            const result = await this.RoomService.update(roomId, updateData);
-
-            if (!result) {
-                return res.status(404).json(responseWrapper("error", "Không tìm thấy phòng cần sửa"));
-            }
+            const result = await this.RoomService.updateRoom(roomId, updateData);
 
             return res
                 .status(200)
                 .json(responseWrapper("success", "Cập Nhật Phòng Thành Công", result));
         } catch (error: any) {
+            // Trường hợp phòng không tồn tại
+            if (
+                error?.code === "ROOM_NOT_FOUND" ||
+                error?.message === "ROOM_NOT_FOUND"
+            ) {
+                return res
+                    .status(404)
+                    .json(responseWrapper("error", "Không tìm thấy phòng cần sửa"));
+            }
+
+            // Trường hợp tên phòng đã tồn tại trong cùng cụm trọ
+            if (
+                error?.code === "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE" ||
+                error?.message === "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE"
+            ) {
+                return res
+                    .status(200)
+                    .json(
+                        responseWrapper(
+                            "error",
+                            "Tên phòng này đã tồn tại trong cụm trọ. Vui lòng chọn tên khác."
+                        )
+                    );
+            }
+
+            // Trường hợp vi phạm unique index ở MongoDB
+            if (error?.code === 11000) {
+                return res
+                    .status(200)
+                    .json(
+                        responseWrapper(
+                            "error",
+                            "Tên phòng này đã tồn tại trong cụm trọ. Vui lòng chọn tên khác."
+                        )
+                    );
+            }
+
             res.status(500).json(responseWrapper("error", "Internal Server Error", error));
         }
     }
