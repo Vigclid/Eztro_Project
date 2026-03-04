@@ -3,7 +3,7 @@ import React from "react";
 import NavBar from "../../components/layout/NavBar";
 import BlankScreen from "../../screens/BlankScreen";
 import { CreateBoardingHouseScreen } from "../../screens/boardingHouse/CreateBoardingHouseScreen";
-import { TrackingPaymentStatus } from "../../screens/boardingHouse/TrackingPaymentStatus";
+import { TrackingInvoiceStatus } from "../../screens/boardingHouse/TrackingInvoiceStatus";
 import { ViewBoardingHousePage } from "../../screens/boardingHouse/ViewBoardingHousePage";
 import { UserProfile } from "../../screens/profile/UserProfile";
 
@@ -21,8 +21,8 @@ const MainTab = () => (
       component={ViewBoardingHousePage}
     />
     <Tab.Screen
-      name="trackingPaymentStatus"
-      component={TrackingPaymentStatus}
+      name="trackingInvoiceStatus"
+      component={TrackingInvoiceStatus}
     />
     <Tab.Screen name="userProfile" component={UserProfile} />
     <Tab.Screen

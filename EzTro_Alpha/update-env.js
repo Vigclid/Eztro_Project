@@ -13,11 +13,8 @@ for (const iface of interfaces["Wi-Fi"] || []) {
 }
 
 const envPath = path.resolve(".env");
-const content = ip
-  ? `EXPO_PUBLIC_SERVER_URI=http://${ip}:8080/`
-  : "EXPO_PUBLIC_SERVER_URI=http://localhost:8080/";
+const content = ip ? `EXPO_PUBLIC_SERVER_URI=http://${ip}:8080/` : "EXPO_PUBLIC_SERVER_URI=http://localhost:8080/";
 
 try {
   fs.writeFileSync(envPath, content, { encoding: "utf8" });
-  console.log(`Update quả ENV thành công 😎 ${content}`);
 } catch (err) {}

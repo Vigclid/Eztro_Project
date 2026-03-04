@@ -17,7 +17,6 @@ export const getUserApi = {
       const response = await apiService.get(`${userApi}`);
       return response.data;
     } catch (error) {
-      console.error(error);
       return { data: { data: [] } };
     }
   },
@@ -36,10 +35,9 @@ export const getUserApi = {
 
   async checkEmailExist(email: string) {
     try {
-      const response = await apiService.get(`${userApi}/exist/${email}`);
+      const response: any = await apiService.get(`${userApi}/exist/${email}`);
       return response?.data?.data?.exists ?? false;
     } catch (error: any) {
-      console.error("checkEmailExist error:", error);
       return false;
     }
   },
@@ -61,24 +59,6 @@ export const getUserApi = {
     return res.data;
   },
 
-  changePassword: async (
-    oldPassword: string,
-    password: string,
-  ): Promise<void> => {
-    const res = await apiService.put<any>(`${userApi}/me/password`, {
-      oldPassword,
-      password,
-    });
-
-    if (res.data?.status === "error") {
-      throw new Error(res.data.message || "Đổi mật khẩu thất bại");
-    }
-
-    if (!res.status) {
-      throw new Error(res.message || "Lỗi mạng");
-    }
-  },
-
   uploadAvatar: async (avatarUri: string): Promise<IUser> => {
     try {
       const base64 = await FileSystem.readAsStringAsync(avatarUri, {
@@ -92,9 +72,7 @@ export const getUserApi = {
       });
 
       if (!res.status || res.error) {
-        throw new Error(
-          res.error?.message || res.message || "Upload avatar thất bại",
-        );
+        throw new Error(res.error?.message || res.message || "Upload avatar thất bại");
       }
 
       if (!res.data?.data) {
@@ -104,6 +82,23 @@ export const getUserApi = {
       return res.data.data as IUser;
     } catch (err: any) {
       throw err;
+    }
+  },
+};
+
+export const putUserApi = {
+  changePassword: async (oldPassword: string, password: string): Promise<void> => {
+    const res = await apiService.put<any>(`${userApi}/me/password`, {
+      oldPassword,
+      password,
+    });
+
+    if (res.data?.status === "error") {
+      throw new Error(res.data.message || "Đổi mật khẩu thất bại");
+    }
+
+    if (!res.status) {
+      throw new Error(res.message || "Lỗi mạng");
     }
   },
 };

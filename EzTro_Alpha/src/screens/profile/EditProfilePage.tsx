@@ -1,4 +1,9 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   ArrowLeft,
@@ -11,7 +16,9 @@ import {
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -22,10 +29,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { getUserApi } from "../../api/user/user";
 import { AppButton } from "../../components/misc/AppButton";
-import { Avatar } from "../../components/misc/Avatar";
 import {
   BORDER_RADIUS,
   COLORS,
@@ -33,28 +39,127 @@ import {
   IMAGE_SIZE,
   SPACING,
 } from "../../constants/theme";
+import { setUser } from "../../features/auth/authSlice";
 import { NavigationProp } from "../../navigation/navigation.type";
-import { RootState } from "../../stores/store";
+import { AppDispatch, RootState } from "../../stores/store";
+import { IUser } from "../../types/users";
+
+const formatDate = (date: Date): string => {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
 
 export const EditProfilePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+
   const [lastName, setLastName] = useState(user?.lastName ?? "");
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
+  const [dateOfBirth, setDateOfBirth] = useState<Date>(
+    user?.dateOfBirth ? new Date(user.dateOfBirth) : new Date(),
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // ─── Date Picker ──────────────────────────────────────────────────────────
+
+  const onDateChange = (_event: DateTimePickerEvent, selected?: Date) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (selected) setDateOfBirth(selected);
+  };
+
+  // ─── Avatar Picker ────────────────────────────────────────────────────────
+
+  const openCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Thông báo", "Cần cấp quyền truy cập camera");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) setLocalAvatarUri(result.assets[0].uri);
+  };
+
+  const openLibrary = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Thông báo", "Cần cấp quyền truy cập thư viện ảnh");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) setLocalAvatarUri(result.assets[0].uri);
+  };
+
+  const handlePickAvatar = () => {
+    Alert.alert("Đổi ảnh đại diện", "Chọn nguồn ảnh", [
+      { text: "Chụp ảnh", onPress: openCamera },
+      { text: "Chọn từ thư viện", onPress: openLibrary },
+      { text: "Hủy", style: "cancel" },
+    ]);
+  };
+
+  // ─── Save ─────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
+    if (isSaving) return;
+    if (!firstName.trim()) {
+      Alert.alert("Lỗi", "Tên không được để trống");
+      return;
+    }
+    if (!lastName.trim()) {
+      Alert.alert("Lỗi", "Họ không được để trống");
+      return;
+    }
+    setIsSaving(true);
     try {
+      let updatedUser: IUser = {
+        ...user!,
+        firstName,
+        lastName,
+        email,
+        dateOfBirth,
+      };
+
+      if (localAvatarUri) {
+        const userWithAvatar = await getUserApi.uploadAvatar(localAvatarUri);
+        updatedUser = {
+          ...updatedUser,
+          profilePicture: userWithAvatar.profilePicture,
+        };
+      }
+
       await getUserApi.updateProfile({
         firstName,
         lastName,
         email,
+        dateOfBirth,
       });
+
+      dispatch(setUser(updatedUser));
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+
       Alert.alert("Thành công", "Cập nhật thông tin thành công");
       navigation.goBack();
     } catch {
       Alert.alert("Lỗi", "Cập nhật thông tin thất bại");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -62,6 +167,12 @@ export const EditProfilePage: React.FC = () => {
     activeField === fieldName
       ? [styles.input, styles.inputActive]
       : styles.input;
+
+  const avatarSource = localAvatarUri
+    ? { uri: localAvatarUri }
+    : user?.profilePicture
+      ? { uri: user.profilePicture }
+      : undefined;
 
   return (
     <SafeAreaProvider style={styles.container}>
@@ -87,8 +198,16 @@ export const EditProfilePage: React.FC = () => {
           style={styles.headerButton}
           onPress={handleSave}
           activeOpacity={0.8}
+          disabled={isSaving}
         >
-          <Save size={IMAGE_SIZE.EDIT_PROFILE_ICON_SIZE} color={COLORS.WHITE} />
+          {isSaving ? (
+            <ActivityIndicator size="small" color={COLORS.WHITE} />
+          ) : (
+            <Save
+              size={IMAGE_SIZE.EDIT_PROFILE_ICON_SIZE}
+              color={COLORS.WHITE}
+            />
+          )}
         </TouchableOpacity>
       </LinearGradient>
 
@@ -103,12 +222,38 @@ export const EditProfilePage: React.FC = () => {
         >
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
-            <View style={styles.avatarCircle}>
-              <Avatar source={{ uri: user?.profilePicture }} size={120} />
-            </View>
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={handlePickAvatar}
+              activeOpacity={0.8}
+            >
+              {avatarSource ? (
+                <Image source={avatarSource} style={styles.avatarImage} />
+              ) : (
+                <LinearGradient
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  colors={[
+                    COLORS.AVATAR_GRADIENT_START,
+                    COLORS.AVATAR_GRADIENT_END,
+                  ]}
+                  style={styles.avatarPlaceholder}
+                >
+                  <User
+                    size={IMAGE_SIZE.EDIT_PROFILE_AVATAR_ICON_SIZE}
+                    color={COLORS.WHITE}
+                  />
+                </LinearGradient>
+              )}
+              {/* Camera badge */}
+              <View style={styles.cameraBadge}>
+                <Camera size={14} color={COLORS.WHITE} />
+              </View>
+            </TouchableOpacity>
+
             <AppButton
               title="Đổi ảnh đại diện"
-              onPress={() => {}}
+              onPress={handlePickAvatar}
               variant="gradient"
               leftIcon={
                 <Camera
@@ -175,7 +320,7 @@ export const EditProfilePage: React.FC = () => {
                 <Text style={styles.required}>*</Text>
               </View>
               <TextInput
-                style={getInputStyle("email")}
+                style={[getInputStyle("email"), styles.inputDisabled]}
                 placeholder="example@email.com"
                 placeholderTextColor={COLORS.LIGHT_GRAY_TEXT}
                 value={email}
@@ -184,10 +329,11 @@ export const EditProfilePage: React.FC = () => {
                 autoCapitalize="none"
                 onFocus={() => setActiveField("email")}
                 onBlur={() => setActiveField(null)}
+                editable={false}
               />
             </View>
 
-            {/* Phone */}
+            {/* Phone — read-only */}
             <View style={styles.fieldSection}>
               <View style={styles.labelRow}>
                 <Phone
@@ -197,12 +343,9 @@ export const EditProfilePage: React.FC = () => {
                 <Text style={styles.label}> Số điện thoại</Text>
               </View>
               <TextInput
-                style={getInputStyle("phone")}
+                style={[styles.input, styles.inputDisabled]}
                 placeholderTextColor={COLORS.LIGHT_GRAY_TEXT}
-                value={user?.phoneNumber}
-                keyboardType="phone-pad"
-                onFocus={() => setActiveField("phone")}
-                onBlur={() => setActiveField(null)}
+                value={user?.phoneNumber ?? ""}
                 editable={false}
               />
             </View>
@@ -216,26 +359,47 @@ export const EditProfilePage: React.FC = () => {
                 />
                 <Text style={styles.label}> Ngày sinh</Text>
               </View>
-              <TextInput
-                style={getInputStyle("birthday")}
-                placeholder="DD/MM/YYYY"
-                placeholderTextColor={COLORS.LIGHT_GRAY_TEXT}
-                onFocus={() => setActiveField("birthday")}
-                onBlur={() => setActiveField(null)}
-              />
+              <TouchableOpacity
+                style={[
+                  styles.datePicker,
+                  showDatePicker && styles.inputActive,
+                ]}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.dateText}>{formatDate(dateOfBirth)}</Text>
+                <Calendar
+                  size={IMAGE_SIZE.EDIT_PROFILE_ICON_SIZE}
+                  color={COLORS.GRAY_TEXT}
+                />
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dateOfBirth}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={onDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
             </View>
 
             {/* Save Button */}
             <AppButton
-              title="Lưu thay đổi"
+              title={isSaving ? "Đang lưu..." : "Lưu thay đổi"}
               onPress={handleSave}
               variant="gradient"
               leftIcon={
-                <Save
-                  size={IMAGE_SIZE.EDIT_PROFILE_ICON_SIZE}
-                  color={COLORS.WHITE}
-                />
+                isSaving ? (
+                  <ActivityIndicator size="small" color={COLORS.WHITE} />
+                ) : (
+                  <Save
+                    size={IMAGE_SIZE.EDIT_PROFILE_ICON_SIZE}
+                    color={COLORS.WHITE}
+                  />
+                )
               }
+              disabled={isSaving}
               style={styles.saveButton}
             />
           </View>
@@ -292,10 +456,35 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.BORDER_GRAY,
     gap: SPACING.EDIT_PROFILE_AVATAR_SECTION_GAP,
   },
-  avatarCircle: {
-    backgroundColor: "#10B981",
-    padding: SPACING.STEP_INDICATOR_PADDING,
-    borderRadius: 100,
+  avatarWrapper: {
+    position: "relative",
+    width: IMAGE_SIZE.EDIT_PROFILE_AVATAR_SIZE,
+    height: IMAGE_SIZE.EDIT_PROFILE_AVATAR_SIZE,
+  },
+  avatarImage: {
+    width: IMAGE_SIZE.EDIT_PROFILE_AVATAR_SIZE,
+    height: IMAGE_SIZE.EDIT_PROFILE_AVATAR_SIZE,
+    borderRadius: BORDER_RADIUS.PROFILE_BADGE,
+  },
+  avatarPlaceholder: {
+    width: IMAGE_SIZE.EDIT_PROFILE_AVATAR_SIZE,
+    height: IMAGE_SIZE.EDIT_PROFILE_AVATAR_SIZE,
+    borderRadius: BORDER_RADIUS.PROFILE_BADGE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cameraBadge: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.GRADIENT_START,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: COLORS.WHITE,
   },
   cameraButton: {
     paddingVertical: SPACING.MEDIUM,
@@ -344,10 +533,25 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  textarea: {
-    height: IMAGE_SIZE.EDIT_PROFILE_TEXTAREA_HEIGHT,
-    paddingVertical: SPACING.EDIT_PROFILE_LABEL_GAP,
-    textAlignVertical: "top",
+  inputDisabled: {
+    backgroundColor: COLORS.PROFILE_BACKGROUND,
+    color: COLORS.LIGHT_GRAY_TEXT,
+  },
+  // ─── Date Picker ──────────────────────────────────────────────────────────
+  datePicker: {
+    height: IMAGE_SIZE.EDIT_PROFILE_INPUT_HEIGHT,
+    backgroundColor: COLORS.WHITE,
+    borderColor: COLORS.BORDER_GRAY,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
+    paddingHorizontal: SPACING.CREATE_INPUT_PADDING_HORIZONTAL,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dateText: {
+    fontSize: FONT_SIZE.CREATE_FORM_INPUT,
+    color: COLORS.DARK_TEXT,
   },
   // ─── Save Button ──────────────────────────────────────────────────────────
   saveButton: {

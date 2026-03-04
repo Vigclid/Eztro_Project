@@ -1,34 +1,18 @@
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { getHouseApi } from "../../api/house/house";
+import { getRoomApi } from "../../api/room/room";
 import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
 import BoardingHouseStatsCard from "../../components/boardingHouse/BoardingHouseStatsCard";
-import {
-  BORDER_RADIUS,
-  COLORS,
-  FONT_SIZE,
-  IMAGE_SIZE,
-  SPACING,
-} from "../../constants/theme";
+import { BORDER_RADIUS, COLORS, FONT_SIZE, IMAGE_SIZE, SPACING } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
-import {
-  Plus,
-  Funnel,
-  Search
-} from "lucide-react-native";
+import { IRoom } from "../../types/room";
+import { Plus, Funnel, Search, Wrench } from "lucide-react-native";
 
 export const ViewBoardingHousePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -36,19 +20,68 @@ export const ViewBoardingHousePage: React.FC = () => {
 
   const { getAllHousesByLandlordId } = getHouseApi;
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
+  const [totalAvailableRooms, setTotalAvailableRooms] = useState<number>(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      const getAllHouses = async () => {
+        try {
+          const res = (await getAllHousesByLandlordId()) as ApiResponse<IHouse[]>;
+          if (res.status === "success") {
+            setBoardingHouses(res.data as IHouse[]);
+          }
+        } catch (err) {}
+      };
+      getAllHouses();
+      return () => {};
+    }, [getAllHousesByLandlordId]),
+  );
 
   useEffect(() => {
-    const getAllHouses = async () => {
-      const res = (await getAllHousesByLandlordId()) as ApiResponse<IHouse[]>;
-      if (res.status === "success") {
-        setBoardingHouses(res.data as IHouse[]);
+    const fetchRoomStats = async () => {
+      if (!boardingHouses || boardingHouses.length === 0) {
+        setTotalAvailableRooms(0);
+        return;
+      }
+
+      try {
+        const houseIds = boardingHouses
+          .map((house) => house._id)
+          .filter((id): id is string => typeof id === "string");
+
+        const responses = await Promise.all(
+          houseIds.map((id) =>
+            getRoomApi.getAllRoomsByHouseId(id) as Promise<ApiResponse<IRoom[]>>
+          )
+        );
+
+        let availableTotal = 0;
+
+        responses.forEach((res) => {
+          if (res.status === "success" && Array.isArray(res.data)) {
+            const rooms = res.data as any as IRoom[];
+            const rented = rooms.filter(
+              (r) => r.status === "Đang Thuê" || r.status === "rented"
+            ).length;
+            availableTotal += rooms.length - rented;
+          }
+        });
+
+        setTotalAvailableRooms(availableTotal);
+      } catch {
+        setTotalAvailableRooms(0);
       }
     };
-    getAllHouses();
-  }, []);
+
+    fetchRoomStats();
+  }, [boardingHouses]);
 
   const handleCreateBoardingHouse = () => {
     navigation.navigate("mainstack", { screen: "createBoardingHousePage" });
+  };
+
+  const handleNavigateToMaintenance = () => {
+    navigation.navigate("mainstack", { screen: "ticketListScreen" });
   };
 
   return (
@@ -59,16 +92,13 @@ export const ViewBoardingHousePage: React.FC = () => {
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-            style={styles.headerGradient}
-          >
+            style={styles.headerGradient}>
             <View style={styles.headerDivider} />
             <View style={styles.headerContent}>
               <View style={styles.headerSpacer} />
 
               <View>
-                <Text style={styles.headerTitle}>
-                  {"Tạo hóa đơn hàng loạt"}
-                </Text>
+                <Text style={styles.headerTitle}>{"Quản Lý Cụm Trọ"}</Text>
               </View>
               <View style={styles.headerSpacer} />
             </View>
@@ -92,15 +122,31 @@ export const ViewBoardingHousePage: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <BoardingHouseStatsCard totalBoardingHouse={7} />
+            <BoardingHouseStatsCard
+              totalBoardingHouse={boardingHouses?.length ?? 0}
+              totalRooms={totalAvailableRooms}
+            />
+
+            {/* Maintenance Button */}
+            <TouchableOpacity onPress={handleNavigateToMaintenance} style={styles.maintenanceCard}>
+              <View style={styles.maintenanceIconContainer}>
+                <Wrench size={24} color={COLORS.WHITE} />
+              </View>
+              <View style={styles.maintenanceContent}>
+                <Text style={styles.maintenanceTitle}>Bảo trì</Text>
+                <Text style={styles.maintenanceDesc}>Yêu cầu sửa chữa</Text>
+              </View>
+              <View style={styles.maintenanceArrow}>
+                <Text style={styles.maintenanceArrowText}>›</Text>
+              </View>
+            </TouchableOpacity>
+
             <View style={styles.boardingHousesContainer}>
               {boardingHouses && (
                 <>
-                  {boardingHouses.map(
-                    (boardingHouse: IHouse, index: number) => (
-                      <BoardingHouseCard key={index} {...boardingHouse} />
-                    ),
-                  )}
+                  {boardingHouses.map((boardingHouse: IHouse, index: number) => (
+                    <BoardingHouseCard key={index} {...boardingHouse} />
+                  ))}
                 </>
               )}
             </View>
@@ -111,13 +157,12 @@ export const ViewBoardingHousePage: React.FC = () => {
       <TouchableOpacity
         onPress={handleCreateBoardingHouse}
         style={styles.floatingButton}
-      // Giữ style cũ để giữ vị trí và hình dạng nút
+        // Giữ style cũ để giữ vị trí và hình dạng nút
       >
         <Plus
           color={COLORS.WHITE} // Màu dấu cộng (thường là trắng)
-          size={40}       // Kích thước dấu cộng
+          size={40} // Kích thước dấu cộng
           strokeWidth={2.5} // Độ dày (tùy chỉnh để trông hiện đại hơn)
-
         />
       </TouchableOpacity>
     </SafeAreaProvider>
@@ -157,6 +202,7 @@ const styles = StyleSheet.create({
     color: COLORS.WHITE,
     fontSize: FONT_SIZE.HEADER_TITLE,
     fontWeight: "bold",
+    paddingTop: 20,
   },
   headerSpacer: {
     width: IMAGE_SIZE.HEADER_LOGO,
@@ -490,5 +536,50 @@ const styles = StyleSheet.create({
     height: 70,
     backgroundColor: COLORS.GREEN_PRIMARY,
     borderRadius: 100,
+  },
+  maintenanceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  maintenanceIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "#A855F7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  maintenanceContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  maintenanceTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: COLORS.TEXT_DARK,
+  },
+  maintenanceDesc: {
+    fontSize: 14,
+    color: COLORS.TEXT_SECONDARY,
+    marginTop: 4,
+  },
+  maintenanceArrow: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  maintenanceArrowText: {
+    fontSize: 24,
+    color: COLORS.PLACEHOLDER_GRAY,
   },
 });

@@ -34,10 +34,6 @@ type CreateRoomRouteProps = RouteProp<
   "createNewRoomScreen"
 >;
 
-// ----------------------------------------------------------------------
-// [SỬA TẠI ĐÂY] Đưa FormInput ra ngoài component CreateNewRoomScreen
-// Để tránh việc component này bị tạo lại mỗi lần render cha
-// ----------------------------------------------------------------------
 const FormInput = ({
   label,
   icon,
@@ -79,16 +75,15 @@ const CreateNewRoomScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<CreateRoomRouteProps>();
 
-  const { houseId, room } = route.params || {};
+  const { houseId, room, onRefresh } = route.params || {};
   const editingRoom = room as IRoom | undefined;
   const isEditMode = !!editingRoom?._id;
 
-  // State lưu trữ dữ liệu form (theo cấu trúc body API /v1/rooms)
   const [formData, setFormData] = useState({
     roomNumber: "",
     price: "",
     status: "Trống" as "Trống" | "Đang thuê",
-    rentalDate: "", // yyyy-mm-dd
+    rentalDate: "",
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -97,7 +92,6 @@ const CreateNewRoomScreen = () => {
     editingRoom?.virtualTenants || [],
   );
 
-  // Khởi tạo dữ liệu nếu là chế độ sửa
   useEffect(() => {
     if (editingRoom) {
       setFormData({
@@ -113,7 +107,6 @@ const CreateNewRoomScreen = () => {
       });
       setTenants(editingRoom.virtualTenants || []);
     } else {
-      // Mặc định ngày tạo là hôm nay khi thêm mới
       setFormData((prev) => ({
         ...prev,
         rentalDate: new Date().toISOString().slice(0, 10),
@@ -125,7 +118,6 @@ const CreateNewRoomScreen = () => {
     navigation.goBack();
   };
 
-  // Hàm xử lý thay đổi input
   const handleChange = (key: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
@@ -138,7 +130,6 @@ const CreateNewRoomScreen = () => {
   const resolveHouseIdFromRoom = (roomData?: IRoom) => {
     if (!roomData?.houseId) return undefined;
     if (typeof roomData.houseId === "string") return roomData.houseId;
-    // @ts-ignore - fallback nếu houseId là object IHouse
     return roomData.houseId?._id;
   };
 
@@ -163,7 +154,6 @@ const CreateNewRoomScreen = () => {
       roomName: formData.roomNumber.trim(),
       rentalFee: Number(formData.price) || 0,
       status: mapStatusForBackend(formData.status),
-      // Ngày tạo phòng (rentalDate) - nếu người dùng không chỉnh thì mặc định là hôm nay
       rentalDate: formData.rentalDate
         ? new Date(formData.rentalDate)
         : new Date(),
@@ -192,7 +182,10 @@ const CreateNewRoomScreen = () => {
           [
             {
               text: "OK",
-              onPress: () => navigation.goBack(),
+              onPress: () => {
+                onRefresh?.();
+                navigation.goBack();
+              },
             },
           ]
         );
@@ -200,22 +193,34 @@ const CreateNewRoomScreen = () => {
         Alert.alert("Lỗi", res.message || "Có lỗi xảy ra, vui lòng thử lại.");
       }
     } catch (error: any) {
-      Alert.alert(
-        "Lỗi",
-        error?.message || "Có lỗi xảy ra, vui lòng thử lại sau."
-      );
+      // Hiển thị thông báo rõ ràng khi tên phòng bị trùng trong cùng cụm trọ
+      const backendMessage =
+        error?.response?.data?.message || error?.message || "";
+
+      if (
+        backendMessage.includes("đã tồn tại trong cụm trọ") ||
+        backendMessage.includes("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE")
+      ) {
+        Alert.alert(
+          "Thông báo",
+          "Tên phòng này đã tồn tại trong cụm trọ. Vui lòng nhập tên khác."
+        );
+      } else {
+        Alert.alert(
+          "Lỗi",
+          backendMessage || "Có lỗi xảy ra, vui lòng thử lại sau."
+        );
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // [ĐÃ XÓA] const FormInput = ... (Đã chuyển ra ngoài)
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY} />
 
-      {/* Header gradient đồng bộ boarding house */}
       <LinearGradient
         colors={COLORS.primaryGradient}
         style={styles.headerGradient}
@@ -243,7 +248,6 @@ const CreateNewRoomScreen = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Số phòng */}
           <View style={styles.singleRow}>
             <FormInput
               label="Số phòng"
@@ -254,7 +258,6 @@ const CreateNewRoomScreen = () => {
             />
           </View>
 
-          {/* Giá thuê */}
           <View style={styles.singleRow}>
             <FormInput
               label="Giá thuê/tháng (đ)"
@@ -266,7 +269,6 @@ const CreateNewRoomScreen = () => {
             />
           </View>
 
-          {/* Ngày tạo phòng */}
           <View style={styles.singleRow}>
             <View style={styles.inputWrapper}>
               <View style={styles.labelContainer}>
@@ -318,7 +320,6 @@ const CreateNewRoomScreen = () => {
             </View>
           </View>
 
-          {/* Phần Trạng thái */}
           <View style={styles.statusSection}>
             <View style={styles.labelContainer}>
               <MaterialCommunityIcons
@@ -331,7 +332,6 @@ const CreateNewRoomScreen = () => {
             </View>
 
             <View style={styles.statusRow}>
-              {/* Nút Trống */}
               <TouchableOpacity
                 style={[
                   styles.statusButton,
@@ -355,7 +355,6 @@ const CreateNewRoomScreen = () => {
 
               <View style={{ width: 15 }} />
 
-              {/* Nút Đang thuê */}
               <TouchableOpacity
                 style={[
                   styles.statusButton,
@@ -379,7 +378,6 @@ const CreateNewRoomScreen = () => {
             </View>
           </View>
 
-          {/* Danh sách người thuê của phòng (nếu có) */}
           {tenants.length > 0 && (
             <View style={styles.tenantsSection}>
               <Text style={styles.tenantsTitle}>Người thuê hiện tại</Text>
@@ -411,7 +409,6 @@ const CreateNewRoomScreen = () => {
                                 (_prev, i) => i !== index,
                               );
 
-                              // Nếu đang sửa phòng thì cập nhật luôn DB
                               if (isEditMode && editingRoom?._id) {
                                 try {
                                   const raw = await postRoomApi.updateRoom(
@@ -439,7 +436,6 @@ const CreateNewRoomScreen = () => {
                                   );
                                 }
                               } else {
-                                // Trường hợp tạo mới phòng (chỉ cập nhật local)
                                 setTenants(updated);
                               }
                             },
@@ -457,7 +453,6 @@ const CreateNewRoomScreen = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Footer Buttons */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.btnCancel, { flex: 1 }]}
@@ -528,7 +523,6 @@ const styles = StyleSheet.create({
   headerRightPlaceholder: {
     width: IMAGE_SIZE.BACK_BUTTON_ICON_WIDTH + 20,
   },
-  // Body Layout
   scrollContent: {
     paddingHorizontal: SPACING.CONTENT_HORIZONTAL_PADDING,
     paddingTop: SPACING.SCROLL_TOP_PADDING,
@@ -585,7 +579,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.CREATE_FORM_INPUT,
     color: COLORS.PLACEHOLDER_GRAY,
   },
-  // Status Section
   statusSection: {
     marginTop: SPACING.SMALL,
   },
@@ -669,7 +662,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 12,
   },
-  // Footer
   footer: {
     position: "absolute",
     bottom: 0,

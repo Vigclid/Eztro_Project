@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
     View,
     ScrollView,
@@ -10,7 +10,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS } from "../../constants/theme";
 import { IRoom } from "../../types/room";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { MainStackParamList } from "../../navigation/navigation.type";
 import { IHouse } from "../../types/house";
 import { getHouseApi } from "../../api/house/house";
@@ -202,34 +202,46 @@ export const BoardingHouseDetailsScreen = () => {
     const { getHouseById } = getHouseApi
     const { getAllRoomsByHouseId } = getRoomApi;
 
-    useEffect(() => {
-        const fetchData = async () => {
-            // Lấy thông tin cụm trọ
-            const resHouse = await getHouseById(_id) as ApiResponse<IHouse>;
-            if (resHouse.status === "success") {
-                setBoardingHouse(resHouse.data as IHouse);
-            }
+    const fetchData = useCallback(async () => {
+        // Lấy thông tin cụm trọ
+        const resHouse = await getHouseById(_id) as ApiResponse<IHouse>;
+        if (resHouse.status === "success") {
+            setBoardingHouse(resHouse.data as IHouse);
+        }
 
-            // Lấy danh sách phòng theo houseId
-            const resRooms = await getAllRoomsByHouseId(_id) as ApiResponse<IRoom[]>;
-            if (resRooms.status === "success" && Array.isArray(resRooms.data)) {
-                const mappedRooms: IRoom[] = (resRooms.data as any[]).map((room: any) => ({
-                    _id: room._id,
-                    houseId: room.houseId,
-                    area: undefined,
-                    floor: undefined,
-                    roomName: room.roomName,
-                    rentalFee: room.rentalFee,
-                    status: room.status,
-                    rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
-                    virtualTenants: room.virtualTenants || [],
-                }));
-                setRooms(mappedRooms);
-            }
-        };
-
-        fetchData();
+        // Lấy danh sách phòng theo houseId
+        const resRooms = await getAllRoomsByHouseId(_id) as ApiResponse<IRoom[]>;
+        if (resRooms.status === "success" && Array.isArray(resRooms.data)) {
+            const mappedRooms: IRoom[] = (resRooms.data as any[]).map((room: any) => ({
+                _id: room._id,
+                houseId: room.houseId,
+                area: undefined,
+                floor: undefined,
+                roomName: room.roomName,
+                rentalFee: room.rentalFee,
+                status: room.status,
+                rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
+                virtualTenants: room.virtualTenants || [],
+            }));
+            setRooms(mappedRooms);
+        }
     }, [_id, getHouseById, getAllRoomsByHouseId]);
+
+    // Lần đầu vào màn hình cũng load dữ liệu
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleRefreshRooms = useCallback(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // Refetch dữ liệu mỗi khi màn hình được focus (khi quay lại từ CreateNewRoomScreen/AddTenantScreen)
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [fetchData])
+    );
     const handleGoBack = () => {
         navigation.goBack();
     }
@@ -377,7 +389,11 @@ export const BoardingHouseDetailsScreen = () => {
                                                     />
                                                 </View>
                                                 <View style={styles.flex1} />
-                                                <Text style={styles.actionTextOrange}>Tạo hóa đơn hàng loạt</Text>
+                                                <TouchableOpacity>
+                                                    <Text style={styles.actionTextOrange}>
+                                                        Tạo hóa đơn hàng loạt
+                                                    </Text>
+                                                </TouchableOpacity>
                                                 <View style={styles.flex1} />
                                             </LinearGradient>
                                         </TouchableOpacity>
@@ -391,6 +407,7 @@ export const BoardingHouseDetailsScreen = () => {
                                                     "createNewRoomScreen" as never,
                                                     {
                                                         houseId: _id,
+                                                        onRefresh: handleRefreshRooms,
                                                     } as never,
                                                 )
                                             }
@@ -422,6 +439,7 @@ export const BoardingHouseDetailsScreen = () => {
                                                 {
                                                     houseId: _id,
                                                     room,
+                                                    onRefresh: handleRefreshRooms,
                                                 } as never,
                                             )
                                         }

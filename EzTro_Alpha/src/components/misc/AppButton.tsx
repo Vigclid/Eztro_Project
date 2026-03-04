@@ -20,6 +20,7 @@ interface AppButtonProps {
   variant?: "primary" | "secondary" | "gradient";
   style?: ViewStyle;
   leftIcon?: React.ReactNode;
+  disabled?: boolean;
 }
 
 export const AppButton: React.FC<AppButtonProps> = ({
@@ -28,10 +29,16 @@ export const AppButton: React.FC<AppButtonProps> = ({
   variant = "primary",
   style,
   leftIcon,
+  disabled = false,
 }) => {
   if (variant === "gradient") {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={style}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        style={[style, disabled && styles.disabledWrapper]}
+        disabled={disabled}
+      >
         <LinearGradient
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
@@ -52,9 +59,10 @@ export const AppButton: React.FC<AppButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={[styles.button, buttonStyle, style]}
+      style={[styles.button, buttonStyle, style, disabled && styles.disabledWrapper]}
       onPress={onPress}
       activeOpacity={0.8}
+      disabled={disabled}
     >
       {leftIcon && <View style={styles.iconWrapper}>{leftIcon}</View>}
       <Text style={[styles.text, textStyle]}>{title}</Text>
@@ -102,5 +110,8 @@ const styles = StyleSheet.create({
   },
   iconWrapper: {
     marginRight: SPACING.ICON_MARGIN_RIGHT,
+  },
+  disabledWrapper: {
+    opacity: 0.5,
   },
 });

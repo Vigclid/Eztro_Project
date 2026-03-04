@@ -55,7 +55,6 @@ export class MailService {
     } catch (err) {
       throw err;
     }
-    console.log(`Verification token sent to ${email}: ${token}`);
     return token;
   }
 

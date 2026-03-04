@@ -31,4 +31,7 @@ export const RoomSchema = new mongoose.Schema<IRoom>({
     virtualTenants: { type: [VirtualTenantSchema], default: [] }
 })
 
+// Không cho phép 2 phòng cùng tên trong 1 cụm trọ
+RoomSchema.index({ houseId: 1, roomName: 1 }, { unique: true });
+
 export default mongoose.model<IRoom>('rooms', RoomSchema)

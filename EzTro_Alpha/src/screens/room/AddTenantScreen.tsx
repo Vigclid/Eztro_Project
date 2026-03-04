@@ -128,7 +128,6 @@ const AddTenantScreen = () => {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Thông tin người thuê</Text>
 
-            {/* Họ và tên */}
             <View style={styles.singleRow}>
               <View style={styles.inputWrapper}>
                 <View style={styles.labelContainer}>
@@ -150,7 +149,6 @@ const AddTenantScreen = () => {
               </View>
             </View>
 
-            {/* Số điện thoại */}
             <View style={styles.singleRow}>
               <View style={styles.inputWrapper}>
                 <View style={styles.labelContainer}>
@@ -173,7 +171,6 @@ const AddTenantScreen = () => {
               </View>
             </View>
 
-            {/* Ngày vào ở (joinDate) */}
             <View style={styles.singleRow}>
               <View style={styles.inputWrapper}>
                 <View style={styles.labelContainer}>
@@ -209,7 +206,6 @@ const AddTenantScreen = () => {
               </View>
             </View>
 
-            {/* Nút Thêm người thuê */}
             <TouchableOpacity
               style={[
                 styles.addButtonWrapper,
@@ -228,7 +224,6 @@ const AddTenantScreen = () => {
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Danh sách người thuê hiện tại (nếu có) */}
             {existingRoom?.virtualTenants && existingRoom.virtualTenants.length > 0 && (
               <View style={styles.currentTenantCard}>
                 {existingRoom.virtualTenants.map((t, idx) => (

@@ -1,14 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  ArrowLeft,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  Phone,
-  User,
-} from "lucide-react-native";
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -25,7 +17,7 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { getUserApi } from "../../api/user/user"; // Import từ file chức năng
-import { AuthNavigationProp } from "../../navigation/navigation.type";
+import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IUser } from "../../types/users";
 
@@ -61,7 +53,7 @@ const FacebookIcon = () => (
 );
 
 export const RegisterScreen = () => {
-  const navigation = useNavigation<AuthNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const { createUser } = getUserApi;
 
   // --- States từ file UI ---
@@ -114,16 +106,14 @@ export const RegisterScreen = () => {
     setEmail(text);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!text) setEmailError("");
-    else if (!emailRegex.test(text))
-      setEmailError("Email không đúng định dạng");
+    else if (!emailRegex.test(text)) setEmailError("Email không đúng định dạng");
     else setEmailError("");
   };
 
   const handlePasswordChange = (text: string) => {
     setPassword(text);
     if (!text) setPasswordError("");
-    else if (text.length < 8)
-      setPasswordError("Mật khẩu phải có ít nhất 8 ký tự");
+    else if (text.length < 8) setPasswordError("Mật khẩu phải có ít nhất 8 ký tự");
     else setPasswordError("");
   };
 
@@ -138,15 +128,13 @@ export const RegisterScreen = () => {
     setPhoneNumber(text);
     const phoneRegex = /^[0-9]{10,11}$/;
     if (!text) setPhoneNumberError("");
-    else if (!phoneRegex.test(text))
-      setPhoneNumberError("SĐT phải từ 10-11 số");
+    else if (!phoneRegex.test(text)) setPhoneNumberError("SĐT phải từ 10-11 số");
     else setPhoneNumberError("");
   };
 
   const handleRegister = async () => {
     if (!isFormValid) {
       Alert.alert("Thông báo", "Vui lòng kiểm tra lại thông tin đăng ký");
-      console.log("Form is not valid");
       return;
     }
 
@@ -167,7 +155,7 @@ export const RegisterScreen = () => {
       const response = (await createUser(userData)) as ApiResponse<IUser>;
       if (response.status === "success") {
         Alert.alert("Thành công", "Đăng ký tài khoản thành công");
-        navigation.navigate("login");
+        navigation.navigate("auth", { screen: "login" });
       } else {
         Alert.alert("Lỗi", response.message || "Đăng ký thất bại");
       }
@@ -180,11 +168,7 @@ export const RegisterScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent
-      />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <LinearGradient
         colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
         style={styles.background}
@@ -194,27 +178,16 @@ export const RegisterScreen = () => {
       <View style={styles.blob} />
 
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardView}
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardView}>
           <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <ArrowLeft size={20} color="#374151" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>Tạo tài khoản mới 🚀</Text>
-            <Text style={styles.subtitle}>
-              Bắt đầu quản lý nhà trọ thông minh hơn
-            </Text>
+            <Text style={styles.subtitle}>Bắt đầu quản lý nhà trọ thông minh hơn</Text>
 
             <View style={styles.formContainer}>
               {/* Họ & Tên */}
@@ -225,12 +198,7 @@ export const RegisterScreen = () => {
                     <View style={styles.iconContainer}>
                       <User size={18} color="#9ca3af" />
                     </View>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Nguyễn"
-                      value={lastName}
-                      onChangeText={setLastName}
-                    />
+                    <TextInput style={styles.input} placeholder="Nguyễn" value={lastName} onChangeText={setLastName} />
                   </View>
                 </View>
                 <View style={styles.halfInputContainer}>
@@ -249,12 +217,7 @@ export const RegisterScreen = () => {
               {/* Email */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    emailError ? styles.inputErrorBorder : null,
-                  ]}
-                >
+                <View style={[styles.inputWrapper, emailError ? styles.inputErrorBorder : null]}>
                   <View style={styles.iconContainer}>
                     <Mail size={18} color="#9ca3af" />
                   </View>
@@ -267,20 +230,13 @@ export const RegisterScreen = () => {
                     autoCapitalize="none"
                   />
                 </View>
-                {emailError ? (
-                  <Text style={styles.errorText}>{emailError}</Text>
-                ) : null}
+                {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
               </View>
 
               {/* Phone */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Số điện thoại</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    phoneNumberError ? styles.inputErrorBorder : null,
-                  ]}
-                >
+                <View style={[styles.inputWrapper, phoneNumberError ? styles.inputErrorBorder : null]}>
                   <View style={styles.iconContainer}>
                     <Phone size={18} color="#9ca3af" />
                   </View>
@@ -293,20 +249,13 @@ export const RegisterScreen = () => {
                     maxLength={11}
                   />
                 </View>
-                {phoneNumberError ? (
-                  <Text style={styles.errorText}>{phoneNumberError}</Text>
-                ) : null}
+                {phoneNumberError ? <Text style={styles.errorText}>{phoneNumberError}</Text> : null}
               </View>
 
               {/* Password */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Mật khẩu</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    passwordError ? styles.inputErrorBorder : null,
-                  ]}
-                >
+                <View style={[styles.inputWrapper, passwordError ? styles.inputErrorBorder : null]}>
                   <View style={styles.iconContainer}>
                     <Lock size={18} color="#9ca3af" />
                   </View>
@@ -317,31 +266,17 @@ export const RegisterScreen = () => {
                     onChangeText={handlePasswordChange}
                     secureTextEntry={!showPassword}
                   />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    {showPassword ? (
-                      <EyeOff size={20} color="#9ca3af" />
-                    ) : (
-                      <Eye size={20} color="#9ca3af" />
-                    )}
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                    {showPassword ? <EyeOff size={20} color="#9ca3af" /> : <Eye size={20} color="#9ca3af" />}
                   </TouchableOpacity>
                 </View>
-                {passwordError ? (
-                  <Text style={styles.errorText}>{passwordError}</Text>
-                ) : null}
+                {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
               </View>
 
               {/* Confirm Password */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Xác nhận mật khẩu</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    confirmPasswordError ? styles.inputErrorBorder : null,
-                  ]}
-                >
+                <View style={[styles.inputWrapper, confirmPasswordError ? styles.inputErrorBorder : null]}>
                   <View style={styles.iconContainer}>
                     <Lock size={18} color="#9ca3af" />
                   </View>
@@ -352,40 +287,24 @@ export const RegisterScreen = () => {
                     onChangeText={handleConfirmChange}
                     secureTextEntry={!showConfirmPassword}
                   />
-                  <TouchableOpacity
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={20} color="#9ca3af" />
-                    ) : (
-                      <Eye size={20} color="#9ca3af" />
-                    )}
+                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                    {showConfirmPassword ? <EyeOff size={20} color="#9ca3af" /> : <Eye size={20} color="#9ca3af" />}
                   </TouchableOpacity>
                 </View>
-                {confirmPasswordError ? (
-                  <Text style={styles.errorText}>{confirmPasswordError}</Text>
-                ) : null}
+                {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
               </View>
 
               {/* Register Button */}
               <TouchableOpacity
-                style={[
-                  styles.registerBtnShadow,
-                  !isFormValid && { opacity: 0.5 },
-                ]}
+                style={[styles.registerBtnShadow, !isFormValid && { opacity: 0.5 }]}
                 onPress={handleRegister}
-                disabled={loading || !isFormValid}
-              >
+                disabled={loading || !isFormValid}>
                 <LinearGradient
                   colors={["#10b981", "#0d9488"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={styles.registerBtn}
-                >
-                  <Text style={styles.registerBtnText}>
-                    {loading ? "Đang xử lý..." : "Đăng ký"}
-                  </Text>
+                  style={styles.registerBtn}>
+                  <Text style={styles.registerBtnText}>{loading ? "Đang xử lý..." : "Đăng ký"}</Text>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -408,7 +327,7 @@ export const RegisterScreen = () => {
 
               <View style={styles.footerLink}>
                 <Text style={styles.footerText}>Đã có tài khoản? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate("login")}>
+                <TouchableOpacity onPress={() => navigation.navigate("auth", { screen: "login" })}>
                   <Text style={styles.linkText}>Đăng nhập ngay</Text>
                 </TouchableOpacity>
               </View>

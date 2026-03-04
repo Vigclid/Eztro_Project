@@ -13,31 +13,27 @@ import {
   View,
 } from "react-native";
 import { useSelector } from "react-redux";
-import {
-  AuthNavigationProp,
-  NavigationProp,
-} from "../../navigation/navigation.type";
+import { NavigationProp } from "../../navigation/navigation.type";
 import { RootState } from "../../stores/store";
 
 const WelcomeScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const mainNavigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   useEffect(() => {
     if (user) {
-      mainNavigation.reset({
+      navigation.reset({
         index: 0,
         routes: [{ name: "mainscreen" }],
       });
     }
   }, []);
-  const navigation = useNavigation<AuthNavigationProp>();
 
   const handleLoginPress = () => {
-    navigation.navigate("login");
+    navigation.navigate("auth", { screen: "login" });
   };
 
   const handleRegisterPress = () => {
-    navigation.navigate("register");
+    navigation.navigate("auth", { screen: "register" });
   };
 
   const features = [
