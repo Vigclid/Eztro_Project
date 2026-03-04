@@ -8,7 +8,7 @@ import { IGoogleUserInfo } from "./auth.model";
 import { uploadImage } from "../../utils/imageUtils";
 
 export class AuthService {
-  static async login(email: string, password: string) {
+  static async login(email: string, password: string, selectedRole?: string) {
     const users: IUser[] = await new userService().getAllPopulated();
 
     const user = users.find((u: IUser) => u.email === email);
@@ -29,6 +29,16 @@ export class AuthService {
       }
       await user.save();
       return { status: 0, message: "Wrong password" };
+    }
+
+    const roleName =
+      typeof user.roleId === "string" ? user.roleId : (user.roleId as IRole)?.name;
+
+    if (selectedRole && roleName !== selectedRole) {
+      return {
+        status: 0,
+        message: "Vai trò đăng nhập không đúng với tài khoản",
+      };
     }
 
     user.accessFailedCount = 0;
