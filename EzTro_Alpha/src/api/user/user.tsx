@@ -21,6 +21,16 @@ export const getUserApi = {
     }
   },
 
+  async getAllTenants(phone?: string) {
+    try {
+      const query = phone ? `?phone=${encodeURIComponent(phone)}` : "";
+      const response = await apiService.get(`${userApi}/tenants${query}`);
+      return response.data;
+    } catch (error) {
+      return { status: "error", data: [] };
+    }
+  },
+
   async createUser(userData: any) {
     try {
       const response = await apiService.post(userApi, userData);
