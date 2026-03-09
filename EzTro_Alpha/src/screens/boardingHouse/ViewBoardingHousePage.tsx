@@ -1,18 +1,33 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Bell, Funnel, Plus, Search, Wrench } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "../../stores/store";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { getHouseApi } from "../../api/house/house";
 import { getRoomApi } from "../../api/room/room";
 import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
 import BoardingHouseStatsCard from "../../components/boardingHouse/BoardingHouseStatsCard";
-import { BORDER_RADIUS, COLORS, FONT_SIZE, IMAGE_SIZE, SPACING } from "../../constants/theme";
+import {
+  BORDER_RADIUS,
+  COLORS,
+  FONT_SIZE,
+  IMAGE_SIZE,
+  SPACING,
+} from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
 import { IRoom } from "../../types/room";
-import { Plus, Funnel, Search, Wrench } from "lucide-react-native";
 
 export const ViewBoardingHousePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -21,12 +36,15 @@ export const ViewBoardingHousePage: React.FC = () => {
   const { getAllHousesByLandlordId } = getHouseApi;
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
   const [totalAvailableRooms, setTotalAvailableRooms] = useState<number>(0);
+  const unreadCount = useSelector((state: RootState) => state.notification.unreadCount);
 
   useFocusEffect(
     useCallback(() => {
       const getAllHouses = async () => {
         try {
-          const res = (await getAllHousesByLandlordId()) as ApiResponse<IHouse[]>;
+          const res = (await getAllHousesByLandlordId()) as ApiResponse<
+            IHouse[]
+          >;
           if (res.status === "success") {
             setBoardingHouses(res.data as IHouse[]);
           }
@@ -50,9 +68,12 @@ export const ViewBoardingHousePage: React.FC = () => {
           .filter((id): id is string => typeof id === "string");
 
         const responses = await Promise.all(
-          houseIds.map((id) =>
-            getRoomApi.getAllRoomsByHouseId(id) as Promise<ApiResponse<IRoom[]>>
-          )
+          houseIds.map(
+            (id) =>
+              getRoomApi.getAllRoomsByHouseId(id) as Promise<
+                ApiResponse<IRoom[]>
+              >,
+          ),
         );
 
         let availableTotal = 0;
@@ -61,7 +82,7 @@ export const ViewBoardingHousePage: React.FC = () => {
           if (res.status === "success" && Array.isArray(res.data)) {
             const rooms = res.data as any as IRoom[];
             const rented = rooms.filter(
-              (r) => r.status === "Đang Thuê" || r.status === "rented"
+              (r) => r.status === "Đang Thuê" || r.status === "rented",
             ).length;
             availableTotal += rooms.length - rented;
           }
@@ -84,6 +105,10 @@ export const ViewBoardingHousePage: React.FC = () => {
     navigation.navigate("mainstack", { screen: "ticketListScreen" });
   };
 
+  const handleNavigateToNotification = () => {
+    navigation.navigate("mainstack", { screen: "notificationScreen" });
+  };
+
   return (
     <SafeAreaProvider style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -92,15 +117,26 @@ export const ViewBoardingHousePage: React.FC = () => {
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-            style={styles.headerGradient}>
+            style={styles.headerGradient}
+          >
             <View style={styles.headerDivider} />
             <View style={styles.headerContent}>
-              <View style={styles.headerSpacer} />
-
               <View>
                 <Text style={styles.headerTitle}>{"Quản Lý Cụm Trọ"}</Text>
               </View>
-              <View style={styles.headerSpacer} />
+              <TouchableOpacity
+                style={styles.notificationBtn}
+                onPress={handleNavigateToNotification}
+              >
+                <Bell color={COLORS.WHITE} size={22} />
+                {unreadCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
           </LinearGradient>
 
@@ -128,7 +164,10 @@ export const ViewBoardingHousePage: React.FC = () => {
             />
 
             {/* Maintenance Button */}
-            <TouchableOpacity onPress={handleNavigateToMaintenance} style={styles.maintenanceCard}>
+            <TouchableOpacity
+              onPress={handleNavigateToMaintenance}
+              style={styles.maintenanceCard}
+            >
               <View style={styles.maintenanceIconContainer}>
                 <Wrench size={24} color={COLORS.WHITE} />
               </View>
@@ -144,9 +183,11 @@ export const ViewBoardingHousePage: React.FC = () => {
             <View style={styles.boardingHousesContainer}>
               {boardingHouses && (
                 <>
-                  {boardingHouses.map((boardingHouse: IHouse, index: number) => (
-                    <BoardingHouseCard key={index} {...boardingHouse} />
-                  ))}
+                  {boardingHouses.map(
+                    (boardingHouse: IHouse, index: number) => (
+                      <BoardingHouseCard key={index} {...boardingHouse} />
+                    ),
+                  )}
                 </>
               )}
             </View>
@@ -202,7 +243,6 @@ const styles = StyleSheet.create({
     color: COLORS.WHITE,
     fontSize: FONT_SIZE.HEADER_TITLE,
     fontWeight: "bold",
-    paddingTop: 20,
   },
   headerSpacer: {
     width: IMAGE_SIZE.HEADER_LOGO,
@@ -581,5 +621,32 @@ const styles = StyleSheet.create({
   maintenanceArrowText: {
     fontSize: 24,
     color: COLORS.PLACEHOLDER_GRAY,
+  },
+  notificationBtn: {
+    width: IMAGE_SIZE.HEADER_LOGO,
+    height: IMAGE_SIZE.HEADER_LOGO,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 14,
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: COLORS.RED_TEXT,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.WHITE,
+  },
+  notificationBadgeText: {
+    color: COLORS.WHITE,
+    fontSize: 10,
+    fontWeight: "bold",
   },
 });
