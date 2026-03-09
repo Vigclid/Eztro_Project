@@ -4,7 +4,7 @@ import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
 import ms from "ms";
 import { userService } from "../users/user.service";
 import jwt from "jsonwebtoken";
-import { IGoogleUserInfo } from "./auth.model";
+import { IGoogleUserInfo, IFacebookUserInfo } from "./auth.model";
 import { IUser } from "../users/user.model";
 
 export class AuthController {
@@ -51,6 +51,30 @@ export class AuthController {
     try {
       const users: IUser | null = await AuthService.loginWithGoogle(
         req.body.ggAccount as IGoogleUserInfo
+      );
+      if (!users) {
+        return res.status(200).json(responseWrapper("error", "Login failed"));
+      }
+      if (users.statusActive === false) {
+        return res.status(200).json(responseWrapper("error", "Banned account"));
+      }
+      const tokens = AuthService.signByUser(users);
+      res.cookie("refreshToken", tokens?.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: ms((process.env.JWT_REFRESH_EXPIRES_IN || "7d") as Parameters<typeof ms>[0]),
+      });
+      res.json(responseWrapper("success", "Login successful", tokens));
+    } catch (error) {
+      return res.status(500).json(responseWrapper("error", "Login failed", error));
+    }
+  };
+
+  static loginWithFacebook = async (req: Request, res: Response) => {
+    try {
+      const users: IUser | null = await AuthService.loginWithFacebook(
+        req.body.fbAccount as IFacebookUserInfo
       );
       if (!users) {
         return res.status(200).json(responseWrapper("error", "Login failed"));

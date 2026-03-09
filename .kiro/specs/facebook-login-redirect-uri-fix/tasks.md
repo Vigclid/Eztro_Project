@@ -1,0 +1,123 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - Facebook App ID and Redirect URI Mismatch
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the configuration mismatch exists
+  - **Scoped PBT Approach**: Scope the property to concrete failing cases - Facebook OAuth requests with mismatched App IDs and redirect URI schemes
+  - Test that Facebook OAuth configuration in LoginScreen.tsx uses App ID `1382104650596188` consistently
+  - Test that redirect URI scheme matches `fb1382104650596188` (from facebookScheme in app.json)
+  - Test that OAuth flow completes successfully without "Không có URI chuyển hướng" error
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the configuration mismatch exists)
+  - Document counterexamples found:
+    - Current App ID in LoginScreen.tsx vs app.json
+    - Current redirect URI scheme vs facebookScheme in app.json
+    - OAuth flow failure with redirect URI error
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 2.1, 2.2_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Non-Facebook Authentication Methods
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-Facebook authentication:
+    - Google OAuth login flow and token handling
+    - Email/password login flow and credential validation
+    - Backend API calls for user creation and JWT generation
+    - Redux state updates for setAccessToken and setUser
+    - Navigation flow to main screen after successful authentication
+  - Write property-based tests capturing observed behavior patterns:
+    - For all Google OAuth requests, authentication flow produces same result as unfixed code
+    - For all email/password requests, authentication flow produces same result as unfixed code
+    - For all backend API calls, user creation and token generation produce same result as unfixed code
+    - For all navigation events, screen transitions produce same result as unfixed code
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+
+- [x] 3. Fix Facebook Login Redirect URI Configuration
+
+  - [x] 3.1 Update app.json with correct Facebook App ID
+    - Change facebookAppId to `1382104650596188`
+    - Verify facebookScheme is set to `fb1382104650596188`
+    - Ensure facebookDisplayName is configured correctly
+    - _Bug_Condition: isBugCondition(input) where input.clientId != app.json.facebookAppId OR input.redirectUriScheme != app.json.facebookScheme_
+    - _Expected_Behavior: OAuth requests use consistent App ID 1382104650596188 across all configuration files_
+    - _Preservation: Google OAuth, email/password login, backend APIs, Redux state, navigation remain unchanged_
+    - _Requirements: 2.1, 2.2_
+
+  - [x] 3.2 Update LoginScreen.tsx Facebook OAuth configuration
+    - Update clientId from current value to `1382104650596188` (line 71)
+    - Update redirect URI scheme to `fb1382104650596188` (line 68)
+    - Ensure makeRedirectUri uses the correct scheme matching app.json
+    - Verify OAuth request configuration aligns with app.json settings
+    - _Bug_Condition: Hardcoded App ID and scheme don't match app.json configuration_
+    - _Expected_Behavior: LoginScreen.tsx uses App ID and scheme from app.json configuration_
+    - _Preservation: Google OAuth configuration and email/password login logic remain unchanged_
+    - _Requirements: 2.1, 2.2_
+
+  - [x] 3.3 Update iOS infoPlist with correct Facebook App ID
+    - Add or update CFBundleURLSchemes with `fb1382104650596188`
+    - Add or update FacebookAppID with `1382104650596188`
+    - Add or update FacebookDisplayName with app name
+    - Ensure LSApplicationQueriesSchemes includes `fbapi`, `fb-messenger-share-api`, `fbauth2`, `fbshareextension`
+    - _Bug_Condition: iOS configuration doesn't match Facebook App ID causing redirect failures on iOS devices_
+    - _Expected_Behavior: iOS properly handles Facebook OAuth redirects with correct URL scheme_
+    - _Preservation: Other iOS URL schemes and configurations remain unchanged_
+    - _Requirements: 2.1, 2.2_
+
+  - [x] 3.4 Clean up unused variables in LoginScreen.tsx
+    - Remove unused `redirectUri` variable declaration (lines 52-54)
+    - Verify no other unused variables or imports exist
+    - Run linter to confirm no warnings
+    - _Bug_Condition: N/A (code cleanup task)_
+    - _Expected_Behavior: Clean code without unused variables or warnings_
+    - _Preservation: All authentication logic remains functionally unchanged_
+    - _Requirements: N/A_
+
+  - [x] 3.5 Create Meta Developer Console setup documentation
+    - Document how to register redirect URIs in Meta Developer Console
+    - Add `fb1382104650596188://authorize` to Valid OAuth Redirect URIs
+    - Add `https://auth.expo.io/@vigclid/EzTro_Alpha` as fallback redirect URI
+    - Document development URI format (e.g., `exp://192.168.x.x:8081`)
+    - Include screenshots and step-by-step instructions
+    - Save documentation to project root or docs folder
+    - _Bug_Condition: Missing documentation causes configuration errors in Meta Developer Console_
+    - _Expected_Behavior: Developers can correctly configure redirect URIs following clear documentation_
+    - _Preservation: N/A (documentation task)_
+    - _Requirements: 2.2_
+
+  - [x] 3.6 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Consistent Facebook App ID Usage
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - Verify Facebook OAuth uses App ID `1382104650596188` consistently
+    - Verify redirect URI scheme matches `fb1382104650596188`
+    - Verify OAuth flow completes without redirect URI errors
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - _Requirements: 2.1, 2.2_
+
+  - [x] 3.7 Verify preservation tests still pass
+    - **Property 2: Preservation** - Non-Facebook Authentication Methods
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - Verify Google OAuth continues to work exactly as before
+    - Verify email/password login continues to work exactly as before
+    - Verify backend API calls produce same results as before
+    - Verify navigation flow remains unchanged
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all tests still pass after fix (no regressions)
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Run all exploration tests and verify they pass (bug is fixed)
+  - Run all preservation tests and verify they pass (no regressions)
+  - Run full integration test of Facebook login flow
+  - Test on both iOS and Android if possible
+  - Verify Meta Developer Console accepts the configured redirect URIs
+  - Ask the user if questions arise or if manual testing is needed

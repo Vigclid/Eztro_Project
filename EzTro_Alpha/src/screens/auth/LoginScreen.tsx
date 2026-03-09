@@ -20,16 +20,25 @@ import Svg, { Path } from "react-native-svg";
 import { useDispatch } from "react-redux";
 
 // Navigation & Store types
-import { loginAsync } from "../../features/auth/authSlice";
+import {
+  loginAsync,
+  setAccessToken,
+  setUser,
+} from "../../features/auth/authSlice";
 import {
   AuthNavigationProp,
   NavigationProp,
 } from "../../navigation/navigation.type";
 import { AppDispatch } from "../../stores/store";
+import {
+  getAuthApi,
+  IFacebookUserInfo,
+  IGoogleUserInfo,
+} from "../../api/auth/auth";
 
 // SET UP GOOGLE LOGIN
-import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
+import * as Facebook from "expo-auth-session/providers/facebook";
 import * as WebBrowser from "expo-web-browser";
 WebBrowser.maybeCompleteAuthSession();
 
@@ -68,23 +77,39 @@ export const LoginScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
   const navigation_main = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: "EzTro_Alpha",
-  });
+
   // LOGIN WITH GOOGLE SETUP
-  const [request, response, promptAsync] = Google.useAuthRequest({
+  const [, response, promptAsync] = Google.useAuthRequest({
     clientId:
       "332795377963-6q4u83qobjnorpo5dsjp7ic9nsadmlgr.apps.googleusercontent.com",
     redirectUri: "https://auth.expo.io/@vigclid/EzTro_Alpha",
+
     scopes: ["profile", "email"],
   });
 
+  // LOGIN WITH FACEBOOK SETUP
+  // Sử dụng Expo auth proxy vì Meta không chấp nhận custom URL schemes
+
+  // Log để debug
+
+  const [, responseFB, promptAsyncFB] = Facebook.useAuthRequest({
+    clientId: "1382104650596188",
+  });
+
+  // Handle Google login response
   useEffect(() => {
     if (response?.type === "success") {
-      const { authentication } = response;
-      console.log("Access Token:", authentication?.accessToken);
+      handleGoogleLoginSuccess(response.authentication);
     }
   }, [response]);
+
+  // Handle Facebook login response
+  useEffect(() => {
+    if (responseFB?.type === "success") {
+      handleFacebookLoginSuccess(responseFB.authentication);
+    }
+  }, [responseFB]);
+
   // State management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -154,6 +179,107 @@ export const LoginScreen = () => {
       setPasswordError("✕ Mật khẩu phải có ít nhất 8 ký tự");
       setPasswordSuccess("");
       setIsFormValid(false);
+    }
+  };
+
+  // Handle Google Login Success
+  const handleGoogleLoginSuccess = async (authentication: any) => {
+    try {
+      setLoading(true);
+
+      // Fetch user info from Google API
+      const userInfoResponse = await fetch(
+        "https://www.googleapis.com/oauth2/v3/userinfo",
+        {
+          headers: { Authorization: `Bearer ${authentication?.accessToken}` },
+        },
+      );
+      const ggAccount: IGoogleUserInfo = await userInfoResponse.json();
+
+      console.log("Google user data:", ggAccount);
+
+      // Send to backend
+      const loginResponse = await getAuthApi.loginWithGoogle(ggAccount);
+
+      if (loginResponse.status === "success") {
+        // Save to Redux store
+        dispatch(setAccessToken(loginResponse.data.accessToken));
+        dispatch(setUser(loginResponse.data.user));
+
+        Alert.alert("Thành công", "Đăng nhập Google thành công");
+
+        // Navigate to main screen
+        navigation_main.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: "mainscreen",
+                params: { screen: "viewBoardingHousePage" },
+              },
+            ],
+          }),
+        );
+      } else {
+        Alert.alert(
+          "Lỗi",
+          loginResponse.message || "Đăng nhập Google thất bại",
+        );
+      }
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      Alert.alert("Lỗi", error.message || "Đăng nhập Google thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Facebook Login Success (WebView OAuth)
+  const handleFacebookLoginSuccess = async (authentication: any) => {
+    try {
+      setLoading(true);
+
+      // Fetch user info from Facebook Graph API
+      const userInfoEndpoint = `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${authentication?.accessToken}`;
+
+      const userInfoResponse = await fetch(userInfoEndpoint);
+      const fbAccount: IFacebookUserInfo = await userInfoResponse.json();
+
+      console.log("Facebook user data:", fbAccount);
+
+      // Send to backend
+      const loginResponse = await getAuthApi.loginWithFacebook(fbAccount);
+
+      if (loginResponse.status === "success") {
+        // Save to Redux store
+        dispatch(setAccessToken(loginResponse.data.accessToken));
+        dispatch(setUser(loginResponse.data.user));
+
+        Alert.alert("Thành công", "Đăng nhập Facebook thành công");
+
+        // Navigate to main screen
+        navigation_main.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: "mainscreen",
+                params: { screen: "viewBoardingHousePage" },
+              },
+            ],
+          }),
+        );
+      } else {
+        Alert.alert(
+          "Lỗi",
+          loginResponse.message || "Đăng nhập Facebook thất bại",
+        );
+      }
+    } catch (error: any) {
+      console.error("Facebook login error:", error);
+      Alert.alert("Lỗi", error.message || "Đăng nhập Facebook thất bại");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -371,7 +497,11 @@ export const LoginScreen = () => {
                 <GoogleIcon />
                 <Text style={styles.socialBtnText}>Google</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.socialBtn}
+                activeOpacity={0.7}
+                onPress={() => promptAsyncFB()}
+              >
                 <FacebookIcon />
                 <Text style={styles.socialBtnText}>Facebook</Text>
               </TouchableOpacity>

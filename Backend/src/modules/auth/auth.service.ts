@@ -4,7 +4,7 @@ import { jwtConfig } from "../../config/jwt";
 import { userService } from "../users/user.service";
 import { IUser } from "../users/user.model";
 import { IRole } from "../roles/role.model";
-import { IGoogleUserInfo } from "./auth.model";
+import { IGoogleUserInfo, IFacebookUserInfo } from "./auth.model";
 import { uploadImage } from "../../utils/imageUtils";
 
 export class AuthService {
@@ -96,6 +96,48 @@ export class AuthService {
       }
       return user;
     } catch (error: any) {
+      return null;
+    }
+  }
+
+  static async loginWithFacebook(facebookUserInfo: IFacebookUserInfo) {
+    try {
+      const userServiceInstance = new userService();
+      let user = await userServiceInstance.getByEmail(facebookUserInfo.email);
+      
+      if (!user) {
+        // Parse name from Facebook (name = "Nguyen Van A")
+        const nameParts = facebookUserInfo.name.split(" ");
+        const firstName = nameParts[nameParts.length - 1]; // "A"
+        const lastName = nameParts.slice(0, -1).join(" "); // "Nguyen Van"
+        
+        // Upload profile picture
+        const profilePictureUrl = await uploadImage(
+          facebookUserInfo.picture.data.url,
+          1,
+          false
+        );
+        
+        // Create new user
+        await userServiceInstance.create({
+          profilePicture: profilePictureUrl.url,
+          firstName: firstName,
+          lastName: lastName,
+          phoneNumber: "",
+          dateOfBirth: new Date(),
+          password: Math.random().toString(36).slice(-8), // Random password
+          email: facebookUserInfo.email,
+          statusActive: true,
+          accessFailedCount: 0,
+          loginFailedTime: null,
+        });
+        
+        user = await userServiceInstance.getByEmail(facebookUserInfo.email);
+      }
+      
+      return user;
+    } catch (error: any) {
+      console.error("Facebook login error:", error);
       return null;
     }
   }

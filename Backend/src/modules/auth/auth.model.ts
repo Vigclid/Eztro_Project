@@ -8,3 +8,14 @@ export interface IGoogleUserInfo {
   email_verified: boolean;
   locale: string;
 }
+
+export interface IFacebookUserInfo {
+  id: string;
+  name: string;
+  email: string;
+  picture: {
+    data: {
+      url: string;
+    };
+  };
+}
