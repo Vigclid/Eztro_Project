@@ -49,6 +49,7 @@ const AddTenantScreen = () => {
   const [searchPhone, setSearchPhone] = useState("");
   const [searchingTenants, setSearchingTenants] = useState(false);
   const [tenantResults, setTenantResults] = useState<IUser[]>([]);
+  const [selectedTenantAccount, setSelectedTenantAccount] = useState<IUser | null>(null);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -62,6 +63,37 @@ const AddTenantScreen = () => {
 
     if (!roomId) {
       Alert.alert("Lỗi", "Thiếu thông tin phòng. Vui lòng thử lại.");
+      return;
+    }
+
+    if (selectedTenantAccount?._id) {
+      setSubmitting(true);
+      try {
+        const raw = await postRoomApi.inviteTenant(roomId, String(selectedTenantAccount._id));
+        const res = (raw || {
+          status: "error",
+          message: "Không nhận được phản hồi từ máy chủ.",
+        }) as ApiResponse<any>;
+        if (res.status === "success" || res.status === true) {
+          Alert.alert("Thành công", "Đã gửi lời mời tham gia phòng cho người thuê", [
+            {
+              text: "OK",
+              onPress: () => navigation.goBack(),
+            },
+          ]);
+        } else {
+          Alert.alert("Lỗi", res.message || "Không thể gửi lời mời.");
+        }
+      } catch (error: any) {
+        Alert.alert(
+          "Lỗi",
+          error?.response?.data?.message ||
+            error?.message ||
+            "Không thể gửi lời mời lúc này."
+        );
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
@@ -95,6 +127,41 @@ const AddTenantScreen = () => {
       Alert.alert(
         "Lỗi",
         error?.message || "Có lỗi xảy ra, vui lòng thử lại sau.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleInviteTenantAccount = async (tenant: IUser) => {
+    if (!roomId) {
+      Alert.alert("Lỗi", "Thiếu thông tin phòng. Vui lòng thử lại.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const raw = await postRoomApi.inviteTenant(roomId, String(tenant._id));
+      const res = (raw || {
+        status: "error",
+        message: "Không nhận được phản hồi từ máy chủ.",
+      }) as ApiResponse<any>;
+      if (res.status === "success" || res.status === true) {
+        Alert.alert("Thành công", "Đã gửi lời mời cho người thuê", [
+          {
+            text: "OK",
+            onPress: () => navigation.goBack(),
+          },
+        ]);
+      } else {
+        Alert.alert("Lỗi", res.message || "Không thể gửi lời mời.");
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Không thể gửi lời mời lúc này."
       );
     } finally {
       setSubmitting(false);
@@ -206,6 +273,18 @@ const AddTenantScreen = () => {
                     onPress={() => {
                       setTenantName(getTenantDisplayName(tenant));
                       setPhoneNumber(tenant.phoneNumber || "");
+                      setSelectedTenantAccount(tenant);
+                      Alert.alert(
+                        "Mời người thuê",
+                        `Gửi lời mời cho ${getTenantDisplayName(tenant)} vào phòng này?`,
+                        [
+                          { text: "Hủy", style: "cancel" },
+                          {
+                            text: "Mời",
+                            onPress: () => handleInviteTenantAccount(tenant),
+                          },
+                        ]
+                      );
                     }}
                   >
                     <Text style={styles.searchResultName}>
@@ -217,6 +296,13 @@ const AddTenantScreen = () => {
                   </TouchableOpacity>
                 ))}
               </View>
+            )}
+
+            {selectedTenantAccount?._id && (
+              <Text style={styles.selectedAccountHint}>
+                Đã chọn tài khoản: {getTenantDisplayName(selectedTenantAccount)}.
+                Hệ thống sẽ gửi lời mời tham gia phòng.
+              </Text>
             )}
 
             <View style={styles.singleRow}>
@@ -510,6 +596,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: FONT_SIZE.ADDRESS,
     color: COLORS.TEXT_SECONDARY,
+  },
+  selectedAccountHint: {
+    marginBottom: SPACING.SMALL,
+    color: COLORS.PRIMARY,
+    fontSize: FONT_SIZE.ADDRESS,
+    fontWeight: "600",
   },
 });
 

@@ -17,7 +17,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MainStackParamList } from "../../navigation/navigation.type";
-import { postRoomApi } from "../../api/room/room";
+import { getRoomApi, postRoomApi } from "../../api/room/room";
 import { ApiResponse } from "../../types/app.common";
 import { IRoom, IVirtualTenant } from "../../types/room";
 import {
@@ -91,6 +91,10 @@ const CreateNewRoomScreen = () => {
   const [tenants, setTenants] = useState<IVirtualTenant[]>(
     editingRoom?.virtualTenants || [],
   );
+  const [inviteCode, setInviteCode] = useState("");
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [roomMembers, setRoomMembers] = useState<any[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   useEffect(() => {
     if (editingRoom) {
@@ -113,6 +117,31 @@ const CreateNewRoomScreen = () => {
       }));
     }
   }, [editingRoom]);
+
+  const fetchRoomMembers = async () => {
+    if (!editingRoom?._id) return;
+
+    setLoadingMembers(true);
+    try {
+      const raw = await getRoomApi.getRoomMembers(editingRoom._id);
+      const res = raw as ApiResponse<any[]>;
+      if (res.status === "success" && Array.isArray(res.data)) {
+        setRoomMembers(res.data);
+      } else {
+        setRoomMembers([]);
+      }
+    } catch {
+      setRoomMembers([]);
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isEditMode && editingRoom?._id) {
+      fetchRoomMembers();
+    }
+  }, [isEditMode, editingRoom?._id]);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -193,7 +222,6 @@ const CreateNewRoomScreen = () => {
         Alert.alert("Lỗi", res.message || "Có lỗi xảy ra, vui lòng thử lại.");
       }
     } catch (error: any) {
-      // Hiển thị thông báo rõ ràng khi tên phòng bị trùng trong cùng cụm trọ
       const backendMessage =
         error?.response?.data?.message || error?.message || "";
 
@@ -214,6 +242,70 @@ const CreateNewRoomScreen = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleGenerateInviteCode = async () => {
+    if (!editingRoom?._id) {
+      Alert.alert("Thông báo", "Bạn cần lưu phòng trước khi tạo mã mời.");
+      return;
+    }
+
+    setGeneratingCode(true);
+    try {
+      const raw = await postRoomApi.createInviteCode(editingRoom._id);
+      const res = raw as ApiResponse<any>;
+
+      if (res.status === "success") {
+        const code = res.data?.inviteCode || "";
+        setInviteCode(String(code));
+        Alert.alert("Thành công", `Mã mời phòng: ${code}`);
+      } else {
+        Alert.alert("Lỗi", res.message || "Không thể tạo mã mời.");
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Không thể tạo mã mời lúc này."
+      );
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
+  const handleRemoveRoomMember = async (member: any) => {
+    Alert.alert(
+      "Xác nhận",
+      `Xóa ${(member?.userId?.lastName || "") + " " + (member?.userId?.firstName || "")} khỏi phòng?`,
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const raw = await postRoomApi.removeRoomMember(String(member._id));
+              const res = raw as ApiResponse<any>;
+              if (res.status === "success") {
+                Alert.alert("Thành công", "Đã xóa thành viên khỏi phòng");
+                fetchRoomMembers();
+                onRefresh?.();
+              } else {
+                Alert.alert("Lỗi", res.message || "Không thể xóa thành viên");
+              }
+            } catch (error: any) {
+              Alert.alert(
+                "Lỗi",
+                error?.response?.data?.message ||
+                  error?.message ||
+                  "Không thể xóa thành viên lúc này"
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
 
@@ -377,6 +469,73 @@ const CreateNewRoomScreen = () => {
               </TouchableOpacity>
             </View>
           </View>
+
+          {isEditMode && (
+            <View style={styles.statusSection}>
+              <View style={styles.labelContainer}>
+                <MaterialCommunityIcons
+                  name="key-outline"
+                  size={18}
+                  color={COLORS.PRIMARY}
+                  style={styles.inputIcon}
+                />
+                <Text style={styles.label}>Mã mời tham gia phòng</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.btnCancel}
+                onPress={handleGenerateInviteCode}
+                disabled={generatingCode}
+              >
+                <Text style={styles.btnCancelText}>
+                  {generatingCode ? "Đang tạo mã..." : "Tạo mã phòng 6 số"}
+                </Text>
+              </TouchableOpacity>
+
+              {inviteCode ? (
+                <Text style={[styles.tenantsTitle, { marginTop: SPACING.SMALL }]}>
+                  Mã hiện tại: {inviteCode}
+                </Text>
+              ) : null}
+            </View>
+          )}
+
+          {isEditMode && (
+            <View style={styles.tenantsSection}>
+              <Text style={styles.tenantsTitle}>Thành viên phòng (tài khoản)</Text>
+              {loadingMembers ? (
+                <Text style={styles.tenantText}>Đang tải danh sách thành viên...</Text>
+              ) : roomMembers.length === 0 ? (
+                <Text style={styles.tenantText}>Chưa có thành viên nào trong phòng</Text>
+              ) : (
+                roomMembers.map((member) => {
+                  const fullName = `${member?.userId?.lastName || ""} ${member?.userId?.firstName || ""}`.trim();
+                  return (
+                    <View key={String(member._id)} style={styles.tenantItem}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.tenantName}>{fullName || "Không rõ tên"}</Text>
+                        <Text style={styles.tenantText}>
+                          {member?.userId?.phoneNumber || member?.userId?.email || "Không có liên hệ"}
+                        </Text>
+                        <Text style={styles.tenantText}>
+                          Vai trò: {member?.role === "TENANT" ? "Người thuê chính" : "Người thuê phụ"}
+                        </Text>
+                        <Text style={styles.tenantText}>
+                          Ngày vào ở: {member?.moveInDate ? new Date(member.moveInDate).toISOString().slice(0, 10) : "--/--/----"}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.tenantRemoveButton}
+                        onPress={() => handleRemoveRoomMember(member)}
+                      >
+                        <Text style={styles.tenantRemoveText}>X</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          )}
 
           {tenants.length > 0 && (
             <View style={styles.tenantsSection}>
