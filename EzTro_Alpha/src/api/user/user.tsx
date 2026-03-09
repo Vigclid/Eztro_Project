@@ -72,7 +72,9 @@ export const getUserApi = {
       });
 
       if (!res.status || res.error) {
-        throw new Error(res.error?.message || res.message || "Upload avatar thất bại");
+        throw new Error(
+          res.error?.message || res.message || "Upload avatar thất bại",
+        );
       }
 
       if (!res.data?.data) {
@@ -87,7 +89,10 @@ export const getUserApi = {
 };
 
 export const putUserApi = {
-  changePassword: async (oldPassword: string, password: string): Promise<void> => {
+  changePassword: async (
+    oldPassword: string,
+    password: string,
+  ): Promise<void> => {
     const res = await apiService.put<any>(`${userApi}/me/password`, {
       oldPassword,
       password,
