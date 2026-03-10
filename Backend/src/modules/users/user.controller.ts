@@ -17,6 +17,18 @@ export class userController extends GenericController<IUser> {
     );
   };
 
+  getAllTenants = async (req: Request, res: Response) => {
+    try {
+      const phone = String(req.query.phone || "").trim();
+      const tenants = await this.UserService.getAllTenants(phone || undefined);
+      return res
+        .status(200)
+        .json(responseWrapper("success", "Lấy danh sách người thuê thành công", tenants));
+    } catch (error) {
+      return res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+    }
+  };
+
   createAccount = async (req: Request, res: Response) => {
     try {
       const roleName = req.body.roleName;

@@ -1,13 +1,13 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { configureStore } from "@reduxjs/toolkit";
 import { combineReducers } from "redux";
-import { persistStore, persistReducer } from "redux-persist";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import todosReducer from "../features/todos/todosSlice";
+import { persistReducer, persistStore } from "redux-persist";
 import authReducer from "../features/auth/authSlice";
+import notificationReducer from "../features/notification/notificationSlice";
 
 const rootReducer = combineReducers({
-  todos: todosReducer,
   auth: authReducer,
+  notification: notificationReducer, // không persist — fetch fresh từ API mỗi lần mở app
 });
 
 const persistConfig = {

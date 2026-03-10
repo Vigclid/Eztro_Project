@@ -18,8 +18,10 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MainStackParamList } from "../../navigation/navigation.type";
 import { postRoomApi } from "../../api/room/room";
+import { getUserApi } from "../../api/user/user";
 import { ApiResponse } from "../../types/app.common";
 import { IRoom, IVirtualTenant } from "../../types/room";
+import { IUser } from "../../types/users";
 import {
   COLORS,
   SPACING,
@@ -44,6 +46,10 @@ const AddTenantScreen = () => {
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [searchPhone, setSearchPhone] = useState("");
+  const [searchingTenants, setSearchingTenants] = useState(false);
+  const [tenantResults, setTenantResults] = useState<IUser[]>([]);
+  const [selectedTenantAccount, setSelectedTenantAccount] = useState<IUser | null>(null);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -57,6 +63,37 @@ const AddTenantScreen = () => {
 
     if (!roomId) {
       Alert.alert("Lỗi", "Thiếu thông tin phòng. Vui lòng thử lại.");
+      return;
+    }
+
+    if (selectedTenantAccount?._id) {
+      setSubmitting(true);
+      try {
+        const raw = await postRoomApi.inviteTenant(roomId, String(selectedTenantAccount._id));
+        const res = (raw || {
+          status: "error",
+          message: "Không nhận được phản hồi từ máy chủ.",
+        }) as ApiResponse<any>;
+        if (res.status === "success" || res.status === true) {
+          Alert.alert("Thành công", "Đã gửi lời mời tham gia phòng cho người thuê", [
+            {
+              text: "OK",
+              onPress: () => navigation.goBack(),
+            },
+          ]);
+        } else {
+          Alert.alert("Lỗi", res.message || "Không thể gửi lời mời.");
+        }
+      } catch (error: any) {
+        Alert.alert(
+          "Lỗi",
+          error?.response?.data?.message ||
+            error?.message ||
+            "Không thể gửi lời mời lúc này."
+        );
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
@@ -96,6 +133,71 @@ const AddTenantScreen = () => {
     }
   };
 
+  const handleInviteTenantAccount = async (tenant: IUser) => {
+    if (!roomId) {
+      Alert.alert("Lỗi", "Thiếu thông tin phòng. Vui lòng thử lại.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const raw = await postRoomApi.inviteTenant(roomId, String(tenant._id));
+      const res = (raw || {
+        status: "error",
+        message: "Không nhận được phản hồi từ máy chủ.",
+      }) as ApiResponse<any>;
+      if (res.status === "success" || res.status === true) {
+        Alert.alert("Thành công", "Đã gửi lời mời cho người thuê", [
+          {
+            text: "OK",
+            onPress: () => navigation.goBack(),
+          },
+        ]);
+      } else {
+        Alert.alert("Lỗi", res.message || "Không thể gửi lời mời.");
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Không thể gửi lời mời lúc này."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const getTenantDisplayName = (user: IUser) => {
+    const fullName = `${user.lastName || ""} ${user.firstName || ""}`.trim();
+    return fullName || user.email || "Không rõ tên";
+  };
+
+  const handleSearchTenantByPhone = async () => {
+    if (!searchPhone.trim()) {
+      setTenantResults([]);
+      Alert.alert("Thông báo", "Vui lòng nhập số điện thoại để tìm kiếm.");
+      return;
+    }
+
+    setSearchingTenants(true);
+    try {
+      const raw = await getUserApi.getAllTenants(searchPhone.trim());
+      const res = raw as ApiResponse<IUser[]>;
+      if (res.status === "success" && Array.isArray(res.data)) {
+        setTenantResults(res.data);
+      } else {
+        setTenantResults([]);
+        Alert.alert("Thông báo", res.message || "Không tìm thấy người thuê phù hợp.");
+      }
+    } catch (error: any) {
+      setTenantResults([]);
+      Alert.alert("Lỗi", error?.message || "Không thể tìm người thuê lúc này.");
+    } finally {
+      setSearchingTenants(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY} />
@@ -127,6 +229,81 @@ const AddTenantScreen = () => {
         >
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Thông tin người thuê</Text>
+
+            <View style={styles.singleRow}>
+              <View style={styles.inputWrapper}>
+                <View style={styles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="account-search-outline"
+                    size={18}
+                    color={COLORS.PRIMARY}
+                    style={styles.inputIcon}
+                  />
+                  <Text style={styles.label}>Tìm người thuê theo số điện thoại</Text>
+                </View>
+
+                <View style={styles.searchRow}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Nhập số điện thoại"
+                    placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+                    value={searchPhone}
+                    keyboardType="phone-pad"
+                    onChangeText={setSearchPhone}
+                  />
+                  <TouchableOpacity
+                    style={styles.searchButton}
+                    onPress={handleSearchTenantByPhone}
+                    disabled={searchingTenants}
+                  >
+                    <Text style={styles.searchButtonText}>
+                      {searchingTenants ? "Đang tìm..." : "Tìm"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {tenantResults.length > 0 && (
+              <View style={styles.searchResultCard}>
+                {tenantResults.map((tenant, idx) => (
+                  <TouchableOpacity
+                    key={`${tenant._id || idx}`}
+                    style={styles.searchResultItem}
+                    onPress={() => {
+                      setTenantName(getTenantDisplayName(tenant));
+                      setPhoneNumber(tenant.phoneNumber || "");
+                      setSelectedTenantAccount(tenant);
+                      Alert.alert(
+                        "Mời người thuê",
+                        `Gửi lời mời cho ${getTenantDisplayName(tenant)} vào phòng này?`,
+                        [
+                          { text: "Hủy", style: "cancel" },
+                          {
+                            text: "Mời",
+                            onPress: () => handleInviteTenantAccount(tenant),
+                          },
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={styles.searchResultName}>
+                      {getTenantDisplayName(tenant)}
+                    </Text>
+                    <Text style={styles.searchResultPhone}>
+                      {tenant.phoneNumber || "Không có số điện thoại"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {selectedTenantAccount?._id && (
+              <Text style={styles.selectedAccountHint}>
+                Đã chọn tài khoản: {getTenantDisplayName(selectedTenantAccount)}.
+                Hệ thống sẽ gửi lời mời tham gia phòng.
+              </Text>
+            )}
 
             <View style={styles.singleRow}>
               <View style={styles.inputWrapper}>
@@ -375,6 +552,56 @@ const styles = StyleSheet.create({
   tenantText: {
     fontSize: FONT_SIZE.ADDRESS,
     color: COLORS.TEXT_SECONDARY,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.SMALL,
+  },
+  searchButton: {
+    height: 48,
+    paddingHorizontal: SPACING.MEDIUM,
+    borderRadius: BORDER_RADIUS.BUTTON,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.PRIMARY,
+  },
+  searchButtonText: {
+    color: COLORS.WHITE,
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  searchResultCard: {
+    borderWidth: 1,
+    borderColor: COLORS.BORDER_GRAY,
+    borderRadius: BORDER_RADIUS.CREATE_FORM_CARD,
+    padding: SPACING.SMALL,
+    marginBottom: SPACING.MEDIUM,
+    backgroundColor: COLORS.BACKGROUND_GRAY,
+  },
+  searchResultItem: {
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER_GRAY_ALPHA,
+    backgroundColor: COLORS.WHITE,
+    padding: SPACING.SMALL,
+    marginBottom: SPACING.XS,
+  },
+  searchResultName: {
+    fontSize: FONT_SIZE.CREATE_FORM_LABEL,
+    color: COLORS.TEXT_DARK,
+    fontWeight: "700",
+  },
+  searchResultPhone: {
+    marginTop: 2,
+    fontSize: FONT_SIZE.ADDRESS,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  selectedAccountHint: {
+    marginBottom: SPACING.SMALL,
+    color: COLORS.PRIMARY,
+    fontSize: FONT_SIZE.ADDRESS,
+    fontWeight: "600",
   },
 });
 

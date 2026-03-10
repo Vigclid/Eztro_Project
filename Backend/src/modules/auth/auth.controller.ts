@@ -9,9 +9,9 @@ import { IUser } from "../users/user.model";
 
 export class AuthController {
   static async login(req: Request, res: Response) {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
-    const tokens = await AuthService.login(email.toLowerCase(), password);
+    const tokens = await AuthService.login(email.toLowerCase(), password, role);
 
     if (tokens.status === 0) {
       return res.status(200).json(responseWrapper("error", tokens.message || "Login failed"));

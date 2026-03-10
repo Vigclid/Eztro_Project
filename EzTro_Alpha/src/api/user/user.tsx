@@ -33,6 +33,16 @@ export const getUserApi = {
 };
 
 export const postUserApi = {
+  async getAllTenants(phone?: string) {
+    try {
+      const query = phone ? `?phone=${encodeURIComponent(phone)}` : "";
+      const response = await apiService.get(`${userApi}/tenants${query}`);
+      return response.data;
+    } catch (error) {
+      return { status: "error", data: [] };
+    }
+  },
+
   async createUser(userData: any) {
     try {
       const response = await apiService.post(userApi, userData);
@@ -42,6 +52,60 @@ export const postUserApi = {
         return error.response.data;
       }
       throw error;
+    }
+  },
+
+  async checkEmailExist(email: string) {
+    try {
+      const response: any = await apiService.get(`${userApi}/exist/${email}`);
+      return response?.data?.data?.exists ?? false;
+    } catch (error: any) {
+      return false;
+    }
+  },
+
+  async resetPassword(email: string, password: string) {
+    try {
+      const res = await apiService.post(`${userApi}/me/password/reset`, {
+        email,
+        password,
+      });
+      return res.data;
+    } catch (err: any) {
+      throw new Error(err.response?.data?.message || "Reset failed");
+    }
+  },
+
+  updateProfile: async (data: any) => {
+    const res = await apiService.put(`${userApi}/me/profile`, data);
+    return res.data;
+  },
+
+  uploadAvatar: async (avatarUri: string): Promise<IUser> => {
+    try {
+      const base64 = await FileSystem.readAsStringAsync(avatarUri, {
+        encoding: "base64",
+      });
+
+      const base64String = `data:image/jpeg;base64,${base64}`;
+
+      const res = await apiService.put<any>(`${userApi}/me/avatar`, {
+        avatar: base64String,
+      });
+
+      if (!res.status || res.error) {
+        throw new Error(
+          res.error?.message || res.message || "Upload avatar thất bại",
+        );
+      }
+
+      if (!res.data?.data) {
+        throw new Error("Không nhận được dữ liệu người dùng");
+      }
+
+      return res.data.data as IUser;
+    } catch (err: any) {
+      throw err;
     }
   },
 };
