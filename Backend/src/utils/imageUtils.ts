@@ -9,7 +9,7 @@ cloudinary.config({
 });
 
 const FOLDER_MAP: { [key: string]: string } = {
-  "1": "book",
+  "1": "Invoice_Image",
   "2": "background",
   "3": "Artwork",
   "4": "AI_images",
