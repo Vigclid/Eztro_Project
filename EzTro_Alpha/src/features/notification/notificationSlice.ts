@@ -1,18 +1,28 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { postNotificationApi } from "../../api/notification/notification";
+import {
+  getNotificationApi,
+  PaginatedNotificationResult,
+  postNotificationApi,
+} from "../../api/notification/notification";
 import { INotification } from "./types";
 
 interface NotificationState {
   notifications: INotification[];
   unreadCount: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+  isFetchingMore: boolean;
 }
 
 const initialState: NotificationState = {
   notifications: [],
   unreadCount: 0,
+  nextCursor: null,
+  hasMore: true,
+  isFetchingMore: false,
 };
 
-// ─── Async thunks (call API + update state) ───────────────────────────
+// ─── Async thunks ─────────────────────────────────────────────────────
 
 export const markReadAsync = createAsyncThunk(
   "notification/markRead",
@@ -29,21 +39,30 @@ export const markAllReadAsync = createAsyncThunk(
   },
 );
 
+export const fetchMoreNotificationsAsync = createAsyncThunk(
+  "notification/fetchMore",
+  async (cursor: string) => {
+    return await getNotificationApi.getMyNotification(cursor);
+  },
+);
+
 // ─── Slice ────────────────────────────────────────────────────────────
 
 const notificationSlice = createSlice({
   name: "notification",
   initialState,
   reducers: {
-    // Gọi khi fetch toàn bộ danh sách từ API
-    setNotifications(state, action: PayloadAction<INotification[]>) {
-      state.notifications = action.payload;
-      state.unreadCount = action.payload.filter(
+    // Called on initial load (socket connect / refresh)
+    setNotifications(state, action: PayloadAction<PaginatedNotificationResult>) {
+      state.notifications = action.payload.data;
+      state.nextCursor = action.payload.nextCursor;
+      state.hasMore = action.payload.hasMore;
+      state.unreadCount = action.payload.data.filter(
         (n) => n.status === "unread",
       ).length;
     },
 
-    // Gọi khi socket nhận được notification mới
+    // Called when socket receives a new notification
     addNotification(state, action: PayloadAction<INotification>) {
       const exists = state.notifications.some(
         (n) => n._id === action.payload._id,
@@ -66,10 +85,12 @@ const notificationSlice = createSlice({
       }
     },
 
-    // Gọi khi user logout
     clearNotifications(state) {
       state.notifications = [];
       state.unreadCount = 0;
+      state.nextCursor = null;
+      state.hasMore = true;
+      state.isFetchingMore = false;
     },
   },
   extraReducers: (builder) => {
@@ -86,6 +107,31 @@ const notificationSlice = createSlice({
           n.status = "read";
         });
         state.unreadCount = 0;
+      })
+      .addCase(fetchMoreNotificationsAsync.pending, (state) => {
+        state.isFetchingMore = true;
+      })
+      .addCase(fetchMoreNotificationsAsync.fulfilled, (state, action) => {
+        const incoming = action.payload.data;
+        const existingIds = new Set(state.notifications.map((n) => n._id));
+        const newItems = incoming.filter((n) => !existingIds.has(n._id));
+        state.notifications.push(...newItems);
+        state.nextCursor = action.payload.nextCursor;
+        state.hasMore = action.payload.hasMore;
+        state.isFetchingMore = false;
+        state.unreadCount = state.notifications.filter(
+          (n) => n.status === "unread",
+        ).length;
+      })
+      .addCase(fetchMoreNotificationsAsync.rejected, (state) => {
+        state.isFetchingMore = false;
+      })
+      .addCase("auth/logout/fulfilled", (state) => {
+        state.notifications = [];
+        state.unreadCount = 0;
+        state.nextCursor = null;
+        state.hasMore = true;
+        state.isFetchingMore = false;
       });
   },
 });

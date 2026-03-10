@@ -34,7 +34,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
-    // Chỉ kết nối khi đã đăng nhập
     if (!user || !accessToken) return;
 
     const socket = io(environments.SERVER_URI as string, {
@@ -46,8 +45,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
     socket.on("connect", async () => {
       setIsConnected(true);
-      const notifications = await getNotificationApi.getMyNotification();
-      dispatch(setNotifications(notifications));
+      const result = await getNotificationApi.getMyNotification();
+      dispatch(setNotifications(result));
     });
     socket.on("disconnect", () => setIsConnected(false));
 

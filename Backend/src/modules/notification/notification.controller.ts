@@ -19,7 +19,8 @@ export class notificationController extends GenericController<INotification> {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
       const { id } = jwt.decode(token) as { id: string };
-      const result = await this.NotificationService.getByUserId(id);
+      const cursor = req.query.cursor as string | undefined;
+      const result = await this.NotificationService.getByUserId(id, cursor);
       res.json(responseWrapper("success", "Lấy danh sách thành công", result));
     } catch (error) {
       next(error);

@@ -89,16 +89,26 @@ export class notificationService extends GenericService<INotification> {
     }
   };
 
-  getByUserId = async (userId: string) => {
-    return NotificationModel.find({
+  getByUserId = async (userId: string, cursor?: string) => {
+    const limit = 20;
+    const filter: Record<string, any> = {
       $or: [
         { "target.kind": "user", "target.userId": new Types.ObjectId(userId) },
-        { "target.kind": "house", "target.houseId": /* user's houseId */ null },
         { "target.kind": "all" },
       ],
-    })
-      .sort({ sendAt: -1 })
-      .limit(50);
+    };
+    if (cursor) {
+      filter._id = { $lt: new Types.ObjectId(cursor) };
+    }
+    const docs = await NotificationModel.find(filter)
+      .sort({ _id: -1 })
+      .limit(limit + 1);
+
+    const hasMore = docs.length > limit;
+    const data = hasMore ? docs.slice(0, limit) : docs;
+    const nextCursor = hasMore ? data[data.length - 1]._id.toString() : null;
+
+    return { data, nextCursor, hasMore };
   };
 
   markAsRead = async (notificationId: string) => {
@@ -109,7 +119,7 @@ export class notificationService extends GenericService<INotification> {
     return NotificationModel.updateMany(
       {
         $or: [
-          { "target.kind": "user",  "target.userId": new Types.ObjectId(userId) },
+          { "target.kind": "user", "target.userId": new Types.ObjectId(userId) },
           { "target.kind": "house" },
           { "target.kind": "all" },
         ],

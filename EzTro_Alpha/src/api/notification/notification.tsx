@@ -3,19 +3,26 @@ import { apiService } from "../../service/apiService";
 
 const notificationUrl = "v1/notifications";
 
-interface NotificationListResponse {
+export interface PaginatedNotificationResult {
   data: INotification[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+interface PaginatedNotificationResponse {
+  data: PaginatedNotificationResult;
 }
 
 export const getNotificationApi = {
-  async getMyNotification(): Promise<INotification[]> {
+  async getMyNotification(cursor?: string): Promise<PaginatedNotificationResult> {
     try {
-      const response = await apiService.get<NotificationListResponse>(
-        `${notificationUrl}/me`,
-      );
-      return response.data?.data ?? [];
+      const url = cursor
+        ? `${notificationUrl}/me?cursor=${cursor}`
+        : `${notificationUrl}/me`;
+      const response = await apiService.get<PaginatedNotificationResponse>(url);
+      return response.data?.data ?? { data: [], nextCursor: null, hasMore: false };
     } catch (error) {
-      return [];
+      return { data: [], nextCursor: null, hasMore: false };
     }
   },
 };

@@ -1,4 +1,5 @@
 import mongoose, { Document, Types } from "mongoose";
+import { NotificationMetadata } from "./notificationMetadata";
 
 export type NotificationTarget =
   | { kind: "user"; userId: Types.ObjectId }
@@ -9,7 +10,7 @@ export interface INotification extends Document {
   type: string;
   target: NotificationTarget;
   triggeredBy?: Types.ObjectId; // ai tạo ra notification này
-  metadata: Record<string, any>; // data tuỳ theo type
+  metadata: NotificationMetadata;
   status: "unread" | "read";
   sendAt: Date;
 }

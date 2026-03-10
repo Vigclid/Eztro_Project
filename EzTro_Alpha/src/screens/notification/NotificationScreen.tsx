@@ -7,12 +7,14 @@ import {
   Megaphone,
   MessageCircle,
   Receipt,
-  Trash2,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,11 +23,14 @@ import {
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
+import { getNotificationApi } from "../../api/notification/notification";
 import { COLORS } from "../../constants/theme";
 import {
+  fetchMoreNotificationsAsync,
   markAllReadAsync,
   markReadAsync,
   removeNotification,
+  setNotifications,
 } from "../../features/notification/notificationSlice";
 import { INotification } from "../../features/notification/types";
 import { NavigationProp } from "../../navigation/navigation.type";
@@ -99,7 +104,7 @@ function getNotificationDisplay(notif: INotification) {
     case "LANDLORD_INVOICE":
       return {
         title: "Hóa đơn mới",
-        body: `Bạn có hóa đơn mới cho ${metadata.roomId ?? "phòng của bạn"}. Tổng: ${formatVND(metadata.amount)}`,
+        body: `Bạn có hóa đơn mới cho phòng của bạn. Tổng: ${formatVND(metadata.amount)}`,
         gradient: ["#51A2FF", "#615FFF"] as [string, string],
         Icon: Receipt,
       };
@@ -205,7 +210,6 @@ const PRIORITY_TABS: { key: Priority; label: string }[] = [
 const NotificationDetailModal = ({
   notif,
   onClose,
-  onDelete,
 }: {
   notif: INotification | null;
   onClose: () => void;
@@ -220,7 +224,6 @@ const NotificationDetailModal = ({
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.modalOverlay} onPress={onClose}>
         <Pressable style={styles.modalSheet} onPress={() => {}}>
-          {/* Icon */}
           <LinearGradient
             colors={gradient}
             start={{ x: 0, y: 0 }}
@@ -230,14 +233,12 @@ const NotificationDetailModal = ({
             <Icon size={32} color="#fff" />
           </LinearGradient>
 
-          {/* Title + time */}
           <View style={styles.modalTitleRow}>
             <Text style={styles.modalTitle}>{title}</Text>
             {notif.status === "unread" && <View style={styles.unreadDot} />}
           </View>
           <Text style={styles.modalTime}>{timeAgo(notif.sendAt)}</Text>
 
-          {/* Body */}
           <ScrollView
             style={styles.modalBodyScroll}
             showsVerticalScrollIndicator={false}
@@ -245,7 +246,6 @@ const NotificationDetailModal = ({
             <Text style={styles.modalBody}>{body}</Text>
           </ScrollView>
 
-          {/* Footer */}
           <View style={styles.modalFooter}>
             <View
               style={[
@@ -257,15 +257,6 @@ const NotificationDetailModal = ({
                 {pCfg.label}
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => {
-                onDelete(notif._id);
-                onClose();
-              }}
-            >
-              <Trash2 size={14} color="#E7000B" />
-            </TouchableOpacity>
           </View>
         </Pressable>
       </Pressable>
@@ -276,7 +267,6 @@ const NotificationDetailModal = ({
 // ─── Notification Card ────────────────────────────────────────────────
 const NotificationCard = ({
   notif,
-  onDelete,
   onPress,
 }: {
   notif: INotification;
@@ -329,33 +319,31 @@ const NotificationCard = ({
               {pCfg.label}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            onPress={(e) => {
-              e.stopPropagation();
-              onDelete(notif._id);
-            }}
-          >
-            <Trash2 size={14} color="#E7000B" />
-          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
   );
 };
 
+// ─── List item types ──────────────────────────────────────────────────
+type ListItem =
+  | { _kind: "section"; title: string }
+  | { _kind: "notif"; data: INotification };
+
 // ─── Main Screen ──────────────────────────────────────────────────────
 export const NotificationScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
 
-  // ── Redux state ──────────────────────────────────────────────────────
-  const { notifications, unreadCount } = useSelector(
-    (state: RootState) => state.notification,
-  );
+  const { notifications, unreadCount, nextCursor, hasMore, isFetchingMore } =
+    useSelector((state: RootState) => state.notification);
 
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [activePriority, setActivePriority] = useState<Priority>("all");
+  const [selectedNotif, setSelectedNotif] = useState<INotification | null>(
+    null,
+  );
+  const [refreshing, setRefreshing] = useState(false);
 
   const getCategoryCount = (key: Category) =>
     key === "all"
@@ -375,9 +363,32 @@ export const NotificationScreen: React.FC = () => {
   const unread = filtered.filter((n) => n.status === "unread");
   const read = filtered.filter((n) => n.status === "read");
 
-  const [selectedNotif, setSelectedNotif] = useState<INotification | null>(
-    null,
-  );
+  // Flatten sections + notifications into a single list for FlatList
+  const listData = useMemo<ListItem[]>(() => {
+    const items: ListItem[] = [];
+    if (unread.length > 0) {
+      items.push({ _kind: "section", title: "Chưa đọc" });
+      unread.forEach((n) => items.push({ _kind: "notif", data: n }));
+    }
+    if (read.length > 0) {
+      items.push({ _kind: "section", title: "Đã đọc" });
+      read.forEach((n) => items.push({ _kind: "notif", data: n }));
+    }
+    return items;
+  }, [unread, read]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    const result = await getNotificationApi.getMyNotification();
+    dispatch(setNotifications(result));
+    setRefreshing(false);
+  };
+
+  const handleLoadMore = () => {
+    if (hasMore && !isFetchingMore && nextCursor) {
+      dispatch(fetchMoreNotificationsAsync(nextCursor));
+    }
+  };
 
   const handleDelete = (id: string) => dispatch(removeNotification(id));
   const handleMarkAllRead = () => dispatch(markAllReadAsync());
@@ -386,6 +397,83 @@ export const NotificationScreen: React.FC = () => {
     if (notif.status === "unread") dispatch(markReadAsync(notif._id));
     setSelectedNotif(notif);
   };
+
+  // ── Tab header renders above the list ────────────────────────────────
+  const ListHeader = (
+    <>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabRow}
+        contentContainerStyle={styles.tabRowContent}
+      >
+        {CATEGORY_TABS.map((tab) => {
+          const isActive = activeCategory === tab.key;
+          const count = getCategoryCount(tab.key);
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.categoryTab, isActive && styles.categoryTabActive]}
+              onPress={() => setActiveCategory(tab.key)}
+            >
+              <Text
+                style={[
+                  styles.categoryTabText,
+                  isActive && styles.categoryTabTextActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+              {count > 0 && (
+                <View
+                  style={[
+                    styles.countBadge,
+                    isActive && styles.countBadgeActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.countText,
+                      isActive && styles.countTextActive,
+                    ]}
+                  >
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabRow}
+        contentContainerStyle={styles.tabRowContent}
+      >
+        {PRIORITY_TABS.map((tab) => {
+          const isActive = activePriority === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.priorityTab, isActive && styles.priorityTabActive]}
+              onPress={() => setActivePriority(tab.key)}
+            >
+              <Text
+                style={[
+                  styles.priorityTabText,
+                  isActive && styles.priorityTabTextActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </>
+  );
 
   return (
     <SafeAreaProvider style={styles.container}>
@@ -412,127 +500,61 @@ export const NotificationScreen: React.FC = () => {
         </TouchableOpacity>
       </LinearGradient>
 
-      <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-        {/* ── Category tabs ── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.tabRow}
-          contentContainerStyle={styles.tabRowContent}
-        >
-          {CATEGORY_TABS.map((tab) => {
-            const isActive = activeCategory === tab.key;
-            const count = getCategoryCount(tab.key);
+      <FlatList<ListItem>
+        style={styles.body}
+        data={listData}
+        keyExtractor={(item, index) =>
+          item._kind === "section"
+            ? `section-${item.title}-${index}`
+            : item.data._id
+        }
+        renderItem={({ item }) => {
+          if (item._kind === "section") {
             return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[
-                  styles.categoryTab,
-                  isActive && styles.categoryTabActive,
-                ]}
-                onPress={() => setActiveCategory(tab.key)}
-              >
-                <Text
-                  style={[
-                    styles.categoryTabText,
-                    isActive && styles.categoryTabTextActive,
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-                {count > 0 && (
-                  <View
-                    style={[
-                      styles.countBadge,
-                      isActive && styles.countBadgeActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.countText,
-                        isActive && styles.countTextActive,
-                      ]}
-                    >
-                      {count}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{item.title}</Text>
+              </View>
             );
-          })}
-        </ScrollView>
-
-        {/* ── Priority tabs ── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.tabRow}
-          contentContainerStyle={styles.tabRowContent}
-        >
-          {PRIORITY_TABS.map((tab) => {
-            const isActive = activePriority === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[
-                  styles.priorityTab,
-                  isActive && styles.priorityTabActive,
-                ]}
-                onPress={() => setActivePriority(tab.key)}
-              >
-                <Text
-                  style={[
-                    styles.priorityTabText,
-                    isActive && styles.priorityTabTextActive,
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* ── Unread section ── */}
-        {unread.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Chưa đọc</Text>
-            {unread.map((n) => (
+          }
+          return (
+            <View style={styles.cardWrapper}>
               <NotificationCard
-                key={n._id}
-                notif={n}
+                notif={item.data}
                 onDelete={handleDelete}
                 onPress={handleCardPress}
               />
-            ))}
-          </View>
-        )}
-
-        {/* ── Read section ── */}
-        {read.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Đã đọc</Text>
-            {read.map((n) => (
-              <NotificationCard
-                key={n._id}
-                notif={n}
-                onDelete={handleDelete}
-                onPress={handleCardPress}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* ── Empty state ── */}
-        {filtered.length === 0 && (
+            </View>
+          );
+        }}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <Bell size={48} color={COLORS.BORDER_GRAY} />
             <Text style={styles.emptyText}>Không có thông báo nào</Text>
           </View>
-        )}
-
-        <View style={{ height: 96 }} />
-      </ScrollView>
+        }
+        ListFooterComponent={
+          isFetchingMore ? (
+            <ActivityIndicator
+              style={styles.loadingMore}
+              color={COLORS.GRADIENT_START}
+            />
+          ) : (
+            <View style={{ height: 96 }} />
+          )
+        }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.GRADIENT_START]}
+            tintColor={COLORS.GRADIENT_START}
+          />
+        }
+      />
 
       <NotificationDetailModal
         notif={selectedNotif}
@@ -630,15 +652,11 @@ const styles = StyleSheet.create({
   priorityTabTextActive: { color: COLORS.GREEN_PRIMARY },
 
   // Section
-  section: { paddingHorizontal: 16, marginTop: 20 },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#101828",
-    marginBottom: 12,
-  },
+  sectionHeader: { paddingHorizontal: 16, marginTop: 20, marginBottom: 12 },
+  sectionTitle: { fontSize: 20, fontWeight: "bold", color: "#101828" },
 
   // Card
+  cardWrapper: { paddingHorizontal: 16 },
   card: {
     flexDirection: "row",
     backgroundColor: COLORS.WHITE,
@@ -713,6 +731,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  // Loading more
+  loadingMore: { paddingVertical: 24 },
 
   // Empty
   emptyState: { alignItems: "center", paddingTop: 60, gap: 12 },
