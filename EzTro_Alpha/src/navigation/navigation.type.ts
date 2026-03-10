@@ -54,6 +54,7 @@ export type MainStackParamList = {
   ticketListScreen: undefined;
   createTicketScreen: undefined;
   ticketDetailScreen: { ticketId: string };
+  notificationScreen: undefined;
 };
 export type AuthStackParamList = {
   welcome: undefined;

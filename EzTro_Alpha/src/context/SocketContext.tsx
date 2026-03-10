@@ -1,11 +1,22 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import SockJS from "sockjs-client";
-import { RootState } from "../stores/store";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { io, Socket } from "socket.io-client";
+import { getNotificationApi } from "../api/notification/notification";
 import environments from "../environments/env";
+import {
+  addNotification,
+  setNotifications,
+} from "../features/notification/notificationSlice";
+import { AppDispatch, RootState } from "../stores/store";
 
 interface SocketContextType {
-  socket: any | null;
+  socket: Socket | null;
   isConnected: boolean;
 }
 
@@ -17,35 +28,45 @@ const SocketContext = createContext<SocketContextType>({
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [socket, setSocket] = useState<any | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { accessToken, user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+
   useEffect(() => {
-    if (!user) return;
+    if (!user || !accessToken) return;
 
-    const sock = new SockJS(`${process.env.SERVER_URI}ws`);
+    const socket = io(environments.SERVER_URI as string, {
+      auth: { token: accessToken },
+      transports: ["websocket"],
+    });
 
-    sock.onopen = () => {
-      sock.send(JSON.stringify({ type: "INIT", userId: user._id }));
+    socketRef.current = socket;
+
+    socket.on("connect", async () => {
       setIsConnected(true);
-    };
-    sock.onmessage = (e) => {};
+      const result = await getNotificationApi.getMyNotification();
+      dispatch(setNotifications(result));
+    });
+    socket.on("disconnect", () => setIsConnected(false));
 
-    sock.onclose = () => {
-      setIsConnected(false);
-    };
+    // ─── Lắng nghe notification từ backend ───────────────────────────
+    // Backend emit: io.to(`user:${userId}`).emit("notification", data)
+    socket.on("notification", (data) => {
+      dispatch(addNotification(data));
+    });
 
-    sock.onerror = (e) => {};
-
-    setSocket(sock);
+    // Thêm event mới ở đây khi có module khác nhé anh em:
+    // socket.on("chat:message", (data) => dispatch(addChatMessage(data)));
 
     return () => {
-      sock.close();
+      socket.disconnect();
+      socketRef.current = null;
     };
-  }, [user]);
+  }, [user, accessToken, dispatch]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
+    <SocketContext.Provider value={{ socket: socketRef.current, isConnected }}>
       {children}
     </SocketContext.Provider>
   );
