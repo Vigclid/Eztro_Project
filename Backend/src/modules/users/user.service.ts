@@ -12,6 +12,26 @@ export class userService extends GenericService<IUser> {
     return userModel.find().populate("roleId").exec();
   };
 
+  getAllTenants = async (phone?: string) => {
+    const tenantRole = await roleModel.findOne({ name: "Tenant" });
+    if (!tenantRole) return [];
+
+    const query: any = {
+      roleId: tenantRole._id,
+      statusActive: true,
+    };
+
+    if (phone) {
+      query.phoneNumber = { $regex: phone, $options: "i" };
+    }
+
+    return userModel
+      .find(query)
+      .select("firstName lastName phoneNumber email roleId")
+      .populate("roleId")
+      .exec();
+  };
+
   createAccount = async (data: Partial<IUser>) => {
     const role = await roleModel.findOne({ name: "Landlord" });
     if (!role) {

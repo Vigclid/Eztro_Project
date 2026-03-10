@@ -449,7 +449,6 @@ export const BoardingHouseDetailsScreen = () => {
                                                 "addTenantScreen" as never,
                                                 {
                                                     roomId: room._id!,
-                                                    room,
                                                 } as never,
                                             )
                                         }

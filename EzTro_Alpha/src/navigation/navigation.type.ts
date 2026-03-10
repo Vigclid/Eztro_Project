@@ -9,6 +9,10 @@ export type RootStackParamList = {
     screen: keyof MainTabParamList;
     params?: MainTabParamList[keyof MainTabParamList];
   };
+  tenantscreen: {
+    screen: keyof TenantTabParamList;
+    params?: TenantTabParamList[keyof TenantTabParamList];
+  };
   mainstack: {
     screen: keyof MainStackParamList;
     params?: MainStackParamList[keyof MainStackParamList];
@@ -19,6 +23,12 @@ export type MainTabParamList = {
   userProfile: undefined;
   viewBoardingHousePage: undefined;
   trackingInvoiceStatus: undefined;
+};
+
+export type TenantTabParamList = {
+  tenantHome: undefined;
+  trackingInvoiceStatus: undefined;
+  userProfile: undefined;
 };
 
 export type MainStackParamList = {
