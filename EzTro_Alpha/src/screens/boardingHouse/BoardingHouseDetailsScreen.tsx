@@ -61,11 +61,14 @@ const RoomCard = ({
     onPressTenant,
     onPressRoom,
 }: {
-    item: IRoom;
+    item: IRoom & { accountTenants?: any[] };
     onPressTenant: () => void;
     onPressRoom: () => void;
 }) => {
     const isRented = item.status === 'rented' || item.status === 'Đang Thuê';
+    const hasAccountTenants = !!item.accountTenants?.length;
+    const hasVirtualTenants = !!item.virtualTenants?.length;
+    const totalTenants = (item.accountTenants?.length || 0) + (item.virtualTenants?.length || 0);
 
     const formatCurrency = (value: number | string) => {
         if (!value) return '0 đ';
@@ -114,20 +117,68 @@ const RoomCard = ({
                 </LinearGradient>
                 {/* ------------------------- */}
 
-                {/* Footer (Người thuê / Button thêm) - Giữ nguyên logic cũ */}
-                {/* Danh sách người thuê (nếu có) */}
-                {item.virtualTenants && item.virtualTenants.length > 0 && (
+                {totalTenants > 0 && (
+                    <View style={styles.tenantSummaryRow}>
+                        <Text style={styles.tenantSummaryText}>Người thuê hiện tại</Text>
+                        <View style={styles.tenantCountBadge}>
+                            <Text style={styles.tenantCountBadgeText}>{totalTenants}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* Danh sách người thuê có tài khoản */}
+                {hasAccountTenants && (
                     <View style={styles.tenantList}>
-                        {item.virtualTenants.map((t, index) => (
+                        <View style={styles.tenantGroupHeader}>
+                            <Text style={styles.tenantGroupTitle}>Tài khoản hệ thống</Text>
+                        </View>
+                        {item.accountTenants?.map((member, index) => {
+                            const fullName = `${member?.userId?.lastName || ""} ${member?.userId?.firstName || ""}`.trim();
+                            return (
+                                <View key={`${member?._id || index}`} style={styles.tenantRow}>
+                                    <Image
+                                        source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ev7746c0_expires_30_days.png" }}
+                                        resizeMode="stretch"
+                                        style={styles.iconSmall}
+                                    />
+                                    <View style={styles.tenantInfoWrap}>
+                                        <Text style={styles.textBoldGray}>
+                                            {fullName || member?.userId?.email || "Không rõ tên"}
+                                        </Text>
+                                        <Text style={styles.textGraySmall}>
+                                            {member?.userId?.phoneNumber || member?.userId?.email || "Không có liên hệ"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.accountTypeBadge}>
+                                        <Text style={styles.accountTypeBadgeText}>
+                                            {member?.role === "TENANT" ? "Chính" : "Phụ"}
+                                        </Text>
+                                    </View>
+                                </View>
+                            );
+                        })}
+                    </View>
+                )}
+
+                {/* Danh sách người thuê không có tài khoản (virtual tenant) */}
+                {hasVirtualTenants && (
+                    <View style={styles.tenantList}>
+                        <View style={styles.tenantGroupHeader}>
+                            <Text style={styles.tenantGroupTitle}>Người thuê thủ công</Text>
+                        </View>
+                        {item.virtualTenants?.map((t, index) => (
                             <View key={`${t.tenantName}-${index}`} style={styles.tenantRow}>
                                 <Image
                                     source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/ev7746c0_expires_30_days.png" }}
                                     resizeMode="stretch"
                                     style={styles.iconSmall}
                                 />
-                                <View>
+                                <View style={styles.tenantInfoWrap}>
                                     <Text style={styles.textBoldGray}>{t.tenantName}</Text>
                                     <Text style={styles.textGraySmall}>{t.phoneNumber}</Text>
+                                </View>
+                                <View style={styles.virtualTypeBadge}>
+                                    <Text style={styles.virtualTypeBadgeText}>Virtual</Text>
                                 </View>
                             </View>
                         ))}
@@ -194,7 +245,7 @@ const TabButton = ({
 export const BoardingHouseDetailsScreen = () => {
     const [activeTab, setActiveTab] = useState<'roomList' | 'fixedFee'>('roomList');
     const [boardingHouse, setBoardingHouse] = useState<IHouse | null>(null);
-    const [rooms, setRooms] = useState<IRoom[]>([]);
+    const [rooms, setRooms] = useState<(IRoom & { accountTenants?: any[] })[]>([]);
     const navigation = useNavigation()
 
     const route = useRoute<DetailsRouteProps>();
@@ -212,7 +263,19 @@ export const BoardingHouseDetailsScreen = () => {
         // Lấy danh sách phòng theo houseId
         const resRooms = await getAllRoomsByHouseId(_id) as ApiResponse<IRoom[]>;
         if (resRooms.status === "success" && Array.isArray(resRooms.data)) {
-            const mappedRooms: IRoom[] = (resRooms.data as any[]).map((room: any) => ({
+            const mappedRooms = await Promise.all((resRooms.data as any[]).map(async (room: any) => {
+                let accountTenants: any[] = [];
+                try {
+                    const rawMembers = await getRoomApi.getRoomMembers(room._id);
+                    const membersRes = rawMembers as ApiResponse<any[]>;
+                    if (membersRes.status === "success" && Array.isArray(membersRes.data)) {
+                        accountTenants = membersRes.data;
+                    }
+                } catch {
+                    accountTenants = [];
+                }
+
+                return {
                 _id: room._id,
                 houseId: room.houseId,
                 area: undefined,
@@ -222,6 +285,8 @@ export const BoardingHouseDetailsScreen = () => {
                 status: room.status,
                 rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
                 virtualTenants: room.virtualTenants || [],
+                accountTenants,
+                };
             }));
             setRooms(mappedRooms);
         }
@@ -855,11 +920,52 @@ const styles = StyleSheet.create({
     tenantRow: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 7,
-        marginBottom: 12,
+        paddingVertical: 9,
+        paddingHorizontal: 10,
+        marginBottom: 8,
+        borderRadius: 10,
+        backgroundColor: "#F8FAFC",
+        borderWidth: 1,
+        borderColor: "#E7ECF3",
     },
     tenantList: {
         marginTop: 8,
+    },
+    tenantSummaryRow: {
+        marginTop: 4,
+        marginBottom: 6,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    tenantSummaryText: {
+        color: "#354152",
+        fontSize: 13,
+        fontWeight: "600",
+    },
+    tenantCountBadge: {
+        minWidth: 26,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#E8FDF2",
+        borderWidth: 1,
+        borderColor: "#A4F3CF",
+    },
+    tenantCountBadgeText: {
+        color: "#007955",
+        fontSize: 12,
+        fontWeight: "bold",
+    },
+    tenantGroupHeader: {
+        marginBottom: 7,
+    },
+    tenantGroupTitle: {
+        color: "#667085",
+        fontSize: 12,
+        fontWeight: "600",
     },
     invoiceRow: {
         flexDirection: "row",
@@ -870,6 +976,9 @@ const styles = StyleSheet.create({
         width: 15,
         height: 15,
         marginRight: 8,
+    },
+    tenantInfoWrap: {
+        flex: 1,
     },
     textBoldGray: {
         color: "#354152",
@@ -884,6 +993,32 @@ const styles = StyleSheet.create({
         color: "#0A0A0A",
         fontSize: 14,
         fontWeight: "bold",
+    },
+    accountTypeBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: "#EEF4FF",
+        borderWidth: 1,
+        borderColor: "#C9DBFF",
+    },
+    accountTypeBadgeText: {
+        color: "#2D5BDA",
+        fontSize: 11,
+        fontWeight: "700",
+    },
+    virtualTypeBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: "#F3F4F6",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+    },
+    virtualTypeBadgeText: {
+        color: "#6B7280",
+        fontSize: 11,
+        fontWeight: "700",
     },
     addTenantBtn: {
         flexDirection: "row",
