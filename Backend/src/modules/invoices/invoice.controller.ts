@@ -75,6 +75,7 @@ export class invoiceController extends GenericController<IInvoice> {
         params: {
           access_token: InvoiceBody.accessToken,
           code: InvoiceBody.phoneToken,
+          secret_key: process.env.ZALO_SECRET_CODE,
         },
       });
       const phoneNumber = response.data.data.number;
