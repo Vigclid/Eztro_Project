@@ -11,10 +11,11 @@ function randomInt(min: number, max?: number): number {
 export class MailService {
   /**
    * @param email
+   * @param token - Optional token to send. If not provided, generates a random 6-digit token
    * @returns
    */
-  static async generateAndSendToken(email: string): Promise<string> {
-    const token = String(100000 + randomInt(900000));
+  static async generateAndSendToken(email: string, token?: string): Promise<string> {
+    const generatedToken = token || String(100000 + randomInt(900000));
 
     const host = process.env.SMTP_HOST || process.env.SMTP_HOSTNAME || "smtp.gmail.com";
     const port = Number(process.env.SMTP_PORT || 587);
@@ -41,7 +42,7 @@ export class MailService {
     });
 
     const subject = "Your Verification Token";
-    const html = MailService.buildEmailContent(token);
+    const html = MailService.buildEmailContent(generatedToken);
 
     try {
       // Fail fast if SMTP connection/auth is invalid
@@ -55,7 +56,7 @@ export class MailService {
     } catch (err) {
       throw err;
     }
-    return token;
+    return generatedToken;
   }
 
   private static buildEmailContent(token: string): string {

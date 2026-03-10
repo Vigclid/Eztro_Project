@@ -18,8 +18,10 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MainStackParamList } from "../../navigation/navigation.type";
 import { getRoomApi, postRoomApi } from "../../api/room/room";
+import { getUserApi } from "../../api/user/user";
 import { ApiResponse } from "../../types/app.common";
 import { IRoom, IVirtualTenant } from "../../types/room";
+import { IUser } from "../../types/users";
 import {
   COLORS,
   SPACING,
@@ -95,6 +97,10 @@ const CreateNewRoomScreen = () => {
   const [generatingCode, setGeneratingCode] = useState(false);
   const [roomMembers, setRoomMembers] = useState<any[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [searchPhone, setSearchPhone] = useState("");
+  const [searchingTenants, setSearchingTenants] = useState(false);
+  const [tenantResults, setTenantResults] = useState<IUser[]>([]);
+  const [invitingTenant, setInvitingTenant] = useState(false);
 
   useEffect(() => {
     if (editingRoom) {
@@ -308,6 +314,69 @@ const CreateNewRoomScreen = () => {
     );
   };
 
+  const getTenantDisplayName = (user: IUser) => {
+    const fullName = `${user.lastName || ""} ${user.firstName || ""}`.trim();
+    return fullName || user.email || "Không rõ tên";
+  };
+
+  const handleSearchTenantByPhone = async () => {
+    if (!searchPhone.trim()) {
+      setTenantResults([]);
+      Alert.alert("Thông báo", "Vui lòng nhập số điện thoại để tìm kiếm.");
+      return;
+    }
+
+    setSearchingTenants(true);
+    try {
+      const raw = await getUserApi.getAllTenants(searchPhone.trim());
+      const res = raw as ApiResponse<IUser[]>;
+      if (res.status === "success" && Array.isArray(res.data)) {
+        setTenantResults(res.data);
+      } else {
+        setTenantResults([]);
+        Alert.alert("Thông báo", res.message || "Không tìm thấy người thuê phù hợp.");
+      }
+    } catch (error: any) {
+      setTenantResults([]);
+      Alert.alert("Lỗi", error?.message || "Không thể tìm người thuê lúc này.");
+    } finally {
+      setSearchingTenants(false);
+    }
+  };
+
+  const handleInviteTenantAccount = async (tenant: IUser) => {
+    if (!editingRoom?._id) {
+      Alert.alert("Lỗi", "Thiếu thông tin phòng. Vui lòng thử lại.");
+      return;
+    }
+
+    setInvitingTenant(true);
+    try {
+      const raw = await postRoomApi.inviteTenant(editingRoom._id, String(tenant._id));
+      const res = (raw || {
+        status: "error",
+        message: "Không nhận được phản hồi từ máy chủ.",
+      }) as ApiResponse<any>;
+
+      if (res.status === "success" || res.status === true) {
+        Alert.alert("Thành công", "Đã gửi lời mời cho người thuê.");
+        fetchRoomMembers();
+        onRefresh?.();
+      } else {
+        Alert.alert("Lỗi", res.message || "Không thể gửi lời mời.");
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Không thể gửi lời mời lúc này."
+      );
+    } finally {
+      setInvitingTenant(false);
+    }
+  };
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -497,6 +566,67 @@ const CreateNewRoomScreen = () => {
                   Mã hiện tại: {inviteCode}
                 </Text>
               ) : null}
+            </View>
+          )}
+
+          {isEditMode && (
+            <View style={styles.tenantsSection}>
+              <Text style={styles.tenantsTitle}>Mời theo số điện thoại</Text>
+              <View style={styles.searchRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="Nhập số điện thoại người thuê"
+                  placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+                  value={searchPhone}
+                  keyboardType="phone-pad"
+                  onChangeText={setSearchPhone}
+                />
+                <TouchableOpacity
+                  style={styles.searchButton}
+                  onPress={handleSearchTenantByPhone}
+                  disabled={searchingTenants || invitingTenant}
+                >
+                  <Text style={styles.searchButtonText}>
+                    {searchingTenants ? "Đang tìm..." : "Tìm"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {tenantResults.length > 0 && (
+                <View style={{ marginTop: SPACING.SMALL }}>
+                  {tenantResults.map((tenant) => (
+                    <View key={String(tenant._id)} style={styles.tenantItem}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.tenantName}>{getTenantDisplayName(tenant)}</Text>
+                        <Text style={styles.tenantText}>
+                          {tenant.phoneNumber || tenant.email || "Không có liên hệ"}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.searchButton}
+                        disabled={invitingTenant}
+                        onPress={() =>
+                          Alert.alert(
+                            "Xác nhận gửi lời mời",
+                            `Gửi lời mời đến ${getTenantDisplayName(tenant)}?`,
+                            [
+                              { text: "Hủy", style: "cancel" },
+                              {
+                                text: "Mời",
+                                onPress: () => handleInviteTenantAccount(tenant),
+                              },
+                            ]
+                          )
+                        }
+                      >
+                        <Text style={styles.searchButtonText}>
+                          {invitingTenant ? "Đang gửi..." : "Mời"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
@@ -820,6 +950,24 @@ const styles = StyleSheet.create({
     color: COLORS.RED_TEXT,
     fontWeight: "bold",
     fontSize: 12,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.SMALL,
+  },
+  searchButton: {
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
+    paddingHorizontal: SPACING.MEDIUM,
+    paddingVertical: 12,
+    backgroundColor: COLORS.PRIMARY,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchButtonText: {
+    color: COLORS.WHITE,
+    fontSize: FONT_SIZE.ADDRESS,
+    fontWeight: "600",
   },
   footer: {
     position: "absolute",
