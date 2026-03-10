@@ -78,6 +78,7 @@ export class invoiceController extends GenericController<IInvoice> {
           secret_key: process.env.ZALO_SECRET_CODE,
         },
       });
+      console.log(response.data);
       const phoneNumber = response.data.data.number;
       const result = await this.InvoiceService.updateInvoiceWithZalo({
         ...InvoiceBody,
@@ -87,6 +88,7 @@ export class invoiceController extends GenericController<IInvoice> {
         .status(200)
         .json(responseWrapper("success", "Cập nhật hóa đơn thành công", result));
     } catch (err: any) {
+      console.log(err.message);
       return res.status(200).json(responseWrapper("error", err.message, null));
     }
   };
