@@ -15,4 +15,5 @@ export interface IUser {
   statusActive: boolean | undefined;
   createdAt: Date | undefined;
   loginFailedTime: Date | null | undefined;
+  roleName: string | undefined;
 }
