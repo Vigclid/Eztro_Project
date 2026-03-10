@@ -18,6 +18,7 @@ router
   .get(UserController.getAvatar);
 
 router.route("/me/password/reset").post(UserController.resetPassword);
+router.route("/tenants").get(authenticate, UserController.getAllTenants);
 
 // ---------- ADMIN ----------
 router.route("/count").get(authenticate, authorize(["Admin"]), UserController.getNumberOfUsers);

@@ -8,8 +8,8 @@ import cors from "cors";
 import loggerMiddleware from "./src/middlewares/loggerMiddleware";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./src/config/db";
-import { initSocketServer } from "./src/sockets";
 import http from "http";
+import { initSocketGateway } from "./src/core/socket/socket.gateway";
 
 const app = express();
 app.use(express.json({ limit: "4mb" }));
@@ -46,7 +46,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 8080;
 const server = http.createServer(app);
 // WEBSOCKET
-initSocketServer(server);
+initSocketGateway(server);
 server.listen(PORT, () => {});
 // https.createServer(httpsOptions, app).listen(PORT, () => {
 //   console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);

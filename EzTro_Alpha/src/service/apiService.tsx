@@ -1,13 +1,13 @@
 import axios, {
+  AxiosError,
   AxiosInstance,
   AxiosResponse,
-  AxiosError,
   InternalAxiosRequestConfig,
 } from "axios";
 import { Misc } from "../constants/misc";
+import environments from "../environments/env";
 import { logoutAsync, setAccessToken } from "../features/auth/authSlice";
 import { store } from "../stores/store";
-import environments from "../environments/env";
 
 // TYPE DEFINITION
 
@@ -132,7 +132,7 @@ apiClient.interceptors.response.use(
           if (!newToken) {
             processQueue(new Error("Refresh failed: No token"), null);
             isRefreshing = false;
-            // Don't logout immediately - user might need to login again
+            store.dispatch(logoutAsync());
             return Promise.reject(err);
           }
 
@@ -147,13 +147,13 @@ apiClient.interceptors.response.use(
         } else {
           processQueue(new Error("Refresh failed"), null);
           isRefreshing = false;
-          // Don't logout immediately
+          store.dispatch(logoutAsync());
           return Promise.reject(err);
         }
       } catch (refreshError: any) {
         processQueue(refreshError, null);
         isRefreshing = false;
-        // Don't logout immediately, let error handler decide
+        store.dispatch(logoutAsync());
         return Promise.reject(refreshError);
       }
     }
