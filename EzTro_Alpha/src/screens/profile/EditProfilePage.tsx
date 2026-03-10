@@ -30,7 +30,7 @@ import {
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
-import { getUserApi } from "../../api/user/user";
+import { putUserApi } from "../../api/user/user";
 import { AppButton } from "../../components/misc/AppButton";
 import {
   BORDER_RADIUS,
@@ -137,14 +137,14 @@ export const EditProfilePage: React.FC = () => {
       };
 
       if (localAvatarUri) {
-        const userWithAvatar = await getUserApi.uploadAvatar(localAvatarUri);
+        const userWithAvatar = await putUserApi.uploadAvatar(localAvatarUri);
         updatedUser = {
           ...updatedUser,
           profilePicture: userWithAvatar.profilePicture,
         };
       }
 
-      await getUserApi.updateProfile({
+      await putUserApi.updateProfile({
         firstName,
         lastName,
         email,

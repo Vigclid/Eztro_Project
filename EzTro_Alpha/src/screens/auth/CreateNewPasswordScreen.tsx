@@ -17,7 +17,7 @@ import {
 } from "react-native";
 
 // Types
-import { getUserApi } from "../../api/user/user";
+import { putUserApi } from "../../api/user/user";
 import { AuthStackParamList } from "../../navigation/navigation.type";
 import { appNavigator } from "../../navigation/navigationActions";
 import { ApiResponse } from "../../types/app.common";
@@ -33,7 +33,7 @@ export const CreateNewPasswordScreen = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { resetPassword } = getUserApi;
+  const { resetPassword } = putUserApi;
 
   // Logic Handlers
   const handleBackPress = () => {
