@@ -26,7 +26,7 @@ const authAxios: AxiosInstance = axios.create({
 export const loginAsync = createAsyncThunk(
   "auth/login",
   async (
-    { email, password }: { email: string; password: string },
+    { email, password, role }: { email: string; password: string; role: string },
     { rejectWithValue },
   ) => {
     try {
@@ -36,6 +36,7 @@ export const loginAsync = createAsyncThunk(
           {
             email,
             password,
+            role,
           },
           {
             withCredentials: true,
