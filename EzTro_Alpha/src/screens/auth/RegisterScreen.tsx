@@ -68,7 +68,7 @@ const FacebookIcon = () => (
 export const RegisterScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { createUser } = postUserApi;
-  const { sendMail, verifyEmailTokenForRegister } = MailPostAPI();
+  const { verifyEmailTokenForRegister } = MailPostAPI();
 
   // --- States từ file UI ---
   const [firstName, setFirstName] = useState("");
@@ -113,7 +113,9 @@ export const RegisterScreen = () => {
       !phoneNumberError &&
       firstName &&
       lastName &&
-      selectedRole;
+      selectedRole &&
+      emailVerified &&
+      emailSent;
     setIsFormValid(!!isValid);
   }, [
     email,
@@ -127,6 +129,8 @@ export const RegisterScreen = () => {
     firstName,
     lastName,
     selectedRole,
+    emailVerified,
+    emailSent,
   ]);
 
   // --- Handlers Validation Logic ---
