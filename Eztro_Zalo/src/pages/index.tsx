@@ -202,7 +202,11 @@ function HomePage() {
                 onChange={(e) =>
                   setWater((prev) => ({ ...prev, value: e.target.value }))
                 }
-                style={{ borderColor: "#16a34a" }}
+                style={{
+                  borderColor: "#16a34a",
+                  background: "#fff",
+                  color: "#111",
+                }}
               />
 
               <button
@@ -281,7 +285,11 @@ function HomePage() {
                 onChange={(e) =>
                   setElectric((prev) => ({ ...prev, value: e.target.value }))
                 }
-                style={{ borderColor: "#ca8a04" }}
+                style={{
+                  borderColor: "#ca8a04",
+                  background: "#fff",
+                  color: "#111",
+                }}
               />
 
               <button
