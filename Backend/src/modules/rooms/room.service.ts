@@ -1,10 +1,15 @@
 import { GenericService } from "../../core/services/base.service";
 import roomModel, { IRoom } from "./room.model";
+<<<<<<< HEAD
+import housePackageModel from '../../modules/housePackage/housePackage.model'
+import { IPackage } from "../package/package.model";
+=======
 import roomInvitationModel from "./roomInvitation.model";
 import roomMemberModel from "./roomMember.model";
 import { Types } from "mongoose";
 import userModel from "../users/user.model";
 import houseModel from "../houses/house.model";
+>>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
 
 export class roomService extends GenericService<IRoom> {
   constructor() {
@@ -32,6 +37,24 @@ export class roomService extends GenericService<IRoom> {
     if (existed) {
       const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
       error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
+      throw error;
+    }
+
+    const housePackage = await housePackageModel.findOne({
+      houseId: data.houseId
+    }).populate('packageId')
+    const packageData = housePackage?.packageId as IPackage
+
+    if (!housePackage) {
+      const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
+      error.code = "HOUSE_PACKAGE_NOT_FOUND";
+      throw error;
+    }
+
+    const countRoom = await roomModel.countDocuments({ houseId: data.houseId });
+    if (countRoom >= packageData.maxRoom) {
+      const error: any = new Error("ROOM_LIMIT_EXCEEDED");
+      error.code = "ROOM_LIMIT_EXCEEDED";
       throw error;
     }
 

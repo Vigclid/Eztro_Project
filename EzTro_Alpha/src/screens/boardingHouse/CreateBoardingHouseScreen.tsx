@@ -2,8 +2,6 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-  Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { postHouseApi } from "../../api/house/house";
 import { AppButton } from "../../components/misc/AppButton";
 import {
   BORDER_RADIUS,
@@ -22,8 +19,6 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
-import { ApiResponse } from "../../types/app.common";
-import { IHouse } from "../../types/house";
 import {
   Building2,
   MapPin,
@@ -33,14 +28,8 @@ import {
   Calendar,
   Zap,
   Waves,
-  Toolbox,
-  Wifi,
-  AirVent,
-  ThermometerSun,
-  Car,
-  LockKeyhole,
-  Tv,
 } from "lucide-react-native"
+import { appNavigator } from "../../navigation/navigationActions";
 
 export const CreateBoardingHouseScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -53,28 +42,24 @@ export const CreateBoardingHouseScreen: React.FC = () => {
   const [defaultElectricityCharge, onChangeDefaultElectricityCharge] = useState("");
   const [defaultWaterCharge, onChangeDefaultWaterCharge] = useState("");
 
-
-  const { createHouse } = postHouseApi;
   const handleCancel = () => {
     navigation.goBack();
   };
 
-  const handleSave = async () => {
-    const res = (await createHouse({
-      houseName: name,
-      address,
-      roomCount,
-      description,
-      status: "Còn Phòng",
-      defaultElectricityCharge: Number(defaultElectricityCharge),
-      defaultWaterCharge: Number(defaultWaterCharge),
-    })) as ApiResponse<IHouse>;
-    if (res.status === "success") {
-      Alert.alert("Thành Công", "Tạo Cụm Trọ Thành Công");
-      navigation.navigate("mainscreen", { screen: "viewBoardingHousePage" });
-    }
-  };
 
+  const handleSave = () => {
+    const data = {
+    houseName: name,
+    address,
+    roomCount: Number(roomCount),
+    defaultPrice: Number(defaultPrice),
+    description,
+    paymentDay: Number(paymentDay),
+    defaultElectricityCharge: Number(defaultElectricityCharge),
+    defaultWaterCharge: Number(defaultWaterCharge),
+  };
+    appNavigator.goToPackagePaymentScreen(data)
+  }
   return (
     <SafeAreaProvider style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -209,57 +194,6 @@ export const CreateBoardingHouseScreen: React.FC = () => {
                 multiline
                 numberOfLines={4}
               />
-            </View>
-          </View>
-
-          <View style={styles.formSection}>
-            <View style={styles.labelContainer}>
-              <View style={styles.formIcon}>
-                <Toolbox size={20} color={COLORS.GREEN_PRIMARY} />
-              </View>
-              <Text style={styles.label}>{"Tiện ích"}</Text>
-            </View>
-            <View style={styles.featureRow}>
-              <TouchableOpacity style={styles.featureButton}>
-                <View style={styles.formIcon}>
-                  <Wifi size={20} color={COLORS.GREEN_PRIMARY} />
-                </View>
-                <Text style={styles.featureText}>{"WiFi"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.featureButtonRight}>
-                <View style={styles.formIcon}>
-                  <AirVent size={20} color={COLORS.GREEN_PRIMARY} />
-                </View>
-                <Text style={styles.featureText}>{"Điều hòa"}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.featureRow}>
-              <TouchableOpacity style={styles.featureButton}>
-                <View style={styles.formIcon}>
-                  <ThermometerSun size={20} color={COLORS.GREEN_PRIMARY} />
-                </View>
-                <Text style={styles.featureText}>{"Nước nóng"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.featureButtonRight}>
-                <View style={styles.formIcon}>
-                  <Car size={20} color={COLORS.GREEN_PRIMARY} />
-                </View>
-                <Text style={styles.featureText}>{"Bãi đỗ xe"}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.featureRow}>
-              <TouchableOpacity style={styles.featureButton}>
-                <View style={styles.formIcon}>
-                  <LockKeyhole size={20} color={COLORS.GREEN_PRIMARY} />
-                </View>
-                <Text style={styles.featureText}>{"An ninh 24/7"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.featureButtonRight}>
-                <View style={styles.formIcon}>
-                  <Tv size={20} color={COLORS.GREEN_PRIMARY} />
-                </View>
-                <Text style={styles.featureText}>{"Truyền hình"}</Text>
-              </TouchableOpacity>
             </View>
           </View>
 
