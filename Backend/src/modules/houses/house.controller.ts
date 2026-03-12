@@ -4,12 +4,16 @@ import { houseService } from "./house.service";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
+import { housePackageService } from "../housePackage/housePackage.service";
+
 
 export class houseController extends GenericController<IHouse> {
     private HouseService: houseService
-    constructor(houseService: houseService) {
+    private HousePackageService: housePackageService
+    constructor(houseService: houseService, housePackageService: housePackageService) {
         super(houseService)
         this.HouseService = houseService
+        this.HousePackageService = housePackageService
     }
 
     getHouseById = async (req: Request, res: Response) => {
@@ -45,6 +49,7 @@ export class houseController extends GenericController<IHouse> {
             };
             req.body.landlordId = id;
             const result = await this.HouseService.createNewHouse(req.body)
+            await this.HousePackageService.createNewHousePackage({ houseId: result._id, packageId: req.body.packageId })
             return res
                 .status(201)
                 .json(responseWrapper("success", "Tạo Cụm Trọ Thành Công", result))

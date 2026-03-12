@@ -41,6 +41,34 @@ export class roomController extends GenericController<IRoom> {
                     );
             }
 
+            if (
+                error?.code === "HOUSE_PACKAGE_NOT_FOUND" ||
+                error?.message === "HOUSE_PACKAGE_NOT_FOUND"
+            ) {
+                return res
+                    .status(200)
+                    .json(
+                        responseWrapper(
+                            "error",
+                            "Gói của bạn đã hết hạn vui lòng gia hạn thêm!"
+                        )
+                    );
+            }
+
+            if (
+                error?.code === "ROOM_LIMIT_EXCEEDED" ||
+                error?.message === "ROOM_LIMIT_EXCEEDED"
+            ) {
+                return res
+                    .status(200)
+                    .json(
+                        responseWrapper(
+                            "error",
+                            "Đã đạt giới hạn tạo phòng, vui lòng nâng cấp gói quản lý!"
+                        )
+                    );
+            }
+
             // Trường hợp vi phạm unique index ở MongoDB
             if (error?.code === 11000) {
                 return res

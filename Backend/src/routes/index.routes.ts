@@ -7,6 +7,7 @@ import v1HouseRoutes from "./v1/house.routes";
 import v1RoomRoutes from "./v1/room.routes";
 import v1InvoiceRoutes from "./v1/invoice.routes";
 import v1TicketRoutes from "./v1/ticket.routes";
+import v1PackageRoutes from './v1/package.routes';
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use(
   v1HouseRoutes,
   v1RoomRoutes,
   v1InvoiceRoutes,
-  v1TicketRoutes
+  v1TicketRoutes,
+  v1PackageRoutes
 );
 export default router;

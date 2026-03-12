@@ -7,6 +7,7 @@ export interface IHouse extends Document {
     description: string,
     defaultElectricityCharge: number,
     defaultWaterCharge: number,
+    defaultPrice: number,
     defaultUtilitesCharge: {
         key: string,
         value: number
@@ -22,6 +23,7 @@ export const HouseSchema = new mongoose.Schema<IHouse>({
     description: {type: String, required: true},
     defaultElectricityCharge: { type: Number },
     defaultWaterCharge: { type: Number },
+    defaultPrice: { type: Number },
     defaultUtilitesCharge: {
         type: [
             {
@@ -32,7 +34,7 @@ export const HouseSchema = new mongoose.Schema<IHouse>({
         required: false
     },
     address: { type: String, required: true },
-    status: { type: String, enum: ['Còn Phòng', 'Hết Phòng'], required: true },
+    status: { type: String, enum: ['Còn Phòng', 'Hết Phòng'], required: true, default: 'Còn Phòng' },
     createDate: { type: Date, default: Date.now }
 })
 

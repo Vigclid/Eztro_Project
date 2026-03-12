@@ -119,4 +119,22 @@ export const appNavigator = {
   goToCreateInvoicesScreen() {
     navigate("mainstack", { screen: "createInvoicesScreen" });
   },
+
+  goToPackagePaymentScreen(houseData?: any) {
+    navigate("mainstack",
+      {
+        screen: "packagePaymentScreen",
+        params: { houseData },
+      },
+    );
+  },
+
+  goToQRScanScreen(houseData?: any, packageId?: any, paymentType?: any) {
+    navigate("mainstack",
+      {
+        screen: "qrScanScreen",
+        params: { houseData, packageId, paymentType },
+      },
+    );
+  }
 };
