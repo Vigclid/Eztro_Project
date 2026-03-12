@@ -12,12 +12,31 @@ export class userService extends GenericService<IUser> {
     return userModel.find().populate("roleId").exec();
   };
 
-  createAccount = async (data: Partial<IUser>) => {
-    const role = await roleModel.findOne({ name: "Landlord" });
+  getAllTenants = async (phone?: string) => {
+    const tenantRole = await roleModel.findOne({ name: "Tenant" });
+    if (!tenantRole) return [];
+
+    const query: any = {
+      roleId: tenantRole._id,
+      statusActive: true,
+    };
+
+    if (phone) {
+      query.phoneNumber = { $regex: phone, $options: "i" };
+    }
+
+    return userModel
+      .find(query)
+      .select("firstName lastName phoneNumber email roleId")
+      .populate("roleId")
+      .exec();
+  };
+
+  createAccount = async (data: Partial<IUser>, roleName: string) => {
+    const role = await roleModel.findOne({ name: roleName }).exec();
     if (!role) {
       throw new Error("Role 'user' not found");
     }
-
     const newUser = new userModel({
       ...data,
       roleId: role._id,
@@ -25,6 +44,14 @@ export class userService extends GenericService<IUser> {
     });
 
     return (await userModel.create(newUser)).populate("roleId");
+  };
+
+  getByEmailOrPhonenumber = async (email: string, phoneNumber: string) => {
+    const emailExists = await userModel
+      .findOne({ $or: [{ email }, { phoneNumber }] })
+      .populate("roleId")
+      .exec();
+    return emailExists;
   };
 
   getByEmail = async (email: string) => {

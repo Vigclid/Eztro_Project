@@ -26,7 +26,7 @@ const authAxios: AxiosInstance = axios.create({
 export const loginAsync = createAsyncThunk(
   "auth/login",
   async (
-    { email, password }: { email: string; password: string },
+    { email, password, role }: { email: string; password: string; role: string },
     { rejectWithValue },
   ) => {
     try {
@@ -36,6 +36,7 @@ export const loginAsync = createAsyncThunk(
           {
             email,
             password,
+            role,
           },
           {
             withCredentials: true,
@@ -63,10 +64,10 @@ export const loginAsync = createAsyncThunk(
 
 export const logoutAsync = createAsyncThunk("auth/logout", async () => {
   try {
-    await AsyncStorage.removeItem("accessToken");
-    await AsyncStorage.removeItem("user");
     await authAxios.post(`${environments.SERVER_URI}logout`);
   } catch (err) {}
+  await AsyncStorage.removeItem("accessToken");
+  await AsyncStorage.removeItem("user");
 });
 
 const authSlice = createSlice({

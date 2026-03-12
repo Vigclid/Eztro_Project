@@ -12,6 +12,30 @@ router.route('/')
 router.route('/house/:houseId')
     .get(authenticate, RoomController.getAllRoomsByHouseId)
 
+router.route('/invite-code/:id')
+    .post(authenticate, RoomController.createInviteCode)
+
+router.route('/invite')
+    .post(authenticate, RoomController.inviteTenant)
+
+router.route('/join-by-code')
+    .post(authenticate, RoomController.joinByCode)
+
+router.route('/invitations/my')
+    .get(authenticate, RoomController.getMyInvitations)
+
+router.route('/invitations/:id/accept')
+    .post(authenticate, RoomController.acceptInvitation)
+
+router.route('/my-room')
+    .get(authenticate, RoomController.getMyActiveRoom)
+
+router.route('/:id/members')
+    .get(authenticate, RoomController.getRoomMembers)
+
+router.route('/members/:id')
+    .delete(authenticate, RoomController.removeRoomMember)
+
 router.route('/:id')
     .patch(authenticate, RoomController.updateRoom)
 

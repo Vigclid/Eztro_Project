@@ -17,21 +17,41 @@ export class userController extends GenericController<IUser> {
     );
   };
 
+  getAllTenants = async (req: Request, res: Response) => {
+    try {
+      const phone = String(req.query.phone || "").trim();
+      const tenants = await this.UserService.getAllTenants(phone || undefined);
+      return res
+        .status(200)
+        .json(responseWrapper("success", "Lấy danh sách người thuê thành công", tenants));
+    } catch (error) {
+      return res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+    }
+  };
+
   createAccount = async (req: Request, res: Response) => {
     try {
-      const emailExists = await this.UserService.getByEmail(req.body.email);
+      const roleName = req.body.roleName;
+      const emailExists = await this.UserService.getByEmailOrPhonenumber(
+        req.body.email,
+        req.body.phoneNumber
+      );
+
       if (!emailExists) {
-        const result = await this.UserService.createAccount(req.body);
+        const result = await this.UserService.createAccount(req.body, roleName);
         return res
           .status(201)
           .json(responseWrapper("success", "Đăng ký tài khoản thành công", result));
-          
       } else {
-        return res.status(200).json(responseWrapper("error", "Email đã tồn tại"));
+        return res
+          .status(200)
+          .json(responseWrapper("error", "Email hoặc số điện thoại đã tồn tại"));
       }
     } catch (error: any) {
       if (error.code === 11000) {
-        return res.status(200).json(responseWrapper("error", "Email đã tồn tại"));
+        return res
+          .status(200)
+          .json(responseWrapper("error", "Email hoặc số điện thoại đã tồn tại"));
       }
 
       res.status(500).json(responseWrapper("error", "Internal Server Error"));
@@ -52,17 +72,21 @@ export class userController extends GenericController<IUser> {
       res.status(404).json(responseWrapper("error", "Something wrongs!", error));
     }
   };
-
   checkExistEmail = async (req: Request, res: Response) => {
     try {
-      const email = String(req.params.email || "").trim().toLowerCase();
-      if (!email) return res.status(400).json(responseWrapper("error", "Email is required"));
+      const email = String(req.params.email).trim().toLowerCase();
+
+      if (!email) {
+        return res.status(400).json(responseWrapper("error", "Email is required"));
+      }
       const user = await this.UserService.getByEmail(email);
-      return res
-        .status(200)
-        .json(responseWrapper("success", "Checked successfully", { exists: !!user }));
+      if (user) {
+        return res.status(200).json(responseWrapper("error", "Email already exists", true));
+      }
+
+      return res.status(200).json(responseWrapper("success", "Checked successfully", false));
     } catch (error) {
-      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+      return res.status(500).json(responseWrapper("error", "Internal Server Error"));
     }
   };
 

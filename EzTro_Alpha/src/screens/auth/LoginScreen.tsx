@@ -1,6 +1,6 @@
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
+import { ArrowLeft, ChevronDown, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -62,6 +62,18 @@ const FacebookIcon = () => (
   </Svg>
 );
 
+type LoginRoleOption = {
+  label: string;
+  value: "Landlord" | "Tenant" | "Staff" | "Admin";
+};
+
+const LOGIN_ROLE_OPTIONS: LoginRoleOption[] = [
+  { label: "Chủ trọ", value: "Landlord" },
+  { label: "Người thuê", value: "Tenant" },
+  { label: "Nhân viên", value: "Staff" },
+  { label: "Quản trị viên", value: "Admin" },
+];
+
 export const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
@@ -79,6 +91,8 @@ export const LoginScreen = () => {
   // State management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState<LoginRoleOption | null>(null);
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -157,6 +171,11 @@ export const LoginScreen = () => {
       return;
     }
 
+    if (!selectedRole) {
+      setError("Vui lòng chọn vai trò đăng nhập");
+      return;
+    }
+
     if (!isFormValid) {
       setError("Vui lòng kiểm tra lại thông tin");
       return;
@@ -166,9 +185,31 @@ export const LoginScreen = () => {
 
     try {
       // Execute Redux Action
-      const result = await dispatch(loginAsync({ email, password }));
+      const result = await dispatch(
+        loginAsync({ email, password, role: selectedRole.value }),
+      );
       if (loginAsync.fulfilled.match(result)) {
         Alert.alert("Thành công", "Đăng nhập thành công");
+        const roleFromUser =
+          typeof (result.payload as any)?.user?.roleId === "object"
+            ? (result.payload as any)?.user?.roleId?.name
+            : selectedRole.value;
+
+        if (roleFromUser === "Tenant") {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: "tenantscreen",
+                  params: { screen: "tenantHome" },
+                },
+              ],
+            }),
+          );
+          return;
+        }
+
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -310,6 +351,65 @@ export const LoginScreen = () => {
               )}
             </View>
 
+            {/* Role Selector (Dropdown) */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Vai trò đăng nhập</Text>
+              <TouchableOpacity
+                style={styles.dropdownTrigger}
+                activeOpacity={0.8}
+                onPress={() => setIsRoleDropdownOpen((prev) => !prev)}
+              >
+                <Text
+                  style={[
+                    styles.dropdownText,
+                    !selectedRole && styles.dropdownPlaceholder,
+                  ]}
+                >
+                  {selectedRole?.label || "Chọn vai trò"}
+                </Text>
+                <ChevronDown
+                  size={18}
+                  color="#6b7280"
+                  style={[
+                    styles.dropdownChevron,
+                    isRoleDropdownOpen && styles.dropdownChevronOpen,
+                  ]}
+                />
+              </TouchableOpacity>
+
+              {isRoleDropdownOpen ? (
+                <View style={styles.dropdownMenu}>
+                  {LOGIN_ROLE_OPTIONS.map((role) => {
+                    const isSelected = selectedRole?.value === role.value;
+                    return (
+                      <TouchableOpacity
+                        key={role.value}
+                        style={[
+                          styles.dropdownItem,
+                          isSelected && styles.dropdownItemSelected,
+                        ]}
+                        onPress={() => {
+                          setSelectedRole(role);
+                          setIsRoleDropdownOpen(false);
+                          setError("");
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            isSelected && styles.dropdownItemTextSelected,
+                          ]}
+                        >
+                          {role.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </View>
+
             {/* Forgot Password Link */}
             <View style={styles.forgotPasswordContainer}>
               <TouchableOpacity onPress={handleForgotPasswordPress}>
@@ -328,7 +428,7 @@ export const LoginScreen = () => {
             <TouchableOpacity
               style={styles.loginBtnShadow}
               onPress={handleLoginPress}
-              disabled={loading || !isFormValid}
+              disabled={loading || !isFormValid || !selectedRole}
               activeOpacity={0.8}
             >
               <LinearGradient
@@ -446,6 +546,54 @@ const styles = StyleSheet.create({
   /* Input Styles */
   inputContainer: {
     marginBottom: 16,
+  },
+  dropdownTrigger: {
+    height: 56,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: "#111827",
+  },
+  dropdownPlaceholder: {
+    color: "#9ca3af",
+  },
+  dropdownChevron: {
+    transform: [{ rotate: "0deg" }],
+  },
+  dropdownChevronOpen: {
+    transform: [{ rotate: "180deg" }],
+  },
+  dropdownMenu: {
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  dropdownItemSelected: {
+    backgroundColor: "#ecfdf5",
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  dropdownItemTextSelected: {
+    color: "#047857",
+    fontWeight: "700",
   },
   label: {
     fontSize: 14,

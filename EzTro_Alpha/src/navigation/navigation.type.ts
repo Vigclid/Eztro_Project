@@ -9,6 +9,10 @@ export type RootStackParamList = {
     screen: keyof MainTabParamList;
     params?: MainTabParamList[keyof MainTabParamList];
   };
+  tenantscreen: {
+    screen: keyof TenantTabParamList;
+    params?: TenantTabParamList[keyof TenantTabParamList];
+  };
   mainstack: {
     screen: keyof MainStackParamList;
     params?: MainStackParamList[keyof MainStackParamList];
@@ -19,6 +23,12 @@ export type MainTabParamList = {
   userProfile: undefined;
   viewBoardingHousePage: undefined;
   trackingInvoiceStatus: undefined;
+};
+
+export type TenantTabParamList = {
+  tenantHome: undefined;
+  trackingInvoiceStatus: undefined;
+  userProfile: undefined;
 };
 
 export type MainStackParamList = {
@@ -44,12 +54,16 @@ export type MainStackParamList = {
   ticketListScreen: undefined;
   createTicketScreen: undefined;
   ticketDetailScreen: { ticketId: string };
+<<<<<<< HEAD
   packagePaymentScreen: { houseData: any | undefined };
   qrScanScreen: {
     houseData: any,
     packageId: any,
     paymentType: any  | undefined
 };
+=======
+  notificationScreen: undefined;
+>>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
 };
 export type AuthStackParamList = {
   welcome: undefined;

@@ -1,6 +1,17 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Phone,
+  User,
+  BadgeCheck,
+  CheckCircle,
+  Loader,
+} from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -14,12 +25,14 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { getUserApi } from "../../api/user/user"; // Import từ file chức năng
+import { getUserApi, postUserApi } from "../../api/user/user"; // Import từ file chức năng
 import { NavigationProp } from "../../navigation/navigation.type";
 import { ApiResponse } from "../../types/app.common";
 import { IUser } from "../../types/users";
+import { MailPostAPI } from "../../api/MailAPI/POST";
 
 // --- Components for Social Icons ---
 const GoogleIcon = () => (
@@ -54,7 +67,8 @@ const FacebookIcon = () => (
 
 export const RegisterScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { createUser } = getUserApi;
+  const { createUser } = postUserApi;
+  const { verifyEmailTokenForRegister } = MailPostAPI();
 
   // --- States từ file UI ---
   const [firstName, setFirstName] = useState("");
@@ -74,6 +88,18 @@ export const RegisterScreen = () => {
   const [phoneNumberError, setPhoneNumberError] = useState("");
   const [isFormValid, setIsFormValid] = useState(false);
 
+  const [selectedRole, setSelectedRole] = useState<"Landlord" | "Tenant">(
+    "Tenant",
+  );
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [otpError, setOtpError] = useState("");
+
+  const [serverOtp, setServerOtp] = useState(""); // OTP server gửi
+  const [userOtp, setUserOtp] = useState(""); // OTP người dùng nhập
+
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   // --- Effect kiểm tra tổng quát form ---
   useEffect(() => {
     const isValid =
@@ -86,7 +112,10 @@ export const RegisterScreen = () => {
       phoneNumber &&
       !phoneNumberError &&
       firstName &&
-      lastName;
+      lastName &&
+      selectedRole &&
+      emailVerified &&
+      emailSent;
     setIsFormValid(!!isValid);
   }, [
     email,
@@ -99,21 +128,91 @@ export const RegisterScreen = () => {
     phoneNumberError,
     firstName,
     lastName,
+    selectedRole,
+    emailVerified,
+    emailSent,
   ]);
 
   // --- Handlers Validation Logic ---
   const handleEmailChange = (text: string) => {
     setEmail(text);
+
+    setEmailVerified(false);
+    setEmailSent(false);
+
+    setUserOtp("");
+    setServerOtp("");
+    setOtpError("");
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!text) setEmailError("");
-    else if (!emailRegex.test(text)) setEmailError("Email không đúng định dạng");
-    else setEmailError("");
+
+    if (!text) {
+      setEmailError("");
+      return;
+    }
+
+    if (!emailRegex.test(text)) {
+      setEmailError("Email không đúng định dạng");
+      return;
+    }
+
+    setEmailError("");
+
+    debounceRef.current = setTimeout(() => {
+      checkEmail(text);
+    }, 2000);
+  };
+
+  const checkEmail = async (email: string) => {
+    try {
+      setCheckingEmail(true);
+
+      const response = await getUserApi.checkEmailExist(email);
+      if (response === false) {
+        await sendVerificationToken(email);
+      } else {
+        setEmailError("Email đã tồn tại");
+      }
+    } catch (error) {
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
+  const sendVerificationToken = async (email: string) => {
+    try {
+      const response = await verifyEmailTokenForRegister(email);
+
+      if (response.status === "success") {
+        setEmailSent(true);
+        setServerOtp(response.data?.token || "");
+      } else {
+        Alert.alert("Lỗi", response.message || "Không thể gửi mã xác thực");
+      }
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể gửi mã xác thực");
+    }
+  };
+
+  const verifyOtp = () => {
+    if (userOtp === serverOtp) {
+      setEmailVerified(true);
+      setOtpError("");
+    } else {
+      setEmailVerified(false);
+      setOtpError("Mã xác thực không đúng");
+    }
   };
 
   const handlePasswordChange = (text: string) => {
     setPassword(text);
     if (!text) setPasswordError("");
-    else if (text.length < 8) setPasswordError("Mật khẩu phải có ít nhất 8 ký tự");
+    else if (text.length < 8)
+      setPasswordError("Mật khẩu phải có ít nhất 8 ký tự");
     else setPasswordError("");
   };
 
@@ -128,7 +227,8 @@ export const RegisterScreen = () => {
     setPhoneNumber(text);
     const phoneRegex = /^[0-9]{10,11}$/;
     if (!text) setPhoneNumberError("");
-    else if (!phoneRegex.test(text)) setPhoneNumberError("SĐT phải từ 10-11 số");
+    else if (!phoneRegex.test(text))
+      setPhoneNumberError("SĐT phải từ 10-11 số");
     else setPhoneNumberError("");
   };
 
@@ -149,8 +249,8 @@ export const RegisterScreen = () => {
       statusActive: true,
       profilePicture: "https://via.placeholder.com/150",
       lastLogin: null,
+      roleName: selectedRole,
     };
-
     try {
       const response = (await createUser(userData)) as ApiResponse<IUser>;
       if (response.status === "success") {
@@ -168,7 +268,11 @@ export const RegisterScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
       <LinearGradient
         colors={["#ecfdf5", "#ffffff", "#f0fdfa"]}
         style={styles.background}
@@ -178,16 +282,27 @@ export const RegisterScreen = () => {
       <View style={styles.blob} />
 
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardView}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardView}
+        >
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
               <ArrowLeft size={20} color="#374151" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.title}>Tạo tài khoản mới 🚀</Text>
-            <Text style={styles.subtitle}>Bắt đầu quản lý nhà trọ thông minh hơn</Text>
+            <Text style={styles.subtitle}>
+              Bắt đầu quản lý nhà trọ thông minh hơn
+            </Text>
 
             <View style={styles.formContainer}>
               {/* Họ & Tên */}
@@ -198,7 +313,12 @@ export const RegisterScreen = () => {
                     <View style={styles.iconContainer}>
                       <User size={18} color="#9ca3af" />
                     </View>
-                    <TextInput style={styles.input} placeholder="Nguyễn" value={lastName} onChangeText={setLastName} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Nguyễn"
+                      value={lastName}
+                      onChangeText={setLastName}
+                    />
                   </View>
                 </View>
                 <View style={styles.halfInputContainer}>
@@ -217,10 +337,17 @@ export const RegisterScreen = () => {
               {/* Email */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>
-                <View style={[styles.inputWrapper, emailError ? styles.inputErrorBorder : null]}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    emailError && styles.inputErrorBorder,
+                    emailVerified && styles.inputSuccessBorder,
+                  ]}
+                >
                   <View style={styles.iconContainer}>
                     <Mail size={18} color="#9ca3af" />
                   </View>
+
                   <TextInput
                     style={styles.input}
                     placeholder="example@email.com"
@@ -229,14 +356,65 @@ export const RegisterScreen = () => {
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
+
+                  {checkingEmail && (
+                    <ActivityIndicator
+                      size="small"
+                      style={{ marginRight: 10 }}
+                    />
+                  )}
+
+                  {emailVerified && (
+                    <CheckCircle
+                      size={20}
+                      color="#10b981"
+                      style={{ marginRight: 10 }}
+                    />
+                  )}
                 </View>
-                {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+                {emailError ? (
+                  <Text style={styles.errorText}>{emailError}</Text>
+                ) : null}
               </View>
+
+              {emailSent && !emailVerified && (
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Mã xác thực</Text>
+
+                  <View style={styles.rowContainer}>
+                    <View style={styles.inputVerifyWrapper}>
+                      <TextInput
+                        style={styles.inputVerify}
+                        placeholder="Nhập mã OTP"
+                        value={userOtp}
+                        onChangeText={setUserOtp}
+                        keyboardType="number-pad"
+                      />
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.verifyButton}
+                      onPress={verifyOtp}
+                    >
+                      <Text style={styles.verifyButtonText}>Xác thực</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {otpError ? (
+                    <Text style={styles.errorText}>{otpError}</Text>
+                  ) : null}
+                </View>
+              )}
 
               {/* Phone */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Số điện thoại</Text>
-                <View style={[styles.inputWrapper, phoneNumberError ? styles.inputErrorBorder : null]}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    phoneNumberError ? styles.inputErrorBorder : null,
+                  ]}
+                >
                   <View style={styles.iconContainer}>
                     <Phone size={18} color="#9ca3af" />
                   </View>
@@ -249,13 +427,20 @@ export const RegisterScreen = () => {
                     maxLength={11}
                   />
                 </View>
-                {phoneNumberError ? <Text style={styles.errorText}>{phoneNumberError}</Text> : null}
+                {phoneNumberError ? (
+                  <Text style={styles.errorText}>{phoneNumberError}</Text>
+                ) : null}
               </View>
 
               {/* Password */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Mật khẩu</Text>
-                <View style={[styles.inputWrapper, passwordError ? styles.inputErrorBorder : null]}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    passwordError ? styles.inputErrorBorder : null,
+                  ]}
+                >
                   <View style={styles.iconContainer}>
                     <Lock size={18} color="#9ca3af" />
                   </View>
@@ -266,17 +451,31 @@ export const RegisterScreen = () => {
                     onChangeText={handlePasswordChange}
                     secureTextEntry={!showPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                    {showPassword ? <EyeOff size={20} color="#9ca3af" /> : <Eye size={20} color="#9ca3af" />}
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} color="#9ca3af" />
+                    ) : (
+                      <Eye size={20} color="#9ca3af" />
+                    )}
                   </TouchableOpacity>
                 </View>
-                {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+                {passwordError ? (
+                  <Text style={styles.errorText}>{passwordError}</Text>
+                ) : null}
               </View>
 
               {/* Confirm Password */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Xác nhận mật khẩu</Text>
-                <View style={[styles.inputWrapper, confirmPasswordError ? styles.inputErrorBorder : null]}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    confirmPasswordError ? styles.inputErrorBorder : null,
+                  ]}
+                >
                   <View style={styles.iconContainer}>
                     <Lock size={18} color="#9ca3af" />
                   </View>
@@ -287,24 +486,80 @@ export const RegisterScreen = () => {
                     onChangeText={handleConfirmChange}
                     secureTextEntry={!showConfirmPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                    {showConfirmPassword ? <EyeOff size={20} color="#9ca3af" /> : <Eye size={20} color="#9ca3af" />}
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} color="#9ca3af" />
+                    ) : (
+                      <Eye size={20} color="#9ca3af" />
+                    )}
                   </TouchableOpacity>
                 </View>
-                {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+                {confirmPasswordError ? (
+                  <Text style={styles.errorText}>{confirmPasswordError}</Text>
+                ) : null}
+              </View>
+
+              <View style={styles.roleNameContainer}>
+                <Text style={styles.label}>Vai trò</Text>
+                <View style={styles.roleOptions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.roleOption,
+                      selectedRole === "Tenant" && styles.roleOptionSelected,
+                    ]}
+                    onPress={() => setSelectedRole("Tenant")}
+                  >
+                    <Text
+                      style={[
+                        styles.roleOptionText,
+                        selectedRole === "Tenant" &&
+                          styles.roleOptionTextSelected,
+                      ]}
+                    >
+                      Người thuê
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.roleOption,
+                      selectedRole === "Landlord" && styles.roleOptionSelected,
+                    ]}
+                    onPress={() => setSelectedRole("Landlord")}
+                  >
+                    <Text
+                      style={[
+                        styles.roleOptionText,
+                        selectedRole === "Landlord" &&
+                          styles.roleOptionTextSelected,
+                      ]}
+                    >
+                      Chủ trọ
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Register Button */}
               <TouchableOpacity
-                style={[styles.registerBtnShadow, !isFormValid && { opacity: 0.5 }]}
+                style={[
+                  styles.registerBtnShadow,
+                  !isFormValid && { opacity: 0.5 },
+                ]}
                 onPress={handleRegister}
-                disabled={loading || !isFormValid}>
+                disabled={loading || !isFormValid}
+              >
                 <LinearGradient
                   colors={["#10b981", "#0d9488"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={styles.registerBtn}>
-                  <Text style={styles.registerBtnText}>{loading ? "Đang xử lý..." : "Đăng ký"}</Text>
+                  style={styles.registerBtn}
+                >
+                  <Text style={styles.registerBtnText}>
+                    {loading ? "Đang xử lý..." : "Đăng ký"}
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -327,7 +582,11 @@ export const RegisterScreen = () => {
 
               <View style={styles.footerLink}>
                 <Text style={styles.footerText}>Đã có tài khoản? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate("auth", { screen: "login" })}>
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("auth", { screen: "login" })
+                  }
+                >
                   <Text style={styles.linkText}>Đăng nhập ngay</Text>
                 </TouchableOpacity>
               </View>
@@ -376,7 +635,12 @@ const styles = StyleSheet.create({
   formContainer: { gap: 12 },
   rowContainer: { flexDirection: "row", gap: 10 },
   halfInputContainer: { flex: 1 },
-  label: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+  },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -421,10 +685,67 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   socialBtnText: { fontSize: 14, fontWeight: "500" },
-  footerLink: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
+  footerLink: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+  },
   footerText: { color: "#6b7280" },
   linkText: { color: "#059669", fontWeight: "bold" },
   inputContainer: { marginBottom: 12 },
+  roleNameContainer: { marginBottom: 12 },
+  roleOptions: { flexDirection: "row", gap: 12, marginTop: 6 },
+  roleOption: {
+    flex: 1,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleOptionSelected: { backgroundColor: "#10b981", borderColor: "#10b981" },
+  roleOptionText: { fontSize: 14, color: "#374151" },
+  roleOptionTextSelected: { color: "#fff", fontWeight: "bold" },
+  VerifyContainer: {
+    flexDirection: "column",
+    gap: 12,
+    marginBottom: 12,
+  },
+  inputVerifyWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
+    borderRadius: 14,
+    height: 52,
+  },
+  labelVerify: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginRight: 6,
+  },
+  inputVerify: {
+    flex: 1,
+    fontSize: 15,
+    color: "#111827",
+    paddingHorizontal: 10,
+  },
+  verifyButton: {
+    marginTop: 0,
+    alignSelf: "flex-start",
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    backgroundColor: "#10b981",
+    borderRadius: 8,
+  },
+  verifyButtonText: { color: "#fff", fontSize: 12, fontWeight: "500" },
+  inputSuccessBorder: {
+    borderColor: "#10b981",
+  },
 });
 
 export default RegisterScreen;
