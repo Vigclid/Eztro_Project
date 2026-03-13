@@ -11,30 +11,27 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
-
-// NOTE:
-// To keep this screen easily pluggable with real data later (Option B),
-// the invoice/room shape is defined inline in state/arrays instead of
-// creating new global types, in order to respect the repo rule that
-// shared interfaces and types live in src/types.
+import RoomInforCard from "../../components/invoice/RoomInforCard";
+import InvoiceDetailCard from "../../components/invoice/InvoiceDetailCard";
 
 export const CreateInvoices = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [selectedHouseId, setSelectedHouseId] = useState("house-1");
-  const [roomsSelection, setRoomsSelection] = useState<
-    Array<{
-      id: string;
-      name: string;
-      tenantName: string;
-      isSelected: boolean;
-      items: Array<{
-        id: string;
-        label: string;
-        amount: string;
-      }>;
-      total: string;
-    }>
-  >([
+
+  // Mảng nhà trọ mẫu
+  const houses = useMemo(() => [
+    { id: "house-1", name: "Nhà trọ Hòa Bình" },
+    { id: "house-2", name: "Nhà trọ Hạnh Phúc" },
+  ], []);
+
+  const [selectedHouseId, setSelectedHouseId] = useState(houses[0].id);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // State quản lý việc mở modal chi tiết phòng
+  const [selectedRoomDetail, setSelectedRoomDetail] = useState<any>(null);
+
+  const selectedHouse = houses.find(h => h.id === selectedHouseId);
+
+  const [roomsSelection, setRoomsSelection] = useState([
     {
       id: "room-101",
       name: "Phòng 101",
@@ -71,8 +68,6 @@ export const CreateInvoices = () => {
   const totalCount = roomsSelection.length;
 
   const totalAmount = useMemo(() => {
-    // This keeps the Figma total as a static label for now,
-    // but the structure allows computing from numeric values later.
     if (selectedCount === 2) {
       return "8.623.000đ";
     }
@@ -89,7 +84,7 @@ export const CreateInvoices = () => {
     );
   };
 
-  const toggleRoomSelection = (roomId: string) => {
+  const toggleRoomSelection = (roomId: string | undefined) => {
     setRoomsSelection((prev) =>
       prev.map((room) =>
         room.id === roomId ? { ...room, isSelected: !room.isSelected } : room
@@ -130,19 +125,47 @@ export const CreateInvoices = () => {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Chọn cụm trọ</Text>
 
-          <TouchableOpacity
-            style={styles.houseSelector}
-            activeOpacity={0.8}
-            onPress={() => setSelectedHouseId(selectedHouseId)}
-          >
-            <View style={styles.selectorIconPlaceholder} />
+          <View style={styles.dropdownWrapper}>
+            <TouchableOpacity
+              style={styles.houseSelector}
+              activeOpacity={0.8}
+              onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              <View style={styles.houseNameWrapper}>
+                <Text style={styles.houseNameText}>{selectedHouse?.name}</Text>
+              </View>
 
-            <View style={styles.houseNameWrapper}>
-              <Text style={styles.houseNameText}>Nhà trọ Hòa Bình</Text>
-            </View>
+              <Text style={styles.chevronIcon}>▼</Text>
+            </TouchableOpacity>
 
-            <View style={styles.selectorChevronPlaceholder} />
-          </TouchableOpacity>
+            {/* Dropdown List */}
+            {isDropdownOpen && (
+              <View style={styles.dropdownContainer}>
+                {houses.map((house, index) => (
+                  <TouchableOpacity
+                    key={house.id}
+                    style={[
+                      styles.dropdownItem,
+                      index === houses.length - 1 && { borderBottomWidth: 0 }
+                    ]}
+                    onPress={() => {
+                      setSelectedHouseId(house.id);
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownText,
+                        selectedHouseId === house.id && styles.dropdownTextSelected
+                      ]}
+                    >
+                      {house.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Summary card */}
@@ -179,53 +202,14 @@ export const CreateInvoices = () => {
         </View>
 
         {/* Rooms list */}
-        <View style={styles.roomsContainer}>
+        <View >
           {roomsSelection.map((room) => (
-            <View key={room.id} style={styles.roomCard}>
-              {/* Header line with room + tenant + checkbox */}
-              <View style={styles.roomHeader}>
-                <TouchableOpacity
-                  onPress={() => toggleRoomSelection(room.id)}
-                  style={styles.roomCheckboxWrapper}
-                  activeOpacity={0.8}
-                >
-                  <View
-                    style={[
-                      styles.checkboxBase,
-                      room.isSelected && styles.checkboxChecked,
-                    ]}
-                  />
-                </TouchableOpacity>
-
-                <View style={styles.roomTitleWrapper}>
-                  <Text style={styles.roomNameText}>{room.name}</Text>
-                  <Text style={styles.tenantText}>{room.tenantName}</Text>
-                </View>
-
-                <View style={styles.roomStatusBadge} />
-              </View>
-
-              {/* Breakdown list */}
-              <View style={styles.breakdownContainer}>
-                {room.items.map((item) => (
-                  <View key={item.id} style={styles.breakdownRow}>
-                    <View style={styles.breakdownLabelWrapper}>
-                      <Text style={styles.breakdownLabelText}>
-                        {item.label}
-                      </Text>
-                    </View>
-                    <Text style={styles.breakdownAmountText}>
-                      {item.amount}
-                    </Text>
-                  </View>
-                ))}
-
-                <View style={styles.breakdownFooter}>
-                  <Text style={styles.breakdownTotalLabel}>Tổng cộng</Text>
-                  <Text style={styles.breakdownTotalAmount}>{room.total}</Text>
-                </View>
-              </View>
-            </View>
+            <RoomInforCard
+              key={room.id}
+              room={room}
+              toggleRoomSelection={toggleRoomSelection}
+              setSelectedRoomDetail={setSelectedRoomDetail}
+            />
           ))}
         </View>
       </ScrollView>
@@ -239,6 +223,10 @@ export const CreateInvoices = () => {
           }}
         />
       </View>
+      <InvoiceDetailCard
+        selectedRoomDetail={selectedRoomDetail}
+        setSelectedRoomDetail={setSelectedRoomDetail}
+      />
     </View>
   );
 };
@@ -259,7 +247,6 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: SPACING.HEADER_MARGIN_BOTTOM,
     marginTop: SPACING.HEADER_MARGIN_BOTTOM,
-
   },
   headerGradient: {
     flexDirection: "row",
@@ -292,12 +279,19 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: SPACING.SEARCH_CONTAINER_MARGIN_BOTTOM,
+    zIndex: 10,
+    elevation: 10,
   },
   sectionLabel: {
     color: COLORS.TEXT_DARK,
     fontSize: FONT_SIZE.LABEL,
     fontWeight: "bold",
     marginBottom: SPACING.LABEL_MARGIN_BOTTOM,
+  },
+  dropdownWrapper: {
+    position: "relative",
+    zIndex: 10,
+    elevation: 10,
   },
   houseSelector: {
     flexDirection: "row",
@@ -314,13 +308,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  selectorIconPlaceholder: {
-    width: SPACING.SEARCH_ICON_MARGIN_LEFT,
-    height: SPACING.SEARCH_ICON_MARGIN_LEFT,
-    borderRadius: BORDER_RADIUS.FEATURE_BADGE,
-    backgroundColor: COLORS.GRAY_LIGHT,
-    marginRight: SPACING.SEARCH_ICON_MARGIN_RIGHT,
-  },
   houseNameWrapper: {
     flex: 1,
   },
@@ -329,11 +316,41 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.SEARCH_INPUT,
     fontWeight: "bold",
   },
-  selectorChevronPlaceholder: {
-    width: SPACING.SEARCH_ICON_MARGIN_LEFT,
-    height: SPACING.SEARCH_ICON_MARGIN_LEFT,
-    borderRadius: BORDER_RADIUS.FEATURE_BADGE,
-    backgroundColor: COLORS.GRAY_LIGHT,
+  chevronIcon: {
+    fontSize: 14,
+    color: COLORS.TEXT_SECONDARY || "#666",
+    marginLeft: 8,
+  },
+  dropdownContainer: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    marginTop: 4,
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER_GRAY,
+    shadowColor: COLORS.SHADOW_COLOR,
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 1000,
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER_GRAY,
+  },
+  dropdownText: {
+    color: COLORS.TEXT_DARK,
+    fontSize: FONT_SIZE.SEARCH_INPUT,
+  },
+  dropdownTextSelected: {
+    fontWeight: "bold",
+    color: COLORS.GREEN_PRIMARY || '#00A152',
   },
   summaryCard: {
     flexDirection: "row",
@@ -396,94 +413,9 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.SEARCH_INPUT,
     fontWeight: "bold",
   },
-  roomsContainer: {},
-  roomCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.BOARDING_HOUSE_CARD,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER_GRAY,
-    shadowColor: COLORS.SHADOW_COLOR,
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 4,
-    paddingVertical: SPACING.BOARDING_HOUSE_CARD_PADDING_VERTICAL,
-    paddingHorizontal: SPACING.BOARDING_HOUSE_CARD_PADDING_RIGHT,
-    marginBottom: SPACING.BOARDING_HOUSE_CARD_MARGIN_BOTTOM,
-  },
-  roomHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: SPACING.STAT_CARD_TEXT_MARGIN_BOTTOM + SPACING.SMALL,
-  },
-  roomCheckboxWrapper: {
-    marginRight: SPACING.SEARCH_ICON_MARGIN_RIGHT,
-  },
-  roomTitleWrapper: {
-    flex: 1,
-  },
-  roomNameText: {
-    color: COLORS.TEXT_DARK,
-    fontSize: FONT_SIZE.BOARDING_HOUSE_TITLE,
-    fontWeight: "bold",
-  },
-  tenantText: {
-    color: COLORS.TEXT_SECONDARY,
-    fontSize: FONT_SIZE.ADDRESS,
-    marginTop: SPACING.XS,
-  },
-  roomStatusBadge: {
-    width: SPACING.STAT_ITEM_ICON_MARGIN_BOTTOM * 2,
-    height: SPACING.STAT_ITEM_ICON_MARGIN_BOTTOM * 2,
-    borderRadius: BORDER_RADIUS.STAT_ITEM,
-    backgroundColor: COLORS.successBg,
-  },
-  breakdownContainer: {
-    marginTop: SPACING.STAT_ITEM_TEXT_MARGIN_BOTTOM,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.BORDER_GRAY,
-    paddingTop: SPACING.STAT_ITEM_TEXT_MARGIN_BOTTOM,
-  },
-  breakdownRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.STAT_ITEM_TEXT_MARGIN_BOTTOM,
-  },
-  breakdownLabelWrapper: {
-    flex: 1,
-    marginRight: SPACING.STAT_ITEM_TEXT_MARGIN_HORIZONTAL,
-  },
-  breakdownLabelText: {
-    color: COLORS.TEXT_DARK,
-    fontSize: FONT_SIZE.SEARCH_INPUT,
-  },
-  breakdownAmountText: {
-    color: COLORS.TEXT_DARK,
-    fontSize: FONT_SIZE.SEARCH_INPUT,
-    fontWeight: "bold",
-  },
-  breakdownFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: SPACING.STAT_ITEM_TEXT_MARGIN_BOTTOM,
-  },
-  breakdownTotalLabel: {
-    color: COLORS.TEXT_DARK,
-    fontSize: FONT_SIZE.SEARCH_INPUT,
-    fontWeight: "bold",
-  },
-  breakdownTotalAmount: {
-    color: COLORS.GREEN_PRIMARY,
-    fontSize: FONT_SIZE.PRICE,
-    fontWeight: "bold",
-  },
   footer: {
     paddingBottom: SPACING.SCROLL_BOTTOM_PADDING,
     paddingTop: SPACING.SMALL,
     backgroundColor: COLORS.white,
   },
 });
-
-
