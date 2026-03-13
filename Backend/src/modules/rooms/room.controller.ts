@@ -41,7 +41,6 @@ export class roomController extends GenericController<IRoom> {
                     );
             }
 
-<<<<<<< HEAD
             if (
                 error?.code === "HOUSE_PACKAGE_NOT_FOUND" ||
                 error?.message === "HOUSE_PACKAGE_NOT_FOUND"
@@ -51,7 +50,21 @@ export class roomController extends GenericController<IRoom> {
                     .json(
                         responseWrapper(
                             "error",
-                            "Gói của bạn đã hết hạn vui lòng gia hạn thêm!"
+                            "Nhà trọ chưa có gói quản lý hợp lệ. Vui lòng mua gói trước khi tạo phòng."
+                        )
+                    );
+            }
+
+            if (
+                error?.code === "HOUSE_PACKAGE_EXPIRED" ||
+                error?.message === "HOUSE_PACKAGE_EXPIRED"
+            ) {
+                return res
+                    .status(200)
+                    .json(
+                        responseWrapper(
+                            "error",
+                            "Gói quản lý của nhà trọ đã hết hạn. Vui lòng gia hạn để tiếp tục tạo phòng."
                         )
                     );
             }
@@ -65,14 +78,14 @@ export class roomController extends GenericController<IRoom> {
                     .json(
                         responseWrapper(
                             "error",
-                            "Đã đạt giới hạn tạo phòng, vui lòng nâng cấp gói quản lý!"
+                            error?.maxRoom
+                                ? `Đã đạt giới hạn ${error.maxRoom} phòng của gói hiện tại. Vui lòng nâng cấp gói để tạo thêm phòng.`
+                                : "Đã đạt giới hạn tạo phòng, vui lòng nâng cấp gói quản lý!"
                         )
                     );
             }
 
             // Trường hợp vi phạm unique index ở MongoDB
-=======
->>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
             if (error?.code === 11000) {
                 return res
                     .status(200)
