@@ -11,6 +11,8 @@ import { CreateNewPasswordScreen } from "../../screens/auth/CreateNewPasswordScr
 import { TicketListScreen } from "../../screens/ticket/TicketListScreen";
 import { CreateTicketScreen } from "../../screens/ticket/CreateTicketScreen";
 import { TicketDetailScreen } from "../../screens/ticket/TicketDetailScreen";
+import {PackagePaymentScreen} from '../../screens/payment/PackagePaymentScreen';
+import { QRScanScreen } from "../../screens/payment/QRScanScreen";
 import { NotificationScreen } from "../../screens/notification/NotificationScreen";
 
 const Stack = createNativeStackNavigator();
@@ -28,6 +30,8 @@ const MainStack = () => (
     <Stack.Screen name="ticketListScreen" component={TicketListScreen} />
     <Stack.Screen name="createTicketScreen" component={CreateTicketScreen} />
     <Stack.Screen name="ticketDetailScreen" component={TicketDetailScreen} />
+    <Stack.Screen name="packagePaymentScreen" component={PackagePaymentScreen} />
+    <Stack.Screen name="qrScanScreen" component={QRScanScreen} />
     <Stack.Screen name="notificationScreen" component={NotificationScreen} />
   </Stack.Navigator>
 );

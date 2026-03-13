@@ -38,22 +38,28 @@ export type MainStackParamList = {
   changePasswordSuccessful: { fromMain: true } | undefined;
   boardingHouseDetailsScreen: { _id: string | undefined };
   createNewRoomScreen:
-    | {
-        houseId: string | undefined;
-        room?: import("../types/room").IRoom;
-        onRefresh?: () => void;
-      }
-    | undefined;
+  | {
+    houseId: string | undefined;
+    room?: import("../types/room").IRoom;
+    onRefresh?: () => void;
+  }
+  | undefined;
   addTenantScreen:
-    | {
-        roomId: string;
-        room?: import("../types/room").IRoom;
-      }
-    | undefined;
+  | {
+    roomId: string;
+    room?: import("../types/room").IRoom;
+  }
+  | undefined;
   createInvoicesScreen: undefined;
   ticketListScreen: undefined;
   createTicketScreen: undefined;
   ticketDetailScreen: { ticketId: string };
+  packagePaymentScreen: { houseData: any | undefined };
+  qrScanScreen: {
+    houseData: any,
+    packageId: any,
+    paymentType: any  | undefined
+};
   notificationScreen: undefined;
 };
 export type AuthStackParamList = {

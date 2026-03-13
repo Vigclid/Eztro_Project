@@ -30,9 +30,20 @@ export const getUserApi = {
       return false;
     }
   },
+
+  async getAllTenants(phone?: string) {
+    try {
+      const query = phone ? `?phone=${encodeURIComponent(phone)}` : "";
+      const response = await apiService.get(`${userApi}/tenants${query}`);
+      return response.data;
+    } catch (error) {
+      return { status: "error", data: [] };
+    }
+  },
 };
 
 export const postUserApi = {
+  // Backward compatibility: keep old call-sites working.
   async getAllTenants(phone?: string) {
     try {
       const query = phone ? `?phone=${encodeURIComponent(phone)}` : "";

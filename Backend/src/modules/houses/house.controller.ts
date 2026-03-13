@@ -4,21 +4,55 @@ import { houseService } from "./house.service";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
+import { housePackageService } from "../housePackage/housePackage.service";
+
 
 export class houseController extends GenericController<IHouse> {
     private HouseService: houseService
-    constructor(houseService: houseService) {
+    private HousePackageService: housePackageService
+    constructor(houseService: houseService, housePackageService: housePackageService) {
         super(houseService)
         this.HouseService = houseService
+        this.HousePackageService = housePackageService
     }
 
     getHouseById = async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
             const result = await this.HouseService.getHouseById(id)
+            if (!result) {
+                return res.status(404).json(responseWrapper("error", "Không tìm thấy cụm trọ"));
+            }
+            const housePackage = await this.HousePackageService.getCurrentHousePackageByHouseId(id);
+
+            const houseData = (result as any)?.toObject?.() || result;
+            const packageData: any = (housePackage as any)?.packageId;
+
+            const payload = {
+                ...houseData,
+                housePackage: housePackage
+                    ? {
+                        _id: (housePackage as any)?._id,
+                        expirationDate: (housePackage as any)?.expirationDate,
+                        createDate: (housePackage as any)?.createDate,
+                        isExpired: new Date((housePackage as any)?.expirationDate) < new Date(),
+                        package: packageData
+                            ? {
+                                _id: packageData?._id,
+                                packageName: packageData?.packageName,
+                                description: packageData?.description,
+                                price: packageData?.price,
+                                maxRoom: packageData?.maxRoom,
+                                duration: packageData?.duration,
+                                createDate: packageData?.createDate,
+                            }
+                            : null,
+                    }
+                    : null,
+            };
             return res
                 .status(200)
-                .json(responseWrapper("success", "Thanh cong", result))
+                .json(responseWrapper("success", "Thanh cong", payload))
         } catch (err: any) {
             res.status(500).json(responseWrapper("error", "Internal Server Error", err))
         }
@@ -45,6 +79,7 @@ export class houseController extends GenericController<IHouse> {
             };
             req.body.landlordId = id;
             const result = await this.HouseService.createNewHouse(req.body)
+            await this.HousePackageService.createNewHousePackage({ houseId: result._id, packageId: req.body.packageId })
             return res
                 .status(201)
                 .json(responseWrapper("success", "Tạo Cụm Trọ Thành Công", result))

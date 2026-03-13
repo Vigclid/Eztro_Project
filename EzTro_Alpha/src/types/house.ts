@@ -1,4 +1,13 @@
 import { IUser } from './users'
+import { IPackage } from './package'
+
+export interface IHousePackageInfo {
+    _id?: string;
+    expirationDate?: Date | string;
+    createDate?: Date | string;
+    isExpired?: boolean;
+    package?: IPackage | null;
+}
 
 export interface IHouse {
     _id: string | undefined
@@ -15,4 +24,5 @@ export interface IHouse {
     status: string | undefined,
     createDate: Date | undefined
     houseImgs: string[] | undefined
+    housePackage?: IHousePackageInfo | null
 }
