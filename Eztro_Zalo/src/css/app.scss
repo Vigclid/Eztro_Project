@@ -2,6 +2,13 @@
   padding: 16px 16px 96px 16px;
 }
 
+.zaui-input input,
+.zaui-input textarea {
+  color: #111 !important;
+  background: #fff !important;
+  -webkit-text-fill-color: #111 !important;
+}
+
 .section-container {
   padding: 16px;
   background: #76ff63;
