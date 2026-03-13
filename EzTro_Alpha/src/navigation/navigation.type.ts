@@ -54,16 +54,13 @@ export type MainStackParamList = {
   ticketListScreen: undefined;
   createTicketScreen: undefined;
   ticketDetailScreen: { ticketId: string };
-<<<<<<< HEAD
   packagePaymentScreen: { houseData: any | undefined };
   qrScanScreen: {
     houseData: any,
     packageId: any,
     paymentType: any  | undefined
 };
-=======
   notificationScreen: undefined;
->>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
 };
 export type AuthStackParamList = {
   welcome: undefined;
