@@ -4,6 +4,7 @@ import { NotificationMetadata } from "./notificationMetadata";
 export type NotificationTarget =
   | { kind: "user"; userId: Types.ObjectId }
   | { kind: "house"; houseId: Types.ObjectId }
+  | { kind: "room"; roomId: Types.ObjectId }
   | { kind: "all" };
 
 export interface INotification extends Document {

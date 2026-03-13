@@ -2,6 +2,7 @@ import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider } from "react-redux";
+import { InAppNotificationBanner } from "./src/components/notification/InAppNotificationBanner";
 import { AuthProvider } from "./src/context/AuthContext";
 import { SocketProvider } from "./src/context/SocketContext";
 import Navigation from "./src/navigation";
@@ -15,6 +16,7 @@ export default function App() {
           <AuthProvider>
             <SocketProvider>
               <Navigation />
+              <InAppNotificationBanner />
             </SocketProvider>
           </AuthProvider>
         </SafeAreaProvider>

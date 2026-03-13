@@ -7,6 +7,7 @@ import {
   sendNotificationToHouse,
   sendNotificationToUser,
 } from "./notification.gateway";
+import { LandlordNotificationMetadata, targetMetadata } from "./notificationMetadata";
 
 // ─── Typed payload cho từng loại notification ───────────────────────
 export type NotificationPayload =
@@ -37,6 +38,18 @@ export type NotificationPayload =
       target: { kind: "user"; userId: string };
       triggeredBy?: string;
       metadata: { postId: string; commentId: string; preview: string };
+    }
+  | {
+      type: typeof NOTIFICATION_TYPES.LANDLORD_RULE_UPDATE;
+      target: targetMetadata;
+      triggeredBy?: string;
+      metadata: LandlordNotificationMetadata;
+    }
+  | {
+      type: typeof NOTIFICATION_TYPES.LANDLORD_BROADCAST;
+      target: targetMetadata;
+      triggeredBy?: string;
+      metadata: LandlordNotificationMetadata;
     };
 // Thêm type mới → chỉ cần thêm vào đây
 
@@ -46,23 +59,25 @@ export class notificationService extends GenericService<INotification> {
   constructor() {
     super(NotificationModel);
   }
-
-  /**
-   * @example
-   * // Trong invoice.service.ts sau khi tạo invoice:
-   * await notificationService.send({
-   *   type: NOTIFICATION_TYPES.LANDLORD_INVOICE,
-   *   target: { kind: 'user', userId: tenant._id.toString() },
-   *   triggeredBy: landlordId,
-   *   metadata: { invoiceId: invoice._id, amount: 500000, roomId: room._id }
-   * });
-   */
   send = async (payload: NotificationPayload): Promise<void> => {
-    // 1. Lưu vào MongoDB
+    // Cast string IDs to ObjectId before persisting
+    const target = (() => {
+      const t = payload.target;
+      if (t.kind === "user") return { kind: "user", userId: new Types.ObjectId(t.userId) };
+      if (t.kind === "house") return { kind: "house", houseId: new Types.ObjectId(t.houseId) };
+      if (t.kind === "room") return { kind: "room", roomId: new Types.ObjectId(t.roomId) };
+      return t;
+    })();
+
+    const triggeredBy =
+      "triggeredBy" in payload && payload.triggeredBy
+        ? new Types.ObjectId(payload.triggeredBy)
+        : undefined;
+
     const doc = await NotificationModel.create({
       type: payload.type,
-      target: payload.target,
-      triggeredBy: "triggeredBy" in payload ? payload.triggeredBy : undefined,
+      target,
+      triggeredBy,
       metadata: payload.metadata,
     });
 
@@ -75,13 +90,12 @@ export class notificationService extends GenericService<INotification> {
       status: doc.status,
     };
 
-    // 2. Emit socket theo target
     switch (payload.target.kind) {
       case "user":
-        sendNotificationToUser(payload.target.userId, eventData);
+        sendNotificationToUser(payload.target.userId!, eventData);
         break;
       case "house":
-        sendNotificationToHouse(payload.target.houseId, eventData);
+        sendNotificationToHouse(payload.target.houseId!, eventData);
         break;
       case "all":
         sendNotificationToAll(eventData);

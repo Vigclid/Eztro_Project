@@ -27,6 +27,19 @@ export const getNotificationApi = {
   },
 };
 
+export interface BroadcastPayload {
+  type: "LANDLORD_BROADCAST" | "LANDLORD_RULE_UPDATE";
+  target: object;
+  metadata: { message: string };
+}
+
+export const sendNotificationApi = {
+  async broadcast(payload: BroadcastPayload) {
+    const response = await apiService.post(`${notificationUrl}/broadcast`, payload);
+    return response.data;
+  },
+};
+
 export const postNotificationApi = {
   async markAsRead(id: string) {
     const response = await apiService.post(

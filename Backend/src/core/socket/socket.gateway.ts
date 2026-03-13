@@ -14,7 +14,7 @@ export function initSocketGateway(httpServer: HttpServer): SocketServer {
     const token = socket.handshake.auth.token;
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      (socket as any).userId  = decoded.userId;
+      (socket as any).userId = decoded.id;
       (socket as any).houseId = decoded.houseId;
       next();
     } catch {
@@ -23,9 +23,8 @@ export function initSocketGateway(httpServer: HttpServer): SocketServer {
   });
 
   io.on("connection", (socket: Socket) => {
-    const userId  = (socket as any).userId  as string;
+    const userId = (socket as any).userId as string;
     const houseId = (socket as any).houseId as string;
-
     socket.join(SocketRooms.user(userId));
     if (houseId) socket.join(SocketRooms.house(houseId));
   });
