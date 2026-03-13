@@ -5,7 +5,8 @@ export type NotificationTarget =
   | { kind: "user"; userId: Types.ObjectId }
   | { kind: "house"; houseId: Types.ObjectId }
   | { kind: "room"; roomId: Types.ObjectId }
-  | { kind: "all" };
+  | { kind: "all" }
+  | { kind: "landlord-all" };
 
 export interface INotification extends Document {
   type: string;

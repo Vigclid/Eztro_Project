@@ -24,9 +24,7 @@ export function initSocketGateway(httpServer: HttpServer): SocketServer {
 
   io.on("connection", (socket: Socket) => {
     const userId = (socket as any).userId as string;
-    const houseId = (socket as any).houseId as string;
     socket.join(SocketRooms.user(userId));
-    if (houseId) socket.join(SocketRooms.house(houseId));
   });
 
   return io;
@@ -34,10 +32,6 @@ export function initSocketGateway(httpServer: HttpServer): SocketServer {
 
 export function emitToUser(userId: string, event: string, data: unknown) {
   io?.to(SocketRooms.user(userId)).emit(event, data);
-}
-
-export function emitToHouse(houseId: string, event: string, data: unknown) {
-  io?.to(SocketRooms.house(houseId)).emit(event, data);
 }
 
 export function emitToAll(event: string, data: unknown) {

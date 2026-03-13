@@ -34,7 +34,7 @@ import { IUser } from "../../types/users";
 
 // ─── Types ────────────────────────────────────────────────────────────
 type NotifType = "LANDLORD_BROADCAST" | "LANDLORD_RULE_UPDATE";
-type TargetScope = "all" | "house" | "room" | "tenant";
+type TargetScope = "landlord-all" | "house" | "room" | "tenant";
 
 // ─── Config ───────────────────────────────────────────────────────────
 const NOTIF_TYPES: { value: NotifType; label: string; desc: string }[] = [
@@ -57,7 +57,7 @@ const TARGET_SCOPES: {
   Icon: React.FC<any>;
 }[] = [
   {
-    value: "all",
+    value: "landlord-all",
     label: "Tất cả nhà trọ",
     desc: "Gửi tới mọi người thuê",
     Icon: Home,
@@ -169,10 +169,9 @@ const InlinePicker: React.FC<PickerProps> = ({
 // ─── Main Screen ──────────────────────────────────────────────────────
 export const CreateNotificationScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-
   // Form state
   const [notifType, setNotifType] = useState<NotifType>("LANDLORD_BROADCAST");
-  const [targetScope, setTargetScope] = useState<TargetScope>("all");
+  const [targetScope, setTargetScope] = useState<TargetScope>("landlord-all");
   const [message, setMessage] = useState("");
 
   // Selection IDs
@@ -193,7 +192,7 @@ export const CreateNotificationScreen: React.FC = () => {
 
   // Load houses when scope requires it
   useEffect(() => {
-    if (targetScope === "all") return;
+    if (targetScope === "landlord-all") return;
     if (houses.length > 0) return;
     setLoadingHouses(true);
     getHouseApi
@@ -254,8 +253,8 @@ export const CreateNotificationScreen: React.FC = () => {
 
   const buildTarget = (): object | null => {
     switch (targetScope) {
-      case "all":
-        return { kind: "all" };
+      case "landlord-all":
+        return { kind: "landlord-all" };
       case "house":
         if (!selectedHouseId) return null;
         return { kind: "house", houseId: selectedHouseId };
@@ -463,7 +462,7 @@ export const CreateNotificationScreen: React.FC = () => {
         </View>
 
         {/* ── Section: Target Selection (dynamic) ── */}
-        {targetScope !== "all" && (
+        {targetScope !== "landlord-all" && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Chọn đối tượng</Text>
             <View style={styles.pickerBox}>

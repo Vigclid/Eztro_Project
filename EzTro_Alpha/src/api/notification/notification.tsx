@@ -48,7 +48,7 @@ export const postNotificationApi = {
     return response.data;
   },
   async markAsReadAll() {
-    const response = await apiService.post(`${notificationUrl}/me/as-read`);
+    const response = await apiService.post(`${notificationUrl}/me`);
     return response.data;
   },
 };
