@@ -1,20 +1,17 @@
 import { GenericService } from "../../core/services/base.service";
 import roomModel, { IRoom } from "./room.model";
-<<<<<<< HEAD
 import housePackageModel from '../../modules/housePackage/housePackage.model'
 import { IPackage } from "../package/package.model";
-=======
 import roomInvitationModel from "./roomInvitation.model";
 import roomMemberModel from "./roomMember.model";
 import { Types } from "mongoose";
 import userModel from "../users/user.model";
 import houseModel from "../houses/house.model";
->>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
 
 export class roomService extends GenericService<IRoom> {
-  constructor() {
-    super(roomModel);
-  }
+    constructor() {
+        super(roomModel);
+    }
 
     private toObjectId = (value: string) => new Types.ObjectId(value);
 
@@ -23,46 +20,46 @@ export class roomService extends GenericService<IRoom> {
     private generateInviteCode = () =>
         Math.floor(100000 + Math.random() * 900000).toString();
 
-  createNewRoom = async (data: Partial<IRoom>) => {
-    // Đảm bảo không tạo 2 phòng trùng tên trong cùng 1 cụm trọ
-    if (!data.houseId || !data.roomName) {
-      throw new Error("HOUSE_ID_AND_ROOM_NAME_REQUIRED");
-    }
+    createNewRoom = async (data: Partial<IRoom>) => {
+        // Đảm bảo không tạo 2 phòng trùng tên trong cùng 1 cụm trọ
+        if (!data.houseId || !data.roomName) {
+            throw new Error("HOUSE_ID_AND_ROOM_NAME_REQUIRED");
+        }
 
-    const existed = await roomModel.findOne({
-      houseId: data.houseId,
-      roomName: data.roomName,
-    });
+        const existed = await roomModel.findOne({
+            houseId: data.houseId,
+            roomName: data.roomName,
+        });
 
-    if (existed) {
-      const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
-      error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
-      throw error;
-    }
+        if (existed) {
+            const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
+            error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
+            throw error;
+        }
 
-    const housePackage = await housePackageModel.findOne({
-      houseId: data.houseId
-    }).populate('packageId')
-    const packageData = housePackage?.packageId as IPackage
+        const housePackage = await housePackageModel.findOne({
+            houseId: data.houseId
+        }).populate('packageId')
+        const packageData = housePackage?.packageId as IPackage
 
-    if (!housePackage) {
-      const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
-      error.code = "HOUSE_PACKAGE_NOT_FOUND";
-      throw error;
-    }
+        if (!housePackage) {
+            const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
+            error.code = "HOUSE_PACKAGE_NOT_FOUND";
+            throw error;
+        }
 
-    const countRoom = await roomModel.countDocuments({ houseId: data.houseId });
-    if (countRoom >= packageData.maxRoom) {
-      const error: any = new Error("ROOM_LIMIT_EXCEEDED");
-      error.code = "ROOM_LIMIT_EXCEEDED";
-      throw error;
-    }
+        const countRoom = await roomModel.countDocuments({ houseId: data.houseId });
+        if (countRoom >= packageData.maxRoom) {
+            const error: any = new Error("ROOM_LIMIT_EXCEEDED");
+            error.code = "ROOM_LIMIT_EXCEEDED";
+            throw error;
+        }
 
-    const newRoom = new roomModel({
-      ...data,
-    });
-    return await roomModel.create(newRoom);
-  };
+        const newRoom = new roomModel({
+            ...data,
+        });
+        return await roomModel.create(newRoom);
+    };
 
     getAllRoomsByHouseId = async (houseId: string) => {
         return await roomModel.find({ houseId: houseId });
@@ -400,32 +397,32 @@ export class roomService extends GenericService<IRoom> {
             .populate("userId", "firstName lastName phoneNumber email");
     };
 
-  updateRoom = async (roomId: string, data: Partial<IRoom>) => {
-    const existing = await roomModel.findById(roomId);
-    if (!existing) {
-      const error: any = new Error("ROOM_NOT_FOUND");
-      error.code = "ROOM_NOT_FOUND";
-      throw error;
-    }
-    const targetHouseId = (data.houseId as any) || existing.houseId;
-    const targetRoomName = (data.roomName as any) || existing.roomName;
+    updateRoom = async (roomId: string, data: Partial<IRoom>) => {
+        const existing = await roomModel.findById(roomId);
+        if (!existing) {
+            const error: any = new Error("ROOM_NOT_FOUND");
+            error.code = "ROOM_NOT_FOUND";
+            throw error;
+        }
+        const targetHouseId = (data.houseId as any) || existing.houseId;
+        const targetRoomName = (data.roomName as any) || existing.roomName;
 
-    if (!targetHouseId || !targetRoomName) {
-      return await roomModel.findByIdAndUpdate(roomId, data, { new: true });
-    }
+        if (!targetHouseId || !targetRoomName) {
+            return await roomModel.findByIdAndUpdate(roomId, data, { new: true });
+        }
 
-    const duplicate = await roomModel.findOne({
-      houseId: targetHouseId,
-      roomName: targetRoomName,
-      _id: { $ne: roomId },
-    });
+        const duplicate = await roomModel.findOne({
+            houseId: targetHouseId,
+            roomName: targetRoomName,
+            _id: { $ne: roomId },
+        });
 
-    if (duplicate) {
-      const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
-      error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
-      throw error;
-    }
+        if (duplicate) {
+            const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
+            error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
+            throw error;
+        }
 
-    return await roomModel.findByIdAndUpdate(roomId, data, { new: true });
-  };
+        return await roomModel.findByIdAndUpdate(roomId, data, { new: true });
+    };
 }
