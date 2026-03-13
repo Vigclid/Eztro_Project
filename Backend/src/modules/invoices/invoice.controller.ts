@@ -78,7 +78,6 @@ export class invoiceController extends GenericController<IInvoice> {
           secret_key: process.env.ZALO_SECRET_CODE,
         },
       });
-      console.log(response.data);
       const phoneNumber = response.data.data.number;
       const result = await this.InvoiceService.updateInvoiceWithZalo({
         ...InvoiceBody,
