@@ -50,4 +50,23 @@ export class housePackageService extends GenericService<IHousePackage> {
 
         return await currentHousePackage.save();
     }
+
+    getCurrentHousePackageByHouseId = async (houseId: string) => {
+        const now = new Date();
+
+        const activePackage = await housePackageModel
+            .findOne({
+                houseId: houseId,
+                expirationDate: { $gte: now },
+            })
+            .sort({ expirationDate: -1, createDate: -1 })
+            .populate("packageId");
+
+        if (activePackage) return activePackage;
+
+        return housePackageModel
+            .findOne({ houseId: houseId })
+            .sort({ expirationDate: -1, createDate: -1 })
+            .populate("packageId");
+    }
 }
