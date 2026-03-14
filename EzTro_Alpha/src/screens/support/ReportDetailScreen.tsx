@@ -134,7 +134,6 @@ export const ReportDetailScreen: React.FC = () => {
         fetchReportDetail();
       }
     } catch (error) {
-      console.error("Error updating status:", error);
     } finally {
       setUpdatingStatus(false);
     }

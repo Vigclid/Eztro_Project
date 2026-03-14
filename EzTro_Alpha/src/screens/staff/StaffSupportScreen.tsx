@@ -63,7 +63,6 @@ export const StaffSupportScreen: React.FC = () => {
         setStats(statsData);
       }
     } catch (error) {
-      console.error("Error fetching reports:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);

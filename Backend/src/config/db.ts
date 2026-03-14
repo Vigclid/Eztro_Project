@@ -13,9 +13,7 @@ export const connectDB = async (): Promise<void> => {
     });
 
     isConnected = true;
-    console.log('✅ Database connected successfully');
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
     process.exit(1);
   }
 };

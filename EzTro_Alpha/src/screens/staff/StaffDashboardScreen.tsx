@@ -112,7 +112,6 @@ export const StaffDashboardScreen: React.FC = () => {
         activity: { today: 234, total: 1847, uniqueUsers: 89, successRate: 94 },
       });
     } catch (error) {
-      console.error("Failed to load dashboard data:", error);
       // Fallback to mock data on error
       setStats({
         users: { total: 156, active: 142 },
