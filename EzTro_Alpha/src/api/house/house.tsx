@@ -14,9 +14,9 @@ export const getHouseApi = {
         }
     },
 
-    async getAllHousesByLandlordId() {
+    async getAllHousesByLandlordId(signal?: AbortSignal) {
         try {
-            const res = await apiService.get(`${houseApi}landlord/all`)
+            const res = await apiService.get(`${houseApi}landlord/all`, { signal })
             return res.data
         } catch (err: any) {
             throw err

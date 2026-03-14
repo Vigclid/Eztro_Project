@@ -68,6 +68,10 @@ export const appNavigator = {
     navigate("mainscreen", { screen: "trackingInvoiceStatus" });
   },
 
+  goToCreateInvoicesScreen() {
+    navigate("mainscreen", { screen: "createInvoicesScreen" });
+  },
+  
   // ─── MAIN STACK ───────────────────────────────────────────────────────────
 
   goToCreateBoardingHousePage() {
@@ -114,10 +118,6 @@ export const appNavigator = {
       screen: "addTenantScreen",
       params: { roomId, room },
     });
-  },
-
-  goToCreateInvoicesScreen() {
-    navigate("mainstack", { screen: "createInvoicesScreen" });
   },
 
   goToPackagePaymentScreen(houseData?: any) {

@@ -43,7 +43,6 @@ export const ViewBoardingHousePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [searchText, onChangeSearchText] = useState("");
 
-  const { getAllHousesByLandlordId } = getHouseApi;
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
   const [totalAvailableRooms, setTotalAvailableRooms] = useState<number>(0);
   const unreadCount = useSelector(
@@ -52,19 +51,24 @@ export const ViewBoardingHousePage: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
+      const controller = new AbortController();
+
+      const { getAllHousesByLandlordId } = getHouseApi;
       const getAllHouses = async () => {
         try {
-          const res = (await getAllHousesByLandlordId()) as ApiResponse<
+          const res = (await getAllHousesByLandlordId(controller.signal)) as ApiResponse<
             IHouse[]
           >;
           if (res.status === "success") {
             setBoardingHouses(res.data as IHouse[]);
           }
-        } catch (err) {}
+        } catch (err) { }
       };
       getAllHouses();
-      return () => {};
-    }, [getAllHousesByLandlordId]),
+      return () => {
+        controller.abort();
+      };
+    }, []),
   );
 
   useEffect(() => {
