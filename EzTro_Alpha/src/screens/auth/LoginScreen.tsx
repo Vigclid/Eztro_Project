@@ -1,6 +1,6 @@
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowLeft, ChevronDown, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
+import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -10,7 +10,6 @@ import {
   SafeAreaView,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -23,6 +22,7 @@ import { useDispatch } from "react-redux";
 import { loginAsync } from "../../features/auth/authSlice";
 import { NavigationProp } from "../../navigation/navigation.type";
 import { AppDispatch } from "../../stores/store";
+import { styles } from "./styles/LoginScreen.style";
 
 // SET UP GOOGLE LOGIN
 import * as AuthSession from "expo-auth-session";
@@ -62,24 +62,10 @@ const FacebookIcon = () => (
   </Svg>
 );
 
-type LoginRoleOption = {
-  label: string;
-  value: "Landlord" | "Tenant" | "Staff" | "Admin";
-};
-
-const LOGIN_ROLE_OPTIONS: LoginRoleOption[] = [
-  { label: "Chủ trọ", value: "Landlord" },
-  { label: "Người thuê", value: "Tenant" },
-  { label: "Nhân viên", value: "Staff" },
-  { label: "Quản trị viên", value: "Admin" },
-];
-
 export const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: "EzTro_Alpha",
-  });
+  
   // LOGIN WITH GOOGLE SETUP
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId:
@@ -91,8 +77,6 @@ export const LoginScreen = () => {
   // State management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<LoginRoleOption | null>(null);
-  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -171,11 +155,6 @@ export const LoginScreen = () => {
       return;
     }
 
-    if (!selectedRole) {
-      setError("Vui lòng chọn vai trò đăng nhập");
-      return;
-    }
-
     if (!isFormValid) {
       setError("Vui lòng kiểm tra lại thông tin");
       return;
@@ -184,17 +163,18 @@ export const LoginScreen = () => {
     setLoading(true);
 
     try {
-      // Execute Redux Action
+      // Execute Redux Action - backend will determine role
       const result = await dispatch(
-        loginAsync({ email, password, role: selectedRole.value }),
+        loginAsync({ email, password, role: "" }),
       );
       if (loginAsync.fulfilled.match(result)) {
         Alert.alert("Thành công", "Đăng nhập thành công");
         const roleFromUser =
           typeof (result.payload as any)?.user?.roleId === "object"
             ? (result.payload as any)?.user?.roleId?.name
-            : selectedRole.value;
+            : (result.payload as any)?.user?.roleName;
 
+        // Route based on role
         if (roleFromUser === "Tenant") {
           navigation.dispatch(
             CommonActions.reset({
@@ -210,6 +190,22 @@ export const LoginScreen = () => {
           return;
         }
 
+        if (roleFromUser === "Staff" || roleFromUser === "Admin") {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: "staffscreen",
+                  params: { screen: "staffDashboard" },
+                },
+              ],
+            }),
+          );
+          return;
+        }
+
+        // Default to landlord screen
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -351,65 +347,6 @@ export const LoginScreen = () => {
               )}
             </View>
 
-            {/* Role Selector (Dropdown) */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Vai trò đăng nhập</Text>
-              <TouchableOpacity
-                style={styles.dropdownTrigger}
-                activeOpacity={0.8}
-                onPress={() => setIsRoleDropdownOpen((prev) => !prev)}
-              >
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    !selectedRole && styles.dropdownPlaceholder,
-                  ]}
-                >
-                  {selectedRole?.label || "Chọn vai trò"}
-                </Text>
-                <ChevronDown
-                  size={18}
-                  color="#6b7280"
-                  style={[
-                    styles.dropdownChevron,
-                    isRoleDropdownOpen && styles.dropdownChevronOpen,
-                  ]}
-                />
-              </TouchableOpacity>
-
-              {isRoleDropdownOpen ? (
-                <View style={styles.dropdownMenu}>
-                  {LOGIN_ROLE_OPTIONS.map((role) => {
-                    const isSelected = selectedRole?.value === role.value;
-                    return (
-                      <TouchableOpacity
-                        key={role.value}
-                        style={[
-                          styles.dropdownItem,
-                          isSelected && styles.dropdownItemSelected,
-                        ]}
-                        onPress={() => {
-                          setSelectedRole(role);
-                          setIsRoleDropdownOpen(false);
-                          setError("");
-                        }}
-                        activeOpacity={0.8}
-                      >
-                        <Text
-                          style={[
-                            styles.dropdownItemText,
-                            isSelected && styles.dropdownItemTextSelected,
-                          ]}
-                        >
-                          {role.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ) : null}
-            </View>
-
             {/* Forgot Password Link */}
             <View style={styles.forgotPasswordContainer}>
               <TouchableOpacity onPress={handleForgotPasswordPress}>
@@ -428,7 +365,7 @@ export const LoginScreen = () => {
             <TouchableOpacity
               style={styles.loginBtnShadow}
               onPress={handleLoginPress}
-              disabled={loading || !isFormValid || !selectedRole}
+              disabled={loading || !isFormValid}
               activeOpacity={0.8}
             >
               <LinearGradient
@@ -481,273 +418,5 @@ export const LoginScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  background: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  blob: {
-    position: "absolute",
-    top: -60,
-    right: -60,
-    width: 256,
-    height: 256,
-    borderRadius: 128,
-    backgroundColor: "rgba(167, 243, 208, 0.2)", // emerald-200/20
-    transform: [{ scale: 1.2 }],
-  },
-  safeArea: {
-    flex: 1,
-    marginTop: Platform.OS === "android" ? 30 : 0,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    marginBottom: 20,
-    zIndex: 10,
-  },
-  backButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    // Shadow
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#111827", // gray-900
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#4b5563", // gray-600
-    marginBottom: 40,
-  },
-
-  /* Input Styles */
-  inputContainer: {
-    marginBottom: 16,
-  },
-  dropdownTrigger: {
-    height: 56,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  dropdownText: {
-    fontSize: 16,
-    color: "#111827",
-  },
-  dropdownPlaceholder: {
-    color: "#9ca3af",
-  },
-  dropdownChevron: {
-    transform: [{ rotate: "0deg" }],
-  },
-  dropdownChevronOpen: {
-    transform: [{ rotate: "180deg" }],
-  },
-  dropdownMenu: {
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#fff",
-    overflow: "hidden",
-  },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  dropdownItemSelected: {
-    backgroundColor: "#ecfdf5",
-  },
-  dropdownItemText: {
-    fontSize: 14,
-    color: "#374151",
-    fontWeight: "500",
-  },
-  dropdownItemTextSelected: {
-    color: "#047857",
-    fontWeight: "700",
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151", // gray-700
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#e5e7eb", // gray-200
-    borderRadius: 16,
-    height: 56,
-  },
-  iconContainer: {
-    paddingLeft: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  input: {
-    flex: 1,
-    height: "100%",
-    fontSize: 16,
-    color: "#111827",
-    paddingHorizontal: 12,
-  },
-  eyeIcon: {
-    padding: 16,
-  },
-
-  /* Validation Messages */
-  validationError: {
-    color: "#dc2626", // red-600
-    fontSize: 13,
-    marginTop: 6,
-    marginLeft: 4,
-  },
-  validationSuccess: {
-    color: "#059669", // emerald-600
-    fontSize: 13,
-    marginTop: 6,
-    marginLeft: 4,
-  },
-
-  /* Forgot Password */
-  forgotPasswordContainer: {
-    alignItems: "flex-end",
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    color: "#059669", // emerald-600
-    fontWeight: "600",
-    fontSize: 14,
-  },
-
-  /* Error Box */
-  errorBox: {
-    backgroundColor: "#fef2f2", // red-50
-    borderColor: "#fecaca", // red-200
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    alignItems: "center",
-  },
-  errorText: {
-    color: "#dc2626", // red-600
-    fontSize: 14,
-    fontWeight: "500",
-  },
-
-  /* Login Button */
-  loginBtnShadow: {
-    shadowColor: "#10b981", // emerald-500
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  loginBtn: {
-    height: 56,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  disabledBtn: {
-    opacity: 0.7,
-  },
-  loginBtnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-
-  /* Divider */
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 24,
-    gap: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#e5e7eb", // gray-200
-  },
-  dividerText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#6b7280", // gray-500
-  },
-
-  /* Social Buttons */
-  socialRow: {
-    flexDirection: "row",
-    gap: 16,
-    marginBottom: 32,
-  },
-  socialBtn: {
-    flex: 1,
-    height: 56,
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
-    borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-  socialBtnText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151", // gray-700
-  },
-
-  /* Footer */
-  footerLink: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  footerText: {
-    color: "#4b5563", // gray-600
-    fontSize: 14,
-  },
-  linkText: {
-    color: "#059669", // emerald-600
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-});
 
 export default LoginScreen;

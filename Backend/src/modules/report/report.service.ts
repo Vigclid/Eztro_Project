@@ -18,11 +18,15 @@ export class ReportService extends GenericService<IReport> {
   }
 
   async getReportById(reportId: string) {
-    return ReportModel.findById(reportId).populate("userId", "fullName email").populate("replies.senderId", "fullName email");
+    return ReportModel.findById(reportId)
+      .populate("userId", "firstName lastName email")
+      .populate("replies.senderId", "firstName lastName email");
   }
 
   async getAllReports() {
-    return ReportModel.find().populate("userId", "fullName email").sort({ createdAt: -1 });
+    return ReportModel.find()
+      .populate("userId", "firstName lastName email")
+      .sort({ createdAt: -1 });
   }
 
   async addReply(reportId: string, senderId: string, message: string) {
@@ -33,7 +37,9 @@ export class ReportService extends GenericService<IReport> {
         $set: { status: "InProgress" },
       },
       { new: true }
-    ).populate("userId", "fullName email").populate("replies.senderId", "fullName email");
+    )
+      .populate("userId", "firstName lastName email")
+      .populate("replies.senderId", "firstName lastName email");
   }
 
   async updateStatus(reportId: string, status: ReportStatus) {

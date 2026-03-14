@@ -39,7 +39,6 @@ export const MyReportsScreen: React.FC = () => {
         setReports(reportsData);
       }
     } catch (error) {
-      console.error("Error fetching reports:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);

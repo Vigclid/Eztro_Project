@@ -68,6 +68,12 @@ export const appNavigator = {
     navigate("mainscreen", { screen: "trackingInvoiceStatus" });
   },
 
+  // ─── STAFF TAB ────────────────────────────────────────────────────────────
+
+  goToStaffSupport() {
+    navigate("staffscreen", { screen: "staffSupport" });
+  },
+
   // ─── MAIN STACK ───────────────────────────────────────────────────────────
 
   goToCreateBoardingHousePage() {

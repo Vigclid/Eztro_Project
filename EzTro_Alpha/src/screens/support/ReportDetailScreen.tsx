@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   RefreshControl,
   ScrollView,
@@ -11,10 +12,11 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowLeft, Bug, HelpCircle, Lightbulb, Send } from "lucide-react-native";
+import { ArrowLeft, Bug, HelpCircle, Lightbulb, Send, ChevronDown } from "lucide-react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { getReportApi } from "../../api/report/GET";
 import { postReportApi } from "../../api/report/POST";
+import { patchReportApi } from "../../api/report/PATCH";
 import { appNavigator } from "../../navigation/navigationActions";
 import { MainStackParamList } from "../../navigation/navigation.type";
 import { styles } from "./styles/ReportDetailScreen.styles";
@@ -28,7 +30,8 @@ type ReportDetailRouteProp = RouteProp<MainStackParamList, "reportDetailScreen">
 interface Reply {
   senderId: {
     _id: string;
-    fullName: string;
+    firstName?: string;
+    lastName?: string;
     email: string;
   };
   message: string;
@@ -39,7 +42,8 @@ interface Report {
   _id: string;
   userId: {
     _id: string;
-    fullName: string;
+    firstName?: string;
+    lastName?: string;
     email: string;
   };
   typeReport: "Help" | "Bug" | "Advice";
@@ -51,6 +55,8 @@ interface Report {
   updatedAt: string;
 }
 
+type ReportStatus = "Pending" | "InProgress" | "Resolved" | "Closed";
+
 export const ReportDetailScreen: React.FC = () => {
   const route = useRoute<ReportDetailRouteProp>();
   const { reportId } = route.params;
@@ -59,8 +65,23 @@ export const ReportDetailScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [replyMessage, setReplyMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   
   const currentUserId = useSelector((state: RootState) => state.auth.user?._id);
+  const userRole = useSelector((state: RootState) => state.auth.user?.roleName);
+  const isStaffOrAdmin = userRole === "Staff" || userRole === "Admin";
+
+  // Check if staff/admin has replied first
+  const hasStaffReplied = report?.replies.some((reply) => {
+    // Check if the reply is from a staff/admin (not the report creator)
+    return reply.senderId._id !== report.userId._id;
+  });
+
+  // User can send message if:
+  // 1. They are staff/admin, OR
+  // 2. They are the report creator AND staff has already replied
+  const canSendMessage = isStaffOrAdmin || (currentUserId === report?.userId._id && hasStaffReplied);
 
   const fetchReportDetail = async () => {
     try {
@@ -71,7 +92,6 @@ export const ReportDetailScreen: React.FC = () => {
         setReport(responseData.data);
       }
     } catch (error) {
-      console.error("Error fetching report detail:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -99,10 +119,34 @@ export const ReportDetailScreen: React.FC = () => {
         fetchReportDetail();
       }
     } catch (error) {
-      console.error("Error sending reply:", error);
     } finally {
       setSending(false);
     }
+  };
+
+  const handleUpdateStatus = async (newStatus: ReportStatus) => {
+    setUpdatingStatus(true);
+    try {
+      const res = await patchReportApi.updateStatus(reportId, { status: newStatus });
+      
+      if (res.status && res.data) {
+        setShowStatusModal(false);
+        fetchReportDetail();
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const getUserFullName = (user: { firstName?: string; lastName?: string; email: string }) => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.firstName) return user.firstName;
+    if (user.lastName) return user.lastName;
+    return user.email;
   };
 
   const getTypeIcon = (type: string) => {
@@ -241,12 +285,21 @@ export const ReportDetailScreen: React.FC = () => {
               <View style={[styles.statusBadge, getStatusStyle(report.status)]}>
                 <Text style={styles.statusText}>{getStatusLabel(report.status)}</Text>
               </View>
+              {isStaffOrAdmin && report.status !== "Closed" && (
+                <TouchableOpacity
+                  style={styles.changeStatusButton}
+                  onPress={() => setShowStatusModal(true)}
+                >
+                  <Text style={styles.changeStatusText}>Đổi trạng thái</Text>
+                  <ChevronDown size={16} color="#10b981" />
+                </TouchableOpacity>
+              )}
               <Text style={styles.reportDate}>{formatDate(report.createdAt)}</Text>
             </View>
             
             <View style={styles.userInfo}>
               <Text style={styles.userLabel}>Người gửi:</Text>
-              <Text style={styles.userName}>{report.userId.fullName}</Text>
+              <Text style={styles.userName}>{getUserFullName(report.userId)}</Text>
             </View>
           </View>
 
@@ -277,9 +330,12 @@ export const ReportDetailScreen: React.FC = () => {
                         isMyMessage ? styles.myMessageBubble : styles.otherMessageBubble,
                       ]}
                     >
-                      {!isMyMessage && (
-                        <Text style={styles.senderName}>{reply.senderId.fullName}</Text>
-                      )}
+                      <Text style={[
+                        styles.senderName,
+                        isMyMessage ? styles.mySenderName : styles.otherSenderName
+                      ]}>
+                        {getUserFullName(reply.senderId)}
+                      </Text>
                       <Text
                         style={[
                           styles.messageText,
@@ -305,31 +361,88 @@ export const ReportDetailScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Reply Input (All users can reply) */}
+      {/* Reply Input */}
       {report.status !== "Closed" && (
-        <View style={styles.replyInputContainer}>
-          <TextInput
-            style={styles.replyInput}
-            placeholder="Nhập tin nhắn..."
-            placeholderTextColor="#9ca3af"
-            value={replyMessage}
-            onChangeText={setReplyMessage}
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, (!replyMessage.trim() || sending) && styles.sendButtonDisabled]}
-            onPress={handleSendReply}
-            disabled={!replyMessage.trim() || sending}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Send size={20} color="#fff" />
-            )}
-          </TouchableOpacity>
-        </View>
+        <>
+          {canSendMessage ? (
+            <View style={styles.replyInputContainer}>
+              <TextInput
+                style={styles.replyInput}
+                placeholder="Nhập tin nhắn..."
+                placeholderTextColor="#9ca3af"
+                value={replyMessage}
+                onChangeText={setReplyMessage}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity
+                style={[styles.sendButton, (!replyMessage.trim() || sending) && styles.sendButtonDisabled]}
+                onPress={handleSendReply}
+                disabled={!replyMessage.trim() || sending}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Send size={20} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.waitingMessageContainer}>
+              <Text style={styles.waitingMessageText}>
+                Vui lòng chờ nhân viên hỗ trợ phản hồi trước khi bạn có thể nhắn tin
+              </Text>
+            </View>
+          )}
+        </>
       )}
+
+      {/* Status Change Modal */}
+      <Modal
+        visible={showStatusModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStatusModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowStatusModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Chọn trạng thái</Text>
+            
+            {(["Pending", "InProgress", "Resolved", "Closed"] as ReportStatus[]).map((status) => (
+              <TouchableOpacity
+                key={status}
+                style={[
+                  styles.statusOption,
+                  report?.status === status && styles.statusOptionActive,
+                ]}
+                onPress={() => handleUpdateStatus(status)}
+                disabled={updatingStatus}
+              >
+                <Text style={[
+                  styles.statusOptionText,
+                  report?.status === status && styles.statusOptionTextActive,
+                ]}>
+                  {getStatusLabel(status)}
+                </Text>
+                {updatingStatus && report?.status === status && (
+                  <ActivityIndicator size="small" color="#10b981" />
+                )}
+              </TouchableOpacity>
+            ))}
+            
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => setShowStatusModal(false)}
+            >
+              <Text style={styles.modalCancelText}>Hủy</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };

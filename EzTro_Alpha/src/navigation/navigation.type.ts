@@ -13,11 +13,16 @@ export type RootStackParamList = {
     screen: keyof TenantTabParamList;
     params?: TenantTabParamList[keyof TenantTabParamList];
   };
+  staffscreen: {
+    screen: keyof StaffTabParamList;
+    params?: StaffTabParamList[keyof StaffTabParamList];
+  };
   mainstack: {
     screen: keyof MainStackParamList;
     params?: MainStackParamList[keyof MainStackParamList];
   };
 };
+
 export type MainTabParamList = {
   blank: undefined;
   userProfile: undefined;
@@ -28,6 +33,14 @@ export type MainTabParamList = {
 export type TenantTabParamList = {
   tenantHome: undefined;
   trackingInvoiceStatus: undefined;
+  userProfile: undefined;
+};
+
+export type StaffTabParamList = {
+  staffDashboard: undefined;
+  staffUsers: undefined;
+  staffSupport: undefined;
+  staffActivity: undefined;
   userProfile: undefined;
 };
 
@@ -63,7 +76,10 @@ export type MainStackParamList = {
   notificationScreen: undefined;
   createNotificationScreen: undefined;
   supportScreen: undefined;
+  myReportsScreen: undefined;
+  reportDetailScreen: { reportId: string };
 };
+
 export type AuthStackParamList = {
   welcome: undefined;
   login: undefined;

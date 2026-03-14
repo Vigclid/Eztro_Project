@@ -4,6 +4,7 @@ import AuthStack from "./stack/AuthStack";
 import MainStack from "./stack/MainStack";
 import MainTab from "./tab/MainTab";
 import TenantTab from "./tab/TenantTab";
+import StaffTab from "./tab/StaffTab";
 
 const Stack = createNativeStackNavigator();
 
@@ -13,6 +14,7 @@ const AppNavigator = () => {
       <Stack.Screen name="auth" component={AuthStack} />
       <Stack.Screen name="mainscreen" component={MainTab} />
       <Stack.Screen name="tenantscreen" component={TenantTab} />
+      <Stack.Screen name="staffscreen" component={StaffTab} />
       <Stack.Screen name="mainstack" component={MainStack} />
     </Stack.Navigator>
   );
