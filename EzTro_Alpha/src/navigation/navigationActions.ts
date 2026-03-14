@@ -68,10 +68,8 @@ export const appNavigator = {
     navigate("mainscreen", { screen: "trackingInvoiceStatus" });
   },
 
-  // ─── STAFF TAB ────────────────────────────────────────────────────────────
-
-  goToStaffSupport() {
-    navigate("staffscreen", { screen: "staffSupport" });
+  goToCreateInvoicesScreen() {
+    navigate("mainscreen", { screen: "createInvoicesScreen" });
   },
 
   // ─── MAIN STACK ───────────────────────────────────────────────────────────
@@ -117,10 +115,6 @@ export const appNavigator = {
       screen: "addTenantScreen",
       params: { roomId, room },
     });
-  },
-
-  goToCreateInvoicesScreen() {
-    navigate("mainstack", { screen: "createInvoicesScreen" });
   },
 
   goToPackagePaymentScreen(houseData?: any) {

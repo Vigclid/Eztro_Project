@@ -28,6 +28,7 @@ export type MainTabParamList = {
   userProfile: undefined;
   viewBoardingHousePage: undefined;
   trackingInvoiceStatus: undefined;
+  createInvoicesScreen: undefined;
 };
 
 export type TenantTabParamList = {
