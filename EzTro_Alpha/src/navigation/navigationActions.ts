@@ -130,9 +130,11 @@ export const appNavigator = {
       params: { houseData, packageId, paymentType },
     });
   },
+
   goToNotificationScreen() {
     navigate("mainstack", { screen: "notificationScreen" });
   },
+
   goToSupportScreen() {
     navigate("mainstack", { screen: "supportScreen" });
   },
