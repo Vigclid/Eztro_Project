@@ -1,13 +1,64 @@
-import { Modal, View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from "react-native"
-import {
-    COLORS,
-} from "../../constants/theme";
+import React, { useState, useEffect } from "react";
+import { Modal, View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Image } from "react-native";
+import { COLORS } from "../../constants/theme";
+import { IRoomInvoice } from "../../types/invoice";
+import { formatCurrencyVND } from "../../utils/currency";
+
 interface InvoiceDetailCardProps {
-    selectedRoomDetail: any
-    setSelectedRoomDetail: (data: any) => void
+    selectedRoomDetail: IRoomInvoice | null;
+    setSelectedRoomDetail: (data: IRoomInvoice | null) => void;
+    onUpdateRoom: (data: IRoomInvoice) => void;
 }
 
-const InvoiceDetailCard = ({ selectedRoomDetail, setSelectedRoomDetail }: InvoiceDetailCardProps) => {
+const InvoiceDetailCard = ({ selectedRoomDetail, setSelectedRoomDetail, onUpdateRoom }: InvoiceDetailCardProps) => {
+    // 1. Dùng local state để chỉnh sửa mà không ảnh hưởng data gốc
+    const [data, setData] = useState<IRoomInvoice | null>(null);
+
+    useEffect(() => {
+        if (selectedRoomDetail) {
+            setData({ ...selectedRoomDetail });
+        }
+    }, [selectedRoomDetail]);
+
+    // 2. Logic tính toán lại khi có thay đổi
+    const updateCalculations = (newData: IRoomInvoice) => {
+        const eUsage = Math.max(0, newData.currentElectricityNumber - newData.previousElectricityNumber);
+        const wUsage = Math.max(0, newData.currentWaterNumber - newData.previousWaterNumber);
+
+        const eCost = eUsage * newData.electricityPrice;
+        const wCost = wUsage * newData.waterPrice;
+        const uCost = newData.utilities.reduce((sum, item) => sum + item.value, 0);
+
+        const updated = {
+            ...newData,
+            electricityUsage: eUsage,
+            waterUsage: wUsage,
+            electricityCost: eCost,
+            waterCost: wCost,
+            utilitiesCost: uCost,
+            totalAmount: newData.rentalFee + eCost + wCost + uCost
+        };
+
+        setData(updated);
+
+        onUpdateRoom(updated);
+    };
+
+    const handleNumberChange = (key: keyof IRoomInvoice, val: string) => {
+        if (!data) return;
+        const num = parseFloat(val) || 0;
+        updateCalculations({ ...data, [key]: num });
+    };
+
+    const handleUtilityChange = (index: number, val: string) => {
+        if (!data) return;
+        const newUtils = [...data.utilities];
+        newUtils[index].value = parseFloat(val.replace(/[^0-9]/g, '')) || 0;
+        updateCalculations({ ...data, utilities: newUtils });
+    };
+
+    if (!data) return null;
+
     return (
         <Modal
             visible={!!selectedRoomDetail}
@@ -17,151 +68,126 @@ const InvoiceDetailCard = ({ selectedRoomDetail, setSelectedRoomDetail }: Invoic
         >
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
-                    {/* Modal Header */}
                     <View style={styles.modalHeader}>
                         <View style={styles.modalHeaderTitles}>
                             <Text style={styles.modalHeaderTitleMain}>Chi tiết hóa đơn</Text>
-                            <Text style={styles.modalHeaderSubtitle}>
-                                {selectedRoomDetail?.name} - {selectedRoomDetail?.tenantName}
-                            </Text>
+                            <Text style={styles.modalHeaderSubtitle}>{data.roomName} - {data.tenantName}</Text>
                         </View>
-                        <TouchableOpacity
-                            style={styles.modalCloseButton}
-                            onPress={() => setSelectedRoomDetail(null)}
-                        >
+                        <TouchableOpacity style={styles.modalCloseButton} onPress={() => setSelectedRoomDetail(null)}>
                             <Text style={styles.modalCloseText}>✕</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Modal Scroll Content */}
                     <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
-
                         {/* Tiền phòng */}
                         <View style={styles.detailCard}>
-                            <View style={styles.detailCardHeader}>
-                                <Text style={styles.detailIcon}>🏠</Text>
-                                <Text style={styles.detailCardTitle}>Tiền phòng</Text>
-                            </View>
-                            <Text style={styles.detailRentAmount}>3.000.000đ</Text>
+                            <Text style={styles.detailCardTitle}>🏠 Tiền phòng</Text>
+                            <Text style={styles.detailRentAmount}>{formatCurrencyVND(data.rentalFee)}</Text>
                         </View>
 
                         {/* Tiền điện */}
                         <View style={styles.detailCard}>
-                            <View style={styles.detailCardHeader}>
-                                <Text style={styles.detailIcon}>⚡</Text>
-                                <Text style={styles.detailCardTitle}>Tiền điện</Text>
-                            </View>
-
+                            <Text style={styles.detailCardTitle}>⚡ Tiền điện</Text>
                             <View style={styles.meterInputContainer}>
                                 <View style={styles.meterColumn}>
                                     <Text style={styles.meterLabel}>Số cũ</Text>
-                                    <TextInput style={styles.meterInput} />
+                                    <TextInput style={styles.meterInput} editable={false} value={data.previousElectricityNumber.toString()} />
                                 </View>
                                 <Text style={styles.meterArrow}>→</Text>
                                 <View style={styles.meterColumn}>
                                     <Text style={styles.meterLabel}>Số mới</Text>
-                                    <TextInput style={styles.meterInput} />
+                                    <TextInput
+                                        style={styles.meterInput}
+                                        keyboardType="numeric"
+                                        value={data.currentElectricityNumber.toString()}
+                                        onChangeText={(v) => handleNumberChange('currentElectricityNumber', v)}
+                                    />
                                 </View>
                             </View>
-
                             <View style={styles.calculationBox}>
-                                <View style={styles.calcRow}>
-                                    <Text style={styles.calcLabel}>Tiêu thụ:</Text>
-                                    <Text style={styles.calcValueOrange}>63 số</Text>
-                                </View>
-                                <View style={styles.calcRow}>
-                                    <Text style={styles.calcLabel}>Đơn giá: 3.500đ/số</Text>
-                                </View>
-                                <View style={styles.calcDivider} />
-                                <View style={styles.calcRow}>
-                                    <Text style={styles.calcLabelBold}>Thành tiền:</Text>
-                                    <Text style={styles.calcValueGreen}>220.500đ</Text>
-                                </View>
+                                <Text style={styles.calcLabel}>Tiêu thụ: {data.electricityUsage} số</Text>
+                                <Text style={styles.calcLabel}>Đơn giá: {formatCurrencyVND(data.electricityPrice)}/số</Text>
+                                <Text style={styles.calcValueGreen}>Thành tiền: {formatCurrencyVND(data.electricityCost)}</Text>
                             </View>
-
                             <Text style={styles.imageBoxLabel}>📷 Ảnh đồng hồ điện</Text>
                             <TouchableOpacity style={styles.imageBox}>
-                                <Text style={styles.imageBoxIcon}>📷</Text>
-                                <Text style={styles.imageBoxText}>Tải ảnh đồng hồ điện</Text>
+                                {data.electricityImage ? (
+                                    <Image source={{ uri: data.electricityImage }} style={styles.imageBoxImage} />
+                                ) : (
+                                    <>
+                                        <Text style={styles.imageBoxIcon}>📷</Text>
+                                        <Text style={styles.imageBoxText}>Chưa có ảnh đồng hồ điện</Text>
+                                    </>
+                                )}
                             </TouchableOpacity>
                         </View>
 
                         {/* Tiền nước */}
                         <View style={styles.detailCard}>
-                            <View style={styles.detailCardHeader}>
-                                <Text style={styles.detailIcon}>💧</Text>
-                                <Text style={styles.detailCardTitle}>Tiền nước</Text>
-                            </View>
-
+                            <Text style={styles.detailCardTitle}>💧 Tiền nước</Text>
                             <View style={styles.meterInputContainer}>
                                 <View style={styles.meterColumn}>
                                     <Text style={styles.meterLabel}>Số cũ</Text>
-                                    <TextInput style={styles.meterInput} />
+                                    <TextInput style={styles.meterInput} editable={false} value={data.previousWaterNumber.toString()} />
                                 </View>
                                 <Text style={styles.meterArrow}>→</Text>
                                 <View style={styles.meterColumn}>
                                     <Text style={styles.meterLabel}>Số mới</Text>
-                                    <TextInput style={styles.meterInput} />
+                                    <TextInput
+                                        style={styles.meterInput}
+                                        keyboardType="numeric"
+                                        value={data.currentWaterNumber.toString()}
+                                        onChangeText={(v) => handleNumberChange('currentWaterNumber', v)}
+                                    />
                                 </View>
                             </View>
-
                             <View style={styles.calculationBox}>
-                                <View style={styles.calcRow}>
-                                    <Text style={styles.calcLabel}>Tiêu thụ:</Text>
-                                    <Text style={styles.calcValueBlue}>12 số</Text>
-                                </View>
-                                <View style={styles.calcRow}>
-                                    <Text style={styles.calcLabel}>Đơn giá: 25.000đ/số</Text>
-                                </View>
-                                <View style={styles.calcDivider} />
-                                <View style={styles.calcRow}>
-                                    <Text style={styles.calcLabelBold}>Thành tiền:</Text>
-                                    <Text style={styles.calcValueGreen}>300.000đ</Text>
-                                </View>
+                                <Text style={styles.calcLabel}>Tiêu thụ: {data.waterUsage} số</Text>
+                                <Text style={styles.calcLabel}>Đơn giá: {formatCurrencyVND(data.waterPrice)}/số</Text>
+                                <Text style={styles.calcValueGreen}>Thành tiền: {formatCurrencyVND(data.waterCost)}</Text>
                             </View>
 
                             <Text style={styles.imageBoxLabel}>📷 Ảnh đồng hồ nước</Text>
                             <TouchableOpacity style={styles.imageBox}>
-                                <Text style={styles.imageBoxIcon}>📷</Text>
-                                <Text style={styles.imageBoxText}>Tải ảnh đồng hồ nước</Text>
+                                {data.waterImage ? (
+                                    <Image source={{ uri: data.waterImage }} style={styles.imageBoxImage} />
+                                ) : (
+                                    <>
+                                        <Text style={styles.imageBoxIcon}>📷</Text>
+                                        <Text style={styles.imageBoxText}>Chưa có ảnh đồng hồ nước</Text>
+                                    </>
+                                )}
                             </TouchableOpacity>
                         </View>
 
                         {/* Phí khác */}
                         <View style={styles.detailCard}>
-                            <View style={styles.detailCardHeader}>
-                                <Text style={styles.detailIcon}>💰</Text>
-                                <Text style={styles.detailCardTitle}>Phí khác</Text>
-                            </View>
-
-                            <View style={styles.otherFeeRow}>
-                                <Text style={styles.otherFeeLabel}>📶 Internet</Text>
-                                <TextInput style={styles.otherFeeInput} />
-                            </View>
-                            <View style={styles.otherFeeRow}>
-                                <Text style={styles.otherFeeLabel}>🗑️ Rác</Text>
-                                <TextInput style={styles.otherFeeInput} />
-                            </View>
-                            <View style={styles.otherFeeRow}>
-                                <Text style={styles.otherFeeLabel}>🅿️ Gửi xe</Text>
-                                <TextInput style={styles.otherFeeInput} />
-                            </View>
+                            <Text style={styles.detailCardTitle}>💰 Phí khác</Text>
+                            {data.utilities.map((util, index) => (
+                                <View style={styles.otherFeeRow} key={index}>
+                                    <Text style={styles.otherFeeLabel}>{util.key}</Text>
+                                    <TextInput
+                                        style={styles.otherFeeInput}
+                                        keyboardType="numeric"
+                                        value={formatCurrencyVND(util.value)}
+                                        onChangeText={(v) => handleUtilityChange(index, v)}
+                                    />
+                                </View>
+                            ))}
                         </View>
 
-                        {/* Tổng cộng Modal */}
                         <View style={styles.modalTotalBox}>
                             <Text style={styles.modalTotalLabel}>Tổng cộng</Text>
-                            <Text style={styles.modalTotalAmount}>3.770.500đ</Text>
+                            <Text style={styles.modalTotalAmount}>{formatCurrencyVND(data.totalAmount)}</Text>
                         </View>
-
                     </ScrollView>
                 </View>
             </View>
         </Modal>
-    )
-}
+    );
+};
 
-export default InvoiceDetailCard
+export default InvoiceDetailCard;
 
 const styles = StyleSheet.create({
     modalOverlay: {
@@ -335,7 +361,7 @@ const styles = StyleSheet.create({
         borderStyle: 'dashed',
         borderColor: '#B0BEC5',
         borderRadius: 8,
-        padding: 24,
+        padding: 5,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#FAFAFA',
@@ -392,4 +418,9 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: COLORS.GREEN_PRIMARY || '#00A152',
     },
+    imageBoxImage: {
+        width: '100%',
+        height: 100,
+        resizeMode: 'contain',
+    }
 });

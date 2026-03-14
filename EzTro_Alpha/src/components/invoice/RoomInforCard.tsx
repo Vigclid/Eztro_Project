@@ -5,12 +5,12 @@ import {
     FONT_SIZE,
     SPACING,
 } from "../../constants/theme";
-import { IRoom } from "../../types/room";
-
+import { formatCurrencyVND } from "../../utils/currency";
+import { IRoomInvoice } from "../../types/invoice";
 interface RoomInforCardProp {
-    room: any
+    room: IRoomInvoice
     toggleRoomSelection: (roomId: string | undefined) => void
-    setSelectedRoomDetail: (room: any) => void
+    setSelectedRoomDetail: (room: IRoomInvoice) => void
 }
 
 const RoomInforCard = ({ room, toggleRoomSelection, setSelectedRoomDetail }: RoomInforCardProp) => {
@@ -19,7 +19,7 @@ const RoomInforCard = ({ room, toggleRoomSelection, setSelectedRoomDetail }: Roo
         <View style={styles.roomCard}>
             <View style={styles.roomHeader}>
                 <TouchableOpacity
-                    onPress={() => toggleRoomSelection(room.id)}
+                    onPress={() => toggleRoomSelection(room._id)}
                     style={styles.roomCheckboxWrapper}
                     activeOpacity={0.8}
                 >
@@ -37,7 +37,7 @@ const RoomInforCard = ({ room, toggleRoomSelection, setSelectedRoomDetail }: Roo
                     activeOpacity={0.7}
                     onPress={() => setSelectedRoomDetail(room)}
                 >
-                    <Text style={styles.roomNameText}>{room.name}</Text>
+                    <Text style={styles.roomNameText}>{room.roomName}</Text>
                     <Text style={styles.tenantText}>{room.tenantName}</Text>
                 </TouchableOpacity>
 
@@ -45,22 +45,46 @@ const RoomInforCard = ({ room, toggleRoomSelection, setSelectedRoomDetail }: Roo
             </View>
 
             <View style={styles.breakdownContainer}>
-                {room.items.map((item: any) => (
-                    <View key={item.id} style={styles.breakdownRow}>
+                <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabelText}>
+                        Tiền phòng
+                    </Text>
+                    <Text style={styles.breakdownLabelText}>
+                        {formatCurrencyVND(room.rentalFee)}
+                    </Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabelText}>
+                        Điện ({room.electricityUsage} số)
+                    </Text>
+                    <Text style={styles.breakdownLabelText}>
+                        {formatCurrencyVND(room.electricityCost)}
+                    </Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabelText}>
+                        Nước ({room.waterUsage} số)
+                    </Text>
+                    <Text style={styles.breakdownLabelText}>
+                        {formatCurrencyVND(room.waterCost)}
+                    </Text>
+                </View>
+                {room?.utilities.map((item: any, index: number) => (
+                    <View key={index} style={styles.breakdownRow}>
                         <View style={styles.breakdownLabelWrapper}>
                             <Text style={styles.breakdownLabelText}>
-                                {item.label}
+                                {item.key}
                             </Text>
                         </View>
                         <Text style={styles.breakdownAmountText}>
-                            {item.amount}
+                            {formatCurrencyVND(item.value)}
                         </Text>
                     </View>
                 ))}
 
                 <View style={styles.breakdownFooter}>
                     <Text style={styles.breakdownTotalLabel}>Tổng cộng</Text>
-                    <Text style={styles.breakdownTotalAmount}>{room.total}</Text>
+                    <Text style={styles.breakdownTotalAmount}>{formatCurrencyVND(room.totalAmount)}</Text>
                 </View>
             </View>
         </View>
@@ -145,6 +169,7 @@ const styles = StyleSheet.create({
     breakdownLabelText: {
         color: COLORS.TEXT_DARK,
         fontSize: FONT_SIZE.SEARCH_INPUT,
+        fontWeight: 'bold'
     },
     breakdownAmountText: {
         color: COLORS.TEXT_DARK,

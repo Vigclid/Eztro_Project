@@ -4,7 +4,7 @@ import BoardingHouseDetailsScreen from "../../screens/boardingHouse/BoardingHous
 import CreateNewRoomScreen from "../../screens/room/CreateNewRoomScreen";
 import AddTenantScreen from "../../screens/room/AddTenantScreen";
 import { CreateBoardingHouseScreen } from "../../screens/boardingHouse/CreateBoardingHouseScreen";
-import { CreateInvoices } from "../../screens/boardingHouse/CreateInvoices";
+import { CreateInvoices } from "../../screens/invoice/CreateInvoices";
 import { EditProfilePage } from "../../screens/profile/EditProfilePage";
 import { ChangePasswordSuccessfulPage } from "../../screens/auth/ChangePasswordSuccessfulPage";
 import { CreateNewPasswordScreen } from "../../screens/auth/CreateNewPasswordScreen";

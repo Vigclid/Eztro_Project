@@ -9,9 +9,12 @@ const InvoiceController = new invoiceController(new invoiceService());
 
 router.route("/:id").get(authenticate, InvoiceController.getInvoiceById);
 
-router.route("room/:roomId").get(authenticate, InvoiceController.getAllInvoicesByRoomId);
+router.route("/room/:roomId").get(authenticate, InvoiceController.getAllInvoicesByRoomId);
+
+router.route("/house/:houseId").get(authenticate, InvoiceController.getRoomsForInvoiceCreation);
 
 router.route("/filter/all").get(authenticate, InvoiceController.getInvoicesByFilter);
+router.route("/create/many").post(authenticate, InvoiceController.createNewInvoices);
 
 router.route("/").post(authenticate, InvoiceController.createNewInvoice);
 router.route("/zalo").post(InvoiceController.receiveInvocieFromZalo);

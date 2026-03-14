@@ -30,6 +30,15 @@ export const getInvoiceApi = {
         } catch (err: any) {
             throw err
         }
+    },
+
+    async getRoomsForInvoiceCreation(houseId: string | undefined, signal?: AbortSignal) {
+        try {
+            const res = await apiService.get(`${invoiceApi}house/${houseId}`, { signal })
+            return res.data
+        } catch (err: any) {
+            throw err
+        }
     }
 }
 
@@ -45,11 +54,10 @@ export const postInvoiceApi = {
             throw err;
         }
     },
-
     async createNewInvoices(invoicesData: any[]) {
         try {
             const res = await apiService.post(
-                invoiceApi,
+                `${invoiceApi}create/many`,
                 invoicesData
             )
             return res.data

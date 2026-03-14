@@ -286,16 +286,16 @@ export const BoardingHouseDetailsScreen = () => {
                 }
 
                 return {
-                _id: room._id,
-                houseId: room.houseId,
-                area: undefined,
-                floor: undefined,
-                roomName: room.roomName,
-                rentalFee: room.rentalFee,
-                status: room.status,
-                rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
-                virtualTenants: room.virtualTenants || [],
-                accountTenants,
+                    _id: room._id,
+                    houseId: room.houseId,
+                    area: undefined,
+                    floor: undefined,
+                    roomName: room.roomName,
+                    rentalFee: room.rentalFee,
+                    status: room.status,
+                    rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
+                    virtualTenants: room.virtualTenants || [],
+                    accountTenants,
                 };
             }));
             setRooms(mappedRooms);
@@ -425,19 +425,21 @@ export const BoardingHouseDetailsScreen = () => {
                                     </View>
                                     <View
                                         style={
-                                            boardingHouse?.housePackage?.isExpired
+                                            boardingHouse?.housePackage?.isExpired ||
+                                                !currentPackage
                                                 ? styles.packageExpiredBadge
                                                 : styles.packageActiveBadge
                                         }
                                     >
                                         <Text
                                             style={
-                                                boardingHouse?.housePackage?.isExpired
+                                                boardingHouse?.housePackage?.isExpired ||
+                                                    !currentPackage
                                                     ? styles.packageExpiredText
                                                     : styles.packageActiveText
                                             }
                                         >
-                                            {boardingHouse?.housePackage?.isExpired ? "Hết hạn" : "Đang hiệu lực"}
+                                            {boardingHouse?.housePackage?.isExpired || !currentPackage ? "Hết hạn" : "Đang hiệu lực"}
                                         </Text>
                                     </View>
                                 </View>

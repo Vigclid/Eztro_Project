@@ -1,7 +1,7 @@
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppButton } from "../../components/misc/AppButton";
 import {
   BORDER_RADIUS,
@@ -13,52 +13,84 @@ import {
 import { NavigationProp } from "../../navigation/navigation.type";
 import RoomInforCard from "../../components/invoice/RoomInforCard";
 import InvoiceDetailCard from "../../components/invoice/InvoiceDetailCard";
+import { getHouseApi } from "../../api/house/house";
+import { ApiResponse } from "../../types/app.common";
+import { IHouse } from "../../types/house";
+import { getInvoiceApi, postInvoiceApi } from "../../api/invoice/invoice";
+import { IRoomInvoice } from "../../types/invoice";
+import { formatCurrencyVND } from "../../utils/currency";
+import { appNavigator } from "../../navigation/navigationActions";
 
 export const CreateInvoices = () => {
   const navigation = useNavigation<NavigationProp>();
 
-  // Mảng nhà trọ mẫu
-  const houses = useMemo(() => [
-    { id: "house-1", name: "Nhà trọ Hòa Bình" },
-    { id: "house-2", name: "Nhà trọ Hạnh Phúc" },
-  ], []);
-
-  const [selectedHouseId, setSelectedHouseId] = useState(houses[0].id);
+  const [houses, setHouses] = useState<IHouse[]>([]);
+  const [selectedHouseId, setSelectedHouseId] = useState<string | undefined>("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  // State quản lý việc mở modal chi tiết phòng
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<any>(null);
+  const selectedHouse = houses.find(h => h._id === selectedHouseId);
+  const [roomsSelection, setRoomsSelection] = useState<IRoomInvoice[]>([]);
 
-  const selectedHouse = houses.find(h => h.id === selectedHouseId);
+  useFocusEffect(
+    useCallback(() => {
+      const controller = new AbortController();
 
-  const [roomsSelection, setRoomsSelection] = useState([
-    {
-      id: "room-101",
-      name: "Phòng 101",
-      tenantName: "Nguyễn Văn A",
-      isSelected: true,
-      items: [
-        { id: "rent", label: "Tiền phòng", amount: "3.000.000đ" },
-        { id: "electric", label: "Điện (148 số)", amount: "518.000đ" },
-        { id: "water", label: "Nước (14 số)", amount: "350.000đ" },
-        { id: "internet", label: "Internet", amount: "100.000đ" },
-      ],
-      total: "4.118.000đ",
-    },
-    {
-      id: "room-201",
-      name: "Phòng 201",
-      tenantName: "Trần Thị C",
-      isSelected: true,
-      items: [
-        { id: "rent", label: "Tiền phòng", amount: "3.500.000đ" },
-        { id: "electric", label: "Điện (130 số)", amount: "455.000đ" },
-        { id: "water", label: "Nước (12 số)", amount: "300.000đ" },
-        { id: "internet", label: "Internet", amount: "100.000đ" },
-      ],
-      total: "4.505.000đ",
-    },
-  ]);
+      const { getAllHousesByLandlordId } = getHouseApi;
+      const getAllHouses = async () => {
+        try {
+          const res = (await getAllHousesByLandlordId(controller.signal)) as ApiResponse<
+            IHouse[]
+          >;
+          if (res.status === "success") {
+            setHouses(res.data as IHouse[]);
+            if (res.data && res.data.length > 0) {
+              setSelectedHouseId(res.data[0]._id);
+            }
+          }
+        } catch (err) { }
+      };
+      getAllHouses();
+      return () => {
+        controller.abort();
+      };
+    }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      // Nếu chưa có selectedHouseId thì không làm gì cả
+      if (!selectedHouseId) {
+        setRoomsSelection([]);
+        return;
+      }
+
+      const controller = new AbortController();
+      const { getRoomsForInvoiceCreation } = getInvoiceApi;
+
+      const fetchRooms = async () => {
+        setRoomsSelection([]);
+        try {
+          const res = (await getRoomsForInvoiceCreation(
+            selectedHouseId,
+            controller.signal
+          )) as ApiResponse<IRoomInvoice[]>;
+          if (res.status === "success" && res.data) {
+            const withSelection: IRoomInvoice[] = (res.data as IRoomInvoice[]).map(inv => ({
+              ...inv,
+              isSelected: false
+            }));
+            setRoomsSelection(withSelection);
+          }
+        } catch (err) { }
+      };
+
+      fetchRooms();
+
+      return () => {
+        controller.abort();
+      };
+    }, [selectedHouseId])
+  );
 
   const selectedCount = useMemo(
     () => roomsSelection.filter((room) => room.isSelected).length,
@@ -68,10 +100,11 @@ export const CreateInvoices = () => {
   const totalCount = roomsSelection.length;
 
   const totalAmount = useMemo(() => {
-    if (selectedCount === 2) {
-      return "8.623.000đ";
-    }
-    return "0đ";
+    return roomsSelection
+      .filter(room => room.isSelected)
+      .reduce((total, room) => {
+        return total + room.totalAmount
+      }, 0)
   }, [selectedCount]);
 
   const toggleSelectAll = () => {
@@ -87,11 +120,44 @@ export const CreateInvoices = () => {
   const toggleRoomSelection = (roomId: string | undefined) => {
     setRoomsSelection((prev) =>
       prev.map((room) =>
-        room.id === roomId ? { ...room, isSelected: !room.isSelected } : room
+        room.roomId === roomId ? { ...room, isSelected: !room.isSelected } : room
       )
     );
   };
 
+  const handleUpdateRoom = (updatedRoom: IRoomInvoice) => {
+    setRoomsSelection(prevRooms =>
+      prevRooms.map(room => room.roomId === updatedRoom.roomId ? updatedRoom : room)
+    );
+    setSelectedRoomDetail(updatedRoom);
+  };
+
+  const handleCreateNewInvoices = async () => {
+    const selectedRooms = roomsSelection.filter(room => room.isSelected);
+    const { createNewInvoices } = postInvoiceApi
+
+    const data = selectedRooms.map(room => ({
+      roomId: room.roomId,
+      status: "processing",
+      previousElectricityNumber: room.previousElectricityNumber,
+      currentElectricityNumber: room.currentElectricityNumber,
+      previousWaterNumber: room.previousWaterNumber,
+      currentWaterNumber: room.currentWaterNumber,
+      electricityCharge: room.electricityCost,
+      waterCharge: room.waterCost,
+      totalAmount: room.totalAmount,
+      utilities: room.utilities,
+    }))
+
+    try {
+      const res = await createNewInvoices(data) as ApiResponse<any[]>;
+      if (res.status === "success") {
+        Alert.alert("Tạo hóa đơn hàng loạt thành công!")
+        appNavigator.goToViewBoardingHousePage()
+      }
+    } catch (err) {
+    }
+  }
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -132,7 +198,7 @@ export const CreateInvoices = () => {
               onPress={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <View style={styles.houseNameWrapper}>
-                <Text style={styles.houseNameText}>{selectedHouse?.name}</Text>
+                <Text style={styles.houseNameText}>{selectedHouse?.houseName}</Text>
               </View>
 
               <Text style={styles.chevronIcon}>▼</Text>
@@ -143,23 +209,23 @@ export const CreateInvoices = () => {
               <View style={styles.dropdownContainer}>
                 {houses.map((house, index) => (
                   <TouchableOpacity
-                    key={house.id}
+                    key={house._id}
                     style={[
                       styles.dropdownItem,
                       index === houses.length - 1 && { borderBottomWidth: 0 }
                     ]}
                     onPress={() => {
-                      setSelectedHouseId(house.id);
+                      setSelectedHouseId(house._id);
                       setIsDropdownOpen(false);
                     }}
                   >
                     <Text
                       style={[
                         styles.dropdownText,
-                        selectedHouseId === house.id && styles.dropdownTextSelected
+                        selectedHouseId === house._id && styles.dropdownTextSelected
                       ]}
                     >
-                      {house.name}
+                      {house.houseName}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -179,7 +245,7 @@ export const CreateInvoices = () => {
 
           <View style={styles.summaryColumn}>
             <Text style={styles.summaryLabel}>Tổng tiền</Text>
-            <Text style={styles.summaryValue}>{totalAmount}</Text>
+            <Text style={styles.summaryValue}>{formatCurrencyVND(totalAmount)}</Text>
           </View>
         </View>
 
@@ -201,31 +267,38 @@ export const CreateInvoices = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Rooms list */}
-        <View >
-          {roomsSelection.map((room) => (
-            <RoomInforCard
-              key={room.id}
-              room={room}
-              toggleRoomSelection={toggleRoomSelection}
-              setSelectedRoomDetail={setSelectedRoomDetail}
-            />
-          ))}
-        </View>
+        {roomsSelection.length > 0 ? (
+          <View>
+            {roomsSelection.map((room) => (
+              <RoomInforCard
+                key={room.roomId}
+                room={room}
+                toggleRoomSelection={toggleRoomSelection}
+                setSelectedRoomDetail={setSelectedRoomDetail}
+              />
+            ))}
+          </View>
+        ) : (
+          <View>
+            <Text>Cụm trọ này chưa có hóa đơn</Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Bottom primary action */}
       <View style={styles.footer}>
         <AppButton
-          title="Tạo hóa đơn"
+          disabled={selectedCount === 0}
+          title={`Tạo hóa đơn (${selectedCount})`}
           onPress={() => {
-            // Placeholder for real submit handler.
+            handleCreateNewInvoices()
           }}
         />
       </View>
       <InvoiceDetailCard
         selectedRoomDetail={selectedRoomDetail}
         setSelectedRoomDetail={setSelectedRoomDetail}
+        onUpdateRoom={handleUpdateRoom}
       />
     </View>
   );
@@ -414,7 +487,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   footer: {
-    paddingBottom: SPACING.SCROLL_BOTTOM_PADDING,
+    paddingBottom: 100,
     paddingTop: SPACING.SMALL,
     backgroundColor: COLORS.white,
   },
