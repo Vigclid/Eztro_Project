@@ -136,5 +136,20 @@ export const appNavigator = {
         params: { houseData, packageId, paymentType },
       },
     );
-  }
+  },
+
+  goToSupportScreen() {
+    navigate("mainstack", { screen: "supportScreen" });
+  },
+
+  goToMyReportsScreen() {
+    navigate("mainstack", { screen: "myReportsScreen" });
+  },
+
+  goToReportDetailScreen(reportId: string) {
+    navigate("mainstack", {
+      screen: "reportDetailScreen",
+      params: { reportId },
+    });
+  },
 };

@@ -1,15 +1,12 @@
 import { GenericService } from "../../core/services/base.service";
 import roomModel, { IRoom } from "./room.model";
-<<<<<<< HEAD
-import housePackageModel from '../../modules/housePackage/housePackage.model'
-import { IPackage } from "../package/package.model";
-=======
 import roomInvitationModel from "./roomInvitation.model";
 import roomMemberModel from "./roomMember.model";
 import { Types } from "mongoose";
 import userModel from "../users/user.model";
 import houseModel from "../houses/house.model";
->>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
+import housePackageModel from "../housePackage/housePackage.model";
+import { IPackage } from "../package/package.model";
 
 export class roomService extends GenericService<IRoom> {
   constructor() {

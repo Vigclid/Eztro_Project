@@ -169,7 +169,11 @@ export const UserProfile: React.FC = () => {
                   </View>
                 </View>
               </View>
-              <View style={styles.sectionItemRow}>
+              <TouchableOpacity
+                style={styles.sectionItemRow}
+                activeOpacity={0.7}
+                onPress={() => appNavigator.goToSupportScreen()}
+              >
                 <View style={styles.sectionIcon}>
                   <HelpCircle size={26} color={COLORS.GRADIENT_START} />
                 </View>
@@ -181,11 +185,11 @@ export const UserProfile: React.FC = () => {
                   </View>
                   <View>
                     <Text style={styles.sectionItemDescription}>
-                      Câu hỏi thường gặp, liên hệ
+                      Trợ giúp, báo lỗi, góp ý
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
           <LinearGradient

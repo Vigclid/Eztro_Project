@@ -41,7 +41,6 @@ export class roomController extends GenericController<IRoom> {
                     );
             }
 
-<<<<<<< HEAD
             if (
                 error?.code === "HOUSE_PACKAGE_NOT_FOUND" ||
                 error?.message === "HOUSE_PACKAGE_NOT_FOUND"
@@ -71,8 +70,6 @@ export class roomController extends GenericController<IRoom> {
             }
 
             // Trường hợp vi phạm unique index ở MongoDB
-=======
->>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
             if (error?.code === 11000) {
                 return res
                     .status(200)

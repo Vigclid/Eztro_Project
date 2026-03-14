@@ -11,12 +11,12 @@ import { CreateNewPasswordScreen } from "../../screens/auth/CreateNewPasswordScr
 import { TicketListScreen } from "../../screens/ticket/TicketListScreen";
 import { CreateTicketScreen } from "../../screens/ticket/CreateTicketScreen";
 import { TicketDetailScreen } from "../../screens/ticket/TicketDetailScreen";
-<<<<<<< HEAD
-import {PackagePaymentScreen} from '../../screens/payment/PackagePaymentScreen';
+import { PackagePaymentScreen } from '../../screens/payment/PackagePaymentScreen';
 import { QRScanScreen } from "../../screens/payment/QRScanScreen";
-=======
 import { NotificationScreen } from "../../screens/notification/NotificationScreen";
->>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
+import { SupportScreen } from "../../screens/support/SupportScreen";
+import { MyReportsScreen } from "../../screens/support/MyReportsScreen";
+import { ReportDetailScreen } from "../../screens/support/ReportDetailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -33,12 +33,12 @@ const MainStack = () => (
     <Stack.Screen name="ticketListScreen" component={TicketListScreen} />
     <Stack.Screen name="createTicketScreen" component={CreateTicketScreen} />
     <Stack.Screen name="ticketDetailScreen" component={TicketDetailScreen} />
-<<<<<<< HEAD
     <Stack.Screen name="packagePaymentScreen" component={PackagePaymentScreen} />
     <Stack.Screen name="qrScanScreen" component={QRScanScreen} />
-=======
     <Stack.Screen name="notificationScreen" component={NotificationScreen} />
->>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
+    <Stack.Screen name="supportScreen" component={SupportScreen} />
+    <Stack.Screen name="myReportsScreen" component={MyReportsScreen} />
+    <Stack.Screen name="reportDetailScreen" component={ReportDetailScreen} />
   </Stack.Navigator>
 );
 

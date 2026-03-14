@@ -88,7 +88,12 @@ const authSlice = createSlice({
       })
       .addCase(loginAsync.fulfilled, (state: any, action: any) => {
         state.accessToken = action.payload?.accessToken || null;
-        state.user = action.payload?.user || null;
+        const user = action.payload?.user;
+        // Transform roleId object to roleName string
+        if (user && user.roleId && typeof user.roleId === "object") {
+          user.roleName = user.roleId.name;
+        }
+        state.user = user || null;
       })
       .addCase(loginAsync.rejected, (state: any, action: any) => {
         state.error = action.payload as string;
