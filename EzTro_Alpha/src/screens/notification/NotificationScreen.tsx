@@ -2,11 +2,13 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Bell,
+  CheckCheck,
   ChevronLeft,
   CreditCard,
   Megaphone,
   MessageCircle,
   Receipt,
+  ScrollText,
 } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
@@ -133,8 +135,8 @@ function getNotificationDisplay(notif: INotification) {
       return {
         title: "Cập nhật nội quy",
         body: metadata.message ?? "Nội quy nhà trọ vừa được cập nhật.",
-        gradient: ["#FFB900", "#FF6900"] as [string, string],
-        Icon: Megaphone,
+        gradient: ["#00bfff", "#00ff88"] as [string, string],
+        Icon: ScrollText,
       };
     case "INTERACTION_COMMENT":
       return {
@@ -232,7 +234,6 @@ const NotificationDetailModal = ({
           >
             <Icon size={32} color="#fff" />
           </LinearGradient>
-
           <View style={styles.modalTitleRow}>
             <Text style={styles.modalTitle}>{title}</Text>
             {notif.status === "unread" && <View style={styles.unreadDot} />}
@@ -496,6 +497,7 @@ export const NotificationScreen: React.FC = () => {
           </Text>
         </View>
         <TouchableOpacity style={styles.readAllBtn} onPress={handleMarkAllRead}>
+          <CheckCheck color="#fff" size={20} />
           <Text style={styles.readAllText}>Đọc tất cả</Text>
         </TouchableOpacity>
       </LinearGradient>

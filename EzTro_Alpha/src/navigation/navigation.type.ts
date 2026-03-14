@@ -61,6 +61,7 @@ export type MainStackParamList = {
     paymentType: any | undefined
   };
   notificationScreen: undefined;
+  createNotificationScreen: undefined;
 };
 export type AuthStackParamList = {
   welcome: undefined;

@@ -1,10 +1,18 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Bell, Funnel, Plus, Search, Wrench } from "lucide-react-native";
-import React, { useCallback, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "../../stores/store";
 import {
+  Bell,
+  Building2,
+  Funnel,
+  Megaphone,
+  Plus,
+  Search,
+  Wrench,
+} from "lucide-react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +21,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 import { getHouseApi } from "../../api/house/house";
 import { getRoomApi } from "../../api/room/room";
 import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
@@ -25,6 +34,7 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
+import { RootState } from "../../stores/store";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
 import { IRoom } from "../../types/room";
@@ -35,7 +45,9 @@ export const ViewBoardingHousePage: React.FC = () => {
 
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
   const [totalAvailableRooms, setTotalAvailableRooms] = useState<number>(0);
-  const unreadCount = useSelector((state: RootState) => state.notification.unreadCount);
+  const unreadCount = useSelector(
+    (state: RootState) => state.notification.unreadCount,
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -101,8 +113,39 @@ export const ViewBoardingHousePage: React.FC = () => {
     fetchRoomStats();
   }, [boardingHouses]);
 
+  // ── Speed Dial FAB ──────────────────────────────────────────────────
+  const [fabOpen, setFabOpen] = useState(false);
+  const fabAnim = useRef(new Animated.Value(0)).current;
+
+  const toggleFab = () => {
+    const toValue = fabOpen ? 0 : 1;
+    setFabOpen(!fabOpen);
+    Animated.spring(fabAnim, {
+      toValue,
+      useNativeDriver: true,
+      tension: 70,
+      friction: 8,
+    }).start();
+  };
+
+  const closeFab = () => {
+    setFabOpen(false);
+    Animated.spring(fabAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 70,
+      friction: 8,
+    }).start();
+  };
+
   const handleCreateBoardingHouse = () => {
+    closeFab();
     navigation.navigate("mainstack", { screen: "createBoardingHousePage" });
+  };
+
+  const handleCreateNotification = () => {
+    closeFab();
+    navigation.navigate("mainstack", { screen: "createNotificationScreen" });
   };
 
   const handleNavigateToMaintenance = () => {
@@ -112,6 +155,11 @@ export const ViewBoardingHousePage: React.FC = () => {
   const handleNavigateToNotification = () => {
     navigation.navigate("mainstack", { screen: "notificationScreen" });
   };
+
+  const fabRotate = fabAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "45deg"],
+  });
 
   return (
     <SafeAreaProvider style={styles.container}>
@@ -198,18 +246,93 @@ export const ViewBoardingHousePage: React.FC = () => {
           </View>
         </View>
       </ScrollView>
-      {/* Floating Button */}
-      <TouchableOpacity
-        onPress={handleCreateBoardingHouse}
-        style={styles.floatingButton}
-      // Giữ style cũ để giữ vị trí và hình dạng nút
-      >
-        <Plus
-          color={COLORS.WHITE} // Màu dấu cộng (thường là trắng)
-          size={40} // Kích thước dấu cộng
-          strokeWidth={2.5} // Độ dày (tùy chỉnh để trông hiện đại hơn)
-        />
-      </TouchableOpacity>
+      {/* Backdrop */}
+      {fabOpen && <Pressable style={styles.fabBackdrop} onPress={closeFab} />}
+
+      {/* Speed Dial FAB */}
+      <View style={styles.fabGroup} pointerEvents="box-none">
+        {/* Sub-action: Create Notification */}
+        <Animated.View
+          pointerEvents={fabOpen ? "auto" : "none"}
+          style={[
+            styles.fabAction,
+            {
+              opacity: fabAnim,
+              transform: [
+                {
+                  translateY: fabAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                  }),
+                },
+                { scale: fabAnim },
+              ],
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.fabActionRow}
+            onPress={handleCreateNotification}
+            activeOpacity={0.85}
+          >
+            <View style={styles.fabActionLabel}>
+              <Text style={styles.fabActionLabelText}>Thông báo</Text>
+            </View>
+            <View style={[styles.fabActionBtn, { backgroundColor: "#FF8C00" }]}>
+              <Megaphone size={22} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Sub-action: Create Boarding House */}
+        <Animated.View
+          pointerEvents={fabOpen ? "auto" : "none"}
+          style={[
+            styles.fabAction,
+            {
+              opacity: fabAnim,
+              transform: [
+                {
+                  translateY: fabAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [40, 0],
+                  }),
+                },
+                { scale: fabAnim },
+              ],
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.fabActionRow}
+            onPress={handleCreateBoardingHouse}
+            activeOpacity={0.85}
+          >
+            <View style={styles.fabActionLabel}>
+              <Text style={styles.fabActionLabelText}>Cụm trọ</Text>
+            </View>
+            <View
+              style={[
+                styles.fabActionBtn,
+                { backgroundColor: COLORS.GREEN_PRIMARY },
+              ]}
+            >
+              <Building2 size={22} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Main FAB */}
+        <TouchableOpacity
+          onPress={toggleFab}
+          style={styles.floatingButton}
+          activeOpacity={0.9}
+        >
+          <Animated.View style={{ transform: [{ rotate: fabRotate }] }}>
+            <Plus color={COLORS.WHITE} size={40} strokeWidth={2.5} />
+          </Animated.View>
+        </TouchableOpacity>
+      </View>
     </SafeAreaProvider>
   );
 };
@@ -572,12 +695,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     alignItems: "center",
     justifyContent: "center",
-    bottom: 100,
-    right: 30,
     // top: SPACING.FLOATING_BUTTON_TOP,
     // right: SPACING.FLOATING_BUTTON_RIGHT,
     width: 70,
     height: 70,
+    top: 40,
+    left: 100,
     backgroundColor: COLORS.GREEN_PRIMARY,
     borderRadius: 100,
   },
@@ -652,5 +775,51 @@ const styles = StyleSheet.create({
     color: COLORS.WHITE,
     fontSize: 10,
     fontWeight: "bold",
+  },
+
+  fabBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    zIndex: 10,
+  },
+  fabGroup: {
+    position: "absolute",
+    bottom: 100,
+    right: 30,
+    alignItems: "flex-end",
+    gap: 14,
+    zIndex: 11,
+  },
+  fabAction: {
+    alignItems: "flex-end",
+  },
+  fabActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    bottom: 100,
+  },
+  fabActionLabel: {
+    backgroundColor: "rgba(16,24,40,0.82)",
+    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+  },
+  fabActionLabelText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  fabActionBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
   },
 });

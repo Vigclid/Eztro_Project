@@ -50,7 +50,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     });
     socket.on("disconnect", () => setIsConnected(false));
 
-    // ─── Lắng nghe notification từ backend ───────────────────────────
+    // ───Cái này đang Lắng nghe notification từ backend, anh em thử như này ───────────────────────────
     // Backend emit: io.to(`user:${userId}`).emit("notification", data)
     socket.on("notification", (data) => {
       dispatch(addNotification(data));

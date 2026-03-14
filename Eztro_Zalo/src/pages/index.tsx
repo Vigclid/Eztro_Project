@@ -1,4 +1,4 @@
-import { chooseImage, getPhoneNumber } from "zmp-sdk";
+import { chooseImage, getAccessToken, getPhoneNumber } from "zmp-sdk";
 import { Box, Button, Input, Page, Text } from "zmp-ui";
 import { useState } from "react";
 import Logo from "@/components/logo";
@@ -49,17 +49,22 @@ function HomePage() {
     if (!water.value || !electric.value) return;
     setLoading(true);
     try {
-      const [phoneRes, waterBase64, electricBase64] = await Promise.all([
-        getPhoneNumber(),
-        water.imageUrl ? toBase64(water.imageUrl) : Promise.resolve(null),
-        electric.imageUrl ? toBase64(electric.imageUrl) : Promise.resolve(null),
-      ]);
+      const [accessToken, phoneRes, waterBase64, electricBase64] =
+        await Promise.all([
+          getAccessToken(),
+          getPhoneNumber(),
+          water.imageUrl ? toBase64(water.imageUrl) : Promise.resolve(null),
+          electric.imageUrl
+            ? toBase64(electric.imageUrl)
+            : Promise.resolve(null),
+        ]);
       if (!phoneRes?.token) {
         setPhoneAccepted(true);
         return;
       }
       const payload = {
-        phoneNumber: phoneRes.token,
+        accessToken,
+        phoneToken: phoneRes.token,
         waterNumber: water.value,
         waterImage: waterBase64,
         electricNumber: electric.value,
@@ -197,7 +202,11 @@ function HomePage() {
                 onChange={(e) =>
                   setWater((prev) => ({ ...prev, value: e.target.value }))
                 }
-                style={{ borderColor: "#16a34a" }}
+                style={{
+                  borderColor: "#16a34a",
+                  background: "#fff",
+                  color: "#111",
+                }}
               />
 
               <button
@@ -276,7 +285,11 @@ function HomePage() {
                 onChange={(e) =>
                   setElectric((prev) => ({ ...prev, value: e.target.value }))
                 }
-                style={{ borderColor: "#ca8a04" }}
+                style={{
+                  borderColor: "#ca8a04",
+                  background: "#fff",
+                  color: "#111",
+                }}
               />
 
               <button
