@@ -5,6 +5,7 @@ import { Request, Response } from "express";
 // import jwt from "jsonwebtoken";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
 import { toLocalPhone } from "../../utils/dateFormarter";
+import axios from "axios";
 
 export class invoiceController extends GenericController<IInvoice> {
   private InvoiceService: invoiceService;
@@ -70,9 +71,17 @@ export class invoiceController extends GenericController<IInvoice> {
   receiveInvocieFromZalo = async (req: Request, res: Response) => {
     try {
       const InvoiceBody = req.body as InvoiceZalo;
+      const response = await axios.get("https://graph.zalo.me/v2.0/me/info", {
+        params: {
+          access_token: InvoiceBody.accessToken,
+          code: InvoiceBody.phoneToken,
+          secret_key: process.env.ZALO_SECRET_CODE,
+        },
+      });
+      const phoneNumber = response.data.data.number;
       const result = await this.InvoiceService.updateInvoiceWithZalo({
         ...InvoiceBody,
-        phoneNumber: toLocalPhone(InvoiceBody.phoneNumber),
+        phoneNumber: toLocalPhone(phoneNumber),
       });
       return res
         .status(200)

@@ -1,12 +1,13 @@
 import { GenericService } from "../../core/services/base.service";
 import roomModel, { IRoom } from "./room.model";
+import housePackageModel from '../../modules/housePackage/housePackage.model'
+import { IPackage } from "../package/package.model";
 import roomInvitationModel from "./roomInvitation.model";
 import roomMemberModel from "./roomMember.model";
 import { Types } from "mongoose";
 import userModel from "../users/user.model";
 import houseModel from "../houses/house.model";
-import housePackageModel from "../housePackage/housePackage.model";
-import { IPackage } from "../package/package.model";
+>>>>>>> dede4e5ed21e15568a6070919cfe9e14b09d7a35
 
 export class roomService extends GenericService<IRoom> {
   constructor() {
@@ -37,12 +38,28 @@ export class roomService extends GenericService<IRoom> {
       throw error;
     }
 
-    const housePackage = await housePackageModel.findOne({
-      houseId: data.houseId
-    }).populate('packageId')
-    const packageData = housePackage?.packageId as IPackage
+    const housePackage = await housePackageModel
+      .findOne({
+        houseId: data.houseId,
+      })
+      .sort({ expirationDate: -1, createDate: -1 })
+      .populate("packageId");
+
+    const packageData = housePackage?.packageId as IPackage;
 
     if (!housePackage) {
+      const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
+      error.code = "HOUSE_PACKAGE_NOT_FOUND";
+      throw error;
+    }
+
+    if (new Date(housePackage.expirationDate) < new Date()) {
+      const error: any = new Error("HOUSE_PACKAGE_EXPIRED");
+      error.code = "HOUSE_PACKAGE_EXPIRED";
+      throw error;
+    }
+
+    if (!packageData || typeof packageData.maxRoom !== "number") {
       const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
       error.code = "HOUSE_PACKAGE_NOT_FOUND";
       throw error;
@@ -52,6 +69,7 @@ export class roomService extends GenericService<IRoom> {
     if (countRoom >= packageData.maxRoom) {
       const error: any = new Error("ROOM_LIMIT_EXCEEDED");
       error.code = "ROOM_LIMIT_EXCEEDED";
+      error.maxRoom = packageData.maxRoom;
       throw error;
     }
 

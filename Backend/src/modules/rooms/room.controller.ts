@@ -50,7 +50,21 @@ export class roomController extends GenericController<IRoom> {
                     .json(
                         responseWrapper(
                             "error",
-                            "Gói của bạn đã hết hạn vui lòng gia hạn thêm!"
+                            "Nhà trọ chưa có gói quản lý hợp lệ. Vui lòng mua gói trước khi tạo phòng."
+                        )
+                    );
+            }
+
+            if (
+                error?.code === "HOUSE_PACKAGE_EXPIRED" ||
+                error?.message === "HOUSE_PACKAGE_EXPIRED"
+            ) {
+                return res
+                    .status(200)
+                    .json(
+                        responseWrapper(
+                            "error",
+                            "Gói quản lý của nhà trọ đã hết hạn. Vui lòng gia hạn để tiếp tục tạo phòng."
                         )
                     );
             }
@@ -64,7 +78,9 @@ export class roomController extends GenericController<IRoom> {
                     .json(
                         responseWrapper(
                             "error",
-                            "Đã đạt giới hạn tạo phòng, vui lòng nâng cấp gói quản lý!"
+                            error?.maxRoom
+                                ? `Đã đạt giới hạn ${error.maxRoom} phòng của gói hiện tại. Vui lòng nâng cấp gói để tạo thêm phòng.`
+                                : "Đã đạt giới hạn tạo phòng, vui lòng nâng cấp gói quản lý!"
                         )
                     );
             }

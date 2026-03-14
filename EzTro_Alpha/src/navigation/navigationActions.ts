@@ -99,10 +99,7 @@ export const appNavigator = {
     });
   },
 
-  goToCreateNewRoomScreen(
-    houseId: string | undefined,
-    room?: import("../types/room").IRoom,
-  ) {
+  goToCreateNewRoomScreen(houseId: string | undefined, room?: import("../types/room").IRoom) {
     navigate("mainstack", {
       screen: "createNewRoomScreen",
       params: { houseId, room },
@@ -121,23 +118,21 @@ export const appNavigator = {
   },
 
   goToPackagePaymentScreen(houseData?: any) {
-    navigate("mainstack",
-      {
-        screen: "packagePaymentScreen",
-        params: { houseData },
-      },
-    );
+    navigate("mainstack", {
+      screen: "packagePaymentScreen",
+      params: { houseData },
+    });
   },
 
   goToQRScanScreen(houseData?: any, packageId?: any, paymentType?: any) {
-    navigate("mainstack",
-      {
-        screen: "qrScanScreen",
-        params: { houseData, packageId, paymentType },
-      },
-    );
+    navigate("mainstack", {
+      screen: "qrScanScreen",
+      params: { houseData, packageId, paymentType },
+    });
   },
-
+  goToNotificationScreen() {
+    navigate("mainstack", { screen: "notificationScreen" });
+  },
   goToSupportScreen() {
     navigate("mainstack", { screen: "supportScreen" });
   },

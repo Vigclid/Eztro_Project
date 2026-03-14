@@ -71,7 +71,7 @@ const BoardingHouseCard = ({
             <View style={styles.boardingHouseCard}>
                 <View style={styles.cardHeader}>
                     <Text style={styles.cardTitle}>{houseName}</Text>
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         style={
                             status === "Còn Phòng"
                                 ? styles.statusBadgeAvailable
@@ -88,7 +88,7 @@ const BoardingHouseCard = ({
                         >
                             {status === "Còn Phòng" ? "Còn phòng" : "Hết phòng"}
                         </Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
 
                 <View style={styles.addressContainer}>

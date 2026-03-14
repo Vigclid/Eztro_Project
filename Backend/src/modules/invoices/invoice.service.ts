@@ -126,10 +126,12 @@ export class invoiceService extends GenericService<IInvoice> {
     if (!invoice) throw new Error("No processing invoice found for this room");
 
     if (data.electricImage) {
-      invoice.electricityImage = await uploadImage(data.electricImage, 1, false);
+      const res = await uploadImage(data.electricImage, 1, false);
+      invoice.electricityImage = res.secure_url;
     }
     if (data.waterImage) {
-      invoice.waterImage = await uploadImage(data.waterImage, 1, false);
+      const res = await uploadImage(data.waterImage, 1, false);
+      invoice.waterImage = res.secure_url;
     }
 
     invoice.currentWaterNumber = Number(data.waterNumber);
