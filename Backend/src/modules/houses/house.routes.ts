@@ -16,6 +16,7 @@ router.route('/landlord/all')
 
 router.route('/:id')
     .get(authenticate, HouseController.getHouseById)
+    .put(authenticate, HouseController.updateHouse)
 
 router.route('/')
     .post(authenticate, HouseController.createNewHouse)

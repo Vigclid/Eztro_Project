@@ -29,6 +29,7 @@ import {
     Settings,
     type LucideIcon,
 } from "lucide-react-native";
+import { appNavigator } from "../../navigation/navigationActions";
 
 type DetailsRouteProps = RouteProp<MainStackParamList, 'boardingHouseDetailsScreen'>;
 
@@ -357,11 +358,13 @@ export const BoardingHouseDetailsScreen = () => {
                         <View>
                             <Text style={styles.headerTitle}>Chi tiết cụm trọ</Text>
                         </View>
-                        <View style={styles.headerIcon}>
+                        <TouchableOpacity
+                            onPress={() => appNavigator.goToCreateBoardingHousePage(boardingHouse)}
+                            style={styles.headerIcon}>
                             <Pen
                                 color={COLORS.WHITE}
                             />
-                        </View>
+                        </TouchableOpacity>
                     </LinearGradient>
 
                     <View style={styles.contentContainer}>
