@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import { TicketService } from "./ticket.service";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
+import jwt from "jsonwebtoken";
 
 export class TicketController {
   private ticketService: TicketService;
@@ -13,7 +14,12 @@ export class TicketController {
   // Tạo ticket bởi tenant
   createByTenant = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.id;
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id } = jwt.decode(token) as { id: string };
+      
       const { title, description, categories } = req.body;
 
       if (!title || !description || !categories || categories.length === 0) {
@@ -21,7 +27,7 @@ export class TicketController {
         return;
       }
 
-      const ticket = await this.ticketService.createTicketByTenant(userId.toString(), {
+      const ticket = await this.ticketService.createTicketByTenant(id, {
         title,
         description,
         categories,
@@ -36,7 +42,12 @@ export class TicketController {
   // Tạo ticket bởi landlord
   createByLandlord = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.id;
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id } = jwt.decode(token) as { id: string };
+      
       const { title, description, categories, houseId, roomId } = req.body;
 
       if (!title || !description || !categories || !houseId || !roomId) {
@@ -44,7 +55,7 @@ export class TicketController {
         return;
       }
 
-      const ticket = await this.ticketService.createTicketByLandlord(userId.toString(), {
+      const ticket = await this.ticketService.createTicketByLandlord(id, {
         title,
         description,
         categories,
@@ -85,8 +96,13 @@ export class TicketController {
   // Lấy tickets của landlord
   getByLandlord = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.id;
-      const tickets = await this.ticketService.getTicketsByLandlord(userId.toString());
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id } = jwt.decode(token) as { id: string };
+      
+      const tickets = await this.ticketService.getTicketsByLandlord(id);
       res.json(responseWrapper("success", "Lấy danh sách tickets thành công", tickets));
     } catch (error) {
       next(error);
@@ -96,8 +112,13 @@ export class TicketController {
   // Lấy tickets của tenant
   getByTenant = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.id;
-      const tickets = await this.ticketService.getTicketsByTenant(userId.toString());
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id } = jwt.decode(token) as { id: string };
+      
+      const tickets = await this.ticketService.getTicketsByTenant(id);
       res.json(responseWrapper("success", "Lấy danh sách tickets thành công", tickets));
     } catch (error) {
       next(error);
@@ -129,7 +150,12 @@ export class TicketController {
   // Thêm reply vào ticket
   addReply = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.id;
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id } = jwt.decode(token) as { id: string };
+      
       const { ticketId } = req.params;
       const { content } = req.body;
 
@@ -138,7 +164,7 @@ export class TicketController {
         return;
       }
 
-      const ticket = await this.ticketService.addReply(ticketId, userId.toString(), content);
+      const ticket = await this.ticketService.addReply(ticketId, id, content);
       res.json(responseWrapper("success", "Thêm reply thành công", ticket));
     } catch (error) {
       next(error);

@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { ReportService } from "./report.service";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
 import { ReportType, ReportStatus } from "./report.model";
+import jwt from "jsonwebtoken";
 
 const VALID_TYPES: ReportType[] = ["Help", "Bug", "Advice"];
 const VALID_STATUSES: ReportStatus[] = ["Pending", "InProgress", "Resolved", "Closed"];
@@ -16,7 +17,12 @@ export class ReportController {
 
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.id;
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id } = jwt.decode(token) as { id: string };
+      
       const { typeReport, title, description } = req.body;
 
       if (!typeReport || !title || !description) {
@@ -29,7 +35,7 @@ export class ReportController {
         return;
       }
 
-      const report = await this.reportService.createReport(userId.toString(), {
+      const report = await this.reportService.createReport(id, {
         typeReport,
         title,
         description,
@@ -43,8 +49,13 @@ export class ReportController {
 
   getMyReports = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.id;
-      const reports = await this.reportService.getReportsByUser(userId.toString());
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id } = jwt.decode(token) as { id: string };
+      
+      const reports = await this.reportService.getReportsByUser(id);
       res.json(responseWrapper("success", "Lấy danh sách báo cáo thành công", reports));
     } catch (error) {
       next(error);
@@ -78,7 +89,12 @@ export class ReportController {
 
   addReply = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const senderId = req.user!.id;
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id: senderId } = jwt.decode(token) as { id: string };
+      
       const { id } = req.params;
       const { message } = req.body;
 
@@ -87,7 +103,7 @@ export class ReportController {
         return;
       }
 
-      const report = await this.reportService.addReply(id, senderId.toString(), message);
+      const report = await this.reportService.addReply(id, senderId, message);
 
       if (!report) {
         res.status(404).json(responseWrapper("error", "Không tìm thấy báo cáo"));

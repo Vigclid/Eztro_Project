@@ -196,8 +196,7 @@ export const LoginScreen = () => {
               index: 0,
               routes: [
                 {
-                  name: "staffscreen",
-                  params: { screen: "staffDashboard" },
+                  name: "staffRedirect",
                 },
               ],
             }),

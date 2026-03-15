@@ -40,7 +40,7 @@ const WelcomeScreen = () => {
       } else if (userRole === "Staff" || userRole === "Admin") {
         navigation.reset({
           index: 0,
-          routes: [{ name: "staffscreen" }],
+          routes: [{ name: "staffRedirect" }],
         });
       } else {
         navigation.reset({

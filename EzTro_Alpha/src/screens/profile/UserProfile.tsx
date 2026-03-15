@@ -31,6 +31,32 @@ export const UserProfile: React.FC = () => {
 
   const { user } = useSelector((state: RootState) => state.auth);
 
+  // Get role name from user object
+  const getRoleName = () => {
+    if (user?.roleName) return user.roleName;
+    if (user?.roleId && typeof user.roleId === 'object' && 'name' in user.roleId) {
+      return user.roleId.name;
+    }
+    return 'Người dùng';
+  };
+
+  const roleName = getRoleName();
+
+  // Map role name to Vietnamese
+  const getRoleDisplayName = (role: string) => {
+    const roleMap: { [key: string]: string } = {
+      'Landlord': 'Chủ trọ',
+      'landlord': 'Chủ trọ',
+      'Tenant': 'Người thuê',
+      'tenant': 'Người thuê',
+      'Staff': 'Nhân viên',
+      'staff': 'Nhân viên',
+      'Admin': 'Quản trị viên',
+      'admin': 'Quản trị viên',
+    };
+    return roleMap[role] || role;
+  };
+
   useEffect(() => {
     if (!user) {
       navigation.reset({
@@ -69,7 +95,7 @@ export const UserProfile: React.FC = () => {
                 <View style={styles.badgeIcon}>
                   <Icon name="home" size={26} color={theme.theme.color} />
                 </View>
-                <Text style={styles.badgeText}>Chủ trọ</Text>
+                <Text style={styles.badgeText}>{getRoleDisplayName(roleName)}</Text>
               </TouchableOpacity>
             </View>
           </View>

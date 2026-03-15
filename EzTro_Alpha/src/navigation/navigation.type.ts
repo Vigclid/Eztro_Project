@@ -21,6 +21,7 @@ export type RootStackParamList = {
     screen: keyof MainStackParamList;
     params?: MainStackParamList[keyof MainStackParamList];
   };
+  staffRedirect: undefined;
 };
 
 export type MainTabParamList = {
