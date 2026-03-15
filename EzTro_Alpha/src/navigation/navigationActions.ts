@@ -110,10 +110,7 @@ export const appNavigator = {
     });
   },
 
-  goToCreateNewRoomScreen(
-    houseId: string | undefined,
-    room?: import("../types/room").IRoom,
-  ) {
+  goToCreateNewRoomScreen(houseId: string | undefined, room?: import("../types/room").IRoom) {
     navigate("mainstack", {
       screen: "createNewRoomScreen",
       params: { houseId, room },
@@ -140,7 +137,23 @@ export const appNavigator = {
       params: { houseData, packageId, paymentType },
     });
   },
+
   goToNotificationScreen() {
     navigate("mainstack", { screen: "notificationScreen" });
+  },
+
+  goToSupportScreen() {
+    navigate("mainstack", { screen: "supportScreen" });
+  },
+
+  goToMyReportsScreen() {
+    navigate("mainstack", { screen: "myReportsScreen" });
+  },
+
+  goToReportDetailScreen(reportId: string) {
+    navigate("mainstack", {
+      screen: "reportDetailScreen",
+      params: { reportId },
+    });
   },
 };

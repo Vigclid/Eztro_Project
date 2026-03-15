@@ -14,11 +14,17 @@ export type RootStackParamList = {
     screen: keyof TenantTabParamList;
     params?: TenantTabParamList[keyof TenantTabParamList];
   };
+  staffscreen: {
+    screen: keyof StaffTabParamList;
+    params?: StaffTabParamList[keyof StaffTabParamList];
+  };
   mainstack: {
     screen: keyof MainStackParamList;
     params?: MainStackParamList[keyof MainStackParamList];
   };
+  staffRedirect: undefined;
 };
+
 export type MainTabParamList = {
   blank: undefined;
   userProfile: undefined;
@@ -33,6 +39,14 @@ export type TenantTabParamList = {
   userProfile: undefined;
 };
 
+export type StaffTabParamList = {
+  staffDashboard: undefined;
+  staffUsers: undefined;
+  staffSupport: undefined;
+  staffActivity: undefined;
+  userProfile: undefined;
+};
+
 export type MainStackParamList = {
   createBoardingHousePage: undefined;
   editProfile: undefined;
@@ -40,30 +54,35 @@ export type MainStackParamList = {
   changePasswordSuccessful: { fromMain: true } | undefined;
   boardingHouseDetailsScreen: { _id: string | undefined };
   createNewRoomScreen:
-  | {
-    houseId: string | undefined;
-    room?: import("../types/room").IRoom;
-    onRefresh?: () => void;
-  }
-  | undefined;
+    | {
+        houseId: string | undefined;
+        room?: import("../types/room").IRoom;
+        onRefresh?: () => void;
+      }
+    | undefined;
   addTenantScreen:
-  | {
-    roomId: string;
-    room?: import("../types/room").IRoom;
-  }
-  | undefined;
+    | {
+        roomId: string;
+        room?: import("../types/room").IRoom;
+      }
+    | undefined;
+  createInvoicesScreen: undefined;
   ticketListScreen: undefined;
   createTicketScreen: undefined;
   ticketDetailScreen: { ticketId: string };
   packagePaymentScreen: { houseData: any | undefined };
   qrScanScreen: {
-    houseData: any,
-    packageId: any,
-    paymentType: any | undefined
+    houseData: any;
+    packageId: any;
+    paymentType: any | undefined;
   };
   notificationScreen: undefined;
   createNotificationScreen: undefined;
+  supportScreen: undefined;
+  myReportsScreen: undefined;
+  reportDetailScreen: { reportId: string };
 };
+
 export type AuthStackParamList = {
   welcome: undefined;
   login: undefined;
