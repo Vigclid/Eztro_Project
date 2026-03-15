@@ -23,6 +23,7 @@ export type MainTabParamList = {
   userProfile: undefined;
   viewBoardingHousePage: undefined;
   trackingInvoiceStatus: undefined;
+  createInvoicesScreen: undefined;
 };
 
 export type TenantTabParamList = {
@@ -50,7 +51,6 @@ export type MainStackParamList = {
     room?: import("../types/room").IRoom;
   }
   | undefined;
-  createInvoicesScreen: undefined;
   ticketListScreen: undefined;
   createTicketScreen: undefined;
   ticketDetailScreen: { ticketId: string };
@@ -58,9 +58,10 @@ export type MainStackParamList = {
   qrScanScreen: {
     houseData: any,
     packageId: any,
-    paymentType: any  | undefined
-};
+    paymentType: any | undefined
+  };
   notificationScreen: undefined;
+  createNotificationScreen: undefined;
 };
 export type AuthStackParamList = {
   welcome: undefined;

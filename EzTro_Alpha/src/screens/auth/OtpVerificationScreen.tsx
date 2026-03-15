@@ -101,7 +101,6 @@ export const OtpVerificationScreen = () => {
     setTimer(60);
     setIsResendDisabled(true);
 
-    // TODO: Gọi hàm API gửi lại mã ở đây (ví dụ: sendMail(email))
     Alert.alert("Thông báo", `Đã gửi lại mã mới đến ${email}`);
   };
 

@@ -253,6 +253,16 @@ export const BoardingHouseDetailsScreen = () => {
     const { getHouseById } = getHouseApi
     const { getAllRoomsByHouseId } = getRoomApi;
 
+    const formatCurrency = (value?: number) => {
+        if (!value) return "0 đ";
+        return Number(value).toLocaleString("vi-VN") + " đ";
+    };
+
+    const formatDate = (value?: string | Date) => {
+        if (!value) return "--/--/----";
+        return new Date(value).toLocaleDateString("vi-VN");
+    };
+
     const fetchData = useCallback(async () => {
         // Lấy thông tin cụm trọ
         const resHouse = await getHouseById(_id) as ApiResponse<IHouse>;
@@ -276,16 +286,16 @@ export const BoardingHouseDetailsScreen = () => {
                 }
 
                 return {
-                _id: room._id,
-                houseId: room.houseId,
-                area: undefined,
-                floor: undefined,
-                roomName: room.roomName,
-                rentalFee: room.rentalFee,
-                status: room.status,
-                rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
-                virtualTenants: room.virtualTenants || [],
-                accountTenants,
+                    _id: room._id,
+                    houseId: room.houseId,
+                    area: undefined,
+                    floor: undefined,
+                    roomName: room.roomName,
+                    rentalFee: room.rentalFee,
+                    status: room.status,
+                    rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
+                    virtualTenants: room.virtualTenants || [],
+                    accountTenants,
                 };
             }));
             setRooms(mappedRooms);
@@ -318,6 +328,15 @@ export const BoardingHouseDetailsScreen = () => {
             </View>
         );
     }
+
+    const currentPackage = boardingHouse?.housePackage?.package;
+    const packageExpiration = boardingHouse?.housePackage?.expirationDate;
+    const maxRoomByPackage = currentPackage?.maxRoom || 0;
+    const usedRoom = rooms.length;
+    const usagePercent =
+        maxRoomByPackage > 0
+            ? Math.min(100, Math.round((usedRoom / maxRoomByPackage) * 100))
+            : 0;
 
     return (
         <View style={styles.container}>
@@ -389,6 +408,88 @@ export const BoardingHouseDetailsScreen = () => {
                                     label="Còn trống"
                                     isLast
                                 />
+                            </View>
+
+                            <View style={styles.packageCard}>
+                                <View style={styles.packageHeaderRow}>
+                                    <View style={styles.rowCenter}>
+                                        <View style={styles.packageIconWrap}>
+                                            <Zap color="#FFFFFF" size={16} />
+                                        </View>
+                                        <View>
+                                            <Text style={styles.packageTitle}>Gói quản lý đang dùng</Text>
+                                            <Text style={styles.packageName}>
+                                                {currentPackage?.packageName || "Chưa có gói"}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <View
+                                        style={
+                                            boardingHouse?.housePackage?.isExpired ||
+                                                !currentPackage
+                                                ? styles.packageExpiredBadge
+                                                : styles.packageActiveBadge
+                                        }
+                                    >
+                                        <Text
+                                            style={
+                                                boardingHouse?.housePackage?.isExpired ||
+                                                    !currentPackage
+                                                    ? styles.packageExpiredText
+                                                    : styles.packageActiveText
+                                            }
+                                        >
+                                            {boardingHouse?.housePackage?.isExpired || !currentPackage ? "Hết hạn" : "Đang hiệu lực"}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.packageMetaGrid}>
+                                    <View style={styles.packageMetaItem}>
+                                        <Text style={styles.packageMetaLabel}>Giới hạn phòng</Text>
+                                        <Text style={styles.packageMetaValue}>
+                                            {maxRoomByPackage > 0 ? `${maxRoomByPackage} phòng` : "--"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.packageMetaItem}>
+                                        <Text style={styles.packageMetaLabel}>Đơn giá gói</Text>
+                                        <Text style={styles.packageMetaValue}>
+                                            {currentPackage ? formatCurrency(currentPackage.price) : "--"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.packageMetaItem}>
+                                        <Text style={styles.packageMetaLabel}>Thời hạn gói</Text>
+                                        <Text style={styles.packageMetaValue}>
+                                            {currentPackage?.duration ? `${currentPackage.duration} tháng` : "--"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.packageMetaItem}>
+                                        <Text style={styles.packageMetaLabel}>Hạn sử dụng</Text>
+                                        <Text style={styles.packageMetaValue}>{formatDate(packageExpiration as any)}</Text>
+                                    </View>
+                                </View>
+
+                                {maxRoomByPackage > 0 && (
+                                    <View style={styles.packageProgressWrap}>
+                                        <View style={styles.packageProgressLabelRow}>
+                                            <Text style={styles.packageProgressLabel}>Mức sử dụng phòng</Text>
+                                            <Text style={styles.packageProgressValue}>
+                                                {usedRoom}/{maxRoomByPackage} ({usagePercent}%)
+                                            </Text>
+                                        </View>
+                                        <View style={styles.packageProgressTrack}>
+                                            <View
+                                                style={[
+                                                    styles.packageProgressBar,
+                                                    { width: `${usagePercent}%` },
+                                                    usagePercent >= 90
+                                                        ? styles.packageProgressBarWarning
+                                                        : null,
+                                                ]}
+                                            />
+                                        </View>
+                                    </View>
+                                )}
                             </View>
 
                             <View>
@@ -716,6 +817,122 @@ const styles = StyleSheet.create({
         color: "#495565",
         fontSize: 12,
         fontWeight: "bold",
+    },
+    packageCard: {
+        backgroundColor: "#F8FAFC",
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: "#E5EAF1",
+        padding: 14,
+        marginBottom: 16,
+    },
+    packageHeaderRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 12,
+    },
+    packageIconWrap: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#00A96B",
+        marginRight: 10,
+    },
+    packageTitle: {
+        color: "#64748B",
+        fontSize: 12,
+        fontWeight: "600",
+    },
+    packageName: {
+        color: "#0F172A",
+        fontSize: 15,
+        fontWeight: "700",
+        marginTop: 2,
+    },
+    packageActiveBadge: {
+        backgroundColor: "#DCFCE7",
+        borderColor: "#86EFAC",
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    packageActiveText: {
+        color: "#15803D",
+        fontSize: 11,
+        fontWeight: "700",
+    },
+    packageExpiredBadge: {
+        backgroundColor: "#FEE2E2",
+        borderColor: "#FCA5A5",
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    packageExpiredText: {
+        color: "#B91C1C",
+        fontSize: 11,
+        fontWeight: "700",
+    },
+    packageMetaGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+    },
+    packageMetaItem: {
+        width: "48%",
+        backgroundColor: "#FFFFFF",
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "#EAECEF",
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        marginBottom: 8,
+    },
+    packageMetaLabel: {
+        color: "#64748B",
+        fontSize: 11,
+        marginBottom: 3,
+    },
+    packageMetaValue: {
+        color: "#111827",
+        fontSize: 13,
+        fontWeight: "700",
+    },
+    packageProgressWrap: {
+        marginTop: 2,
+    },
+    packageProgressLabelRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 6,
+    },
+    packageProgressLabel: {
+        color: "#64748B",
+        fontSize: 12,
+    },
+    packageProgressValue: {
+        color: "#0F172A",
+        fontSize: 12,
+        fontWeight: "700",
+    },
+    packageProgressTrack: {
+        height: 8,
+        borderRadius: 999,
+        backgroundColor: "#E2E8F0",
+        overflow: "hidden",
+    },
+    packageProgressBar: {
+        height: "100%",
+        borderRadius: 999,
+        backgroundColor: "#00A96B",
+    },
+    packageProgressBarWarning: {
+        backgroundColor: "#EA580C",
     },
 
     // Inputs & Amenity

@@ -68,6 +68,10 @@ export const appNavigator = {
     navigate("mainscreen", { screen: "trackingInvoiceStatus" });
   },
 
+  goToCreateInvoicesScreen() {
+    navigate("mainscreen", { screen: "createInvoicesScreen" });
+  },
+  
   // ─── MAIN STACK ───────────────────────────────────────────────────────────
 
   goToCreateBoardingHousePage() {
@@ -116,25 +120,20 @@ export const appNavigator = {
     });
   },
 
-  goToCreateInvoicesScreen() {
-    navigate("mainstack", { screen: "createInvoicesScreen" });
-  },
-
   goToPackagePaymentScreen(houseData?: any) {
-    navigate("mainstack",
-      {
-        screen: "packagePaymentScreen",
-        params: { houseData },
-      },
-    );
+    navigate("mainstack", {
+      screen: "packagePaymentScreen",
+      params: { houseData },
+    });
   },
 
   goToQRScanScreen(houseData?: any, packageId?: any, paymentType?: any) {
-    navigate("mainstack",
-      {
-        screen: "qrScanScreen",
-        params: { houseData, packageId, paymentType },
-      },
-    );
-  }
+    navigate("mainstack", {
+      screen: "qrScanScreen",
+      params: { houseData, packageId, paymentType },
+    });
+  },
+  goToNotificationScreen() {
+    navigate("mainstack", { screen: "notificationScreen" });
+  },
 };

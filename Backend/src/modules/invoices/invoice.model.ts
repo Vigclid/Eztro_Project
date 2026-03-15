@@ -2,6 +2,8 @@ import mongoose, { Document, Types } from "mongoose";
 import { IRoom } from "../rooms/room.model";
 
 export interface InvoiceZalo {
+  accessToken: string;
+  phoneToken: string;
   phoneNumber: string;
   waterNumber: string;
   waterImage: string;

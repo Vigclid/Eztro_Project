@@ -2,9 +2,10 @@ import { IInvoice, InvoiceZalo } from "./invoice.model";
 import { GenericController } from "../../core/controllers/base.controller";
 import { invoiceService } from "./invoice.service";
 import { Request, Response } from "express";
-// import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
 import { toLocalPhone } from "../../utils/dateFormarter";
+import axios from "axios";
 
 export class invoiceController extends GenericController<IInvoice> {
   private InvoiceService: invoiceService;
@@ -52,8 +53,12 @@ export class invoiceController extends GenericController<IInvoice> {
   };
 
   getInvoicesByFilter = async (req: Request, res: Response) => {
+    const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
+      id: string;
+    };
     try {
       const filters = {
+        landLordId: id,
         houseId: req.query["params[houseId]"] as string,
         month: req.query["params[month]"] as string,
         year: req.query["params[year]"] as string,
@@ -70,9 +75,17 @@ export class invoiceController extends GenericController<IInvoice> {
   receiveInvocieFromZalo = async (req: Request, res: Response) => {
     try {
       const InvoiceBody = req.body as InvoiceZalo;
+      const response = await axios.get("https://graph.zalo.me/v2.0/me/info", {
+        params: {
+          access_token: InvoiceBody.accessToken,
+          code: InvoiceBody.phoneToken,
+          secret_key: process.env.ZALO_SECRET_CODE,
+        },
+      });
+      const phoneNumber = response.data.data.number;
       const result = await this.InvoiceService.updateInvoiceWithZalo({
         ...InvoiceBody,
-        phoneNumber: toLocalPhone(InvoiceBody.phoneNumber),
+        phoneNumber: toLocalPhone(phoneNumber),
       });
       return res
         .status(200)
@@ -81,4 +94,14 @@ export class invoiceController extends GenericController<IInvoice> {
       return res.status(200).json(responseWrapper("error", err.message, null));
     }
   };
+
+  getRoomsForInvoiceCreation = async (req: Request, res: Response) =>{
+    try {
+      const {houseId} = req.params
+      const result = await this.InvoiceService.getRoomsForInvoiceCreation(houseId);
+      return res.status(200).json(responseWrapper("success", "Lấy danh sách phòng", result));
+    } catch (err: any) {
+      res.status(500).json(responseWrapper("error", "Lỗi server", err));
+    }
+  }
 }

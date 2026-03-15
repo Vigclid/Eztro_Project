@@ -17,10 +17,11 @@ app.use(express.urlencoded({ limit: "4mb", extended: true }));
 app.use(cookieParser());
 // CORS
 const isProduction = process.env.NODE_ENV === "production";
-const origin = isProduction ? process.env.CLIENT_URL_PROD : process.env.CLIENT_URL_DEV;
+const clientOrigin = isProduction ? process.env.CLIENT_URL_PROD : process.env.CLIENT_URL_DEV;
+const allowedOrigins = [clientOrigin, "https://h5.zdn.vn"].filter(Boolean) as string[];
 app.use(
   cors({
-    origin,
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })

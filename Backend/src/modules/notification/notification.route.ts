@@ -12,4 +12,5 @@ router
   .post(authenticate, NotificaitonController.markAsReadAll);
 
 router.route("/me/as-read/:id").post(authenticate, NotificaitonController.markAsRead);
+router.route("/broadcast").post(authenticate, NotificaitonController.createNotificaition);
 export default router;
