@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Bug,
@@ -10,65 +10,38 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-} from 'lucide-react';
-import { reportGetAPI } from '../../api/reportAPI/GET';
-import { reportPostAPI } from '../../api/reportAPI/POST';
-import { reportPatchAPI } from '../../api/reportAPI/PATCH';
-import './styles/ReportDetailScreen.css';
-
-interface Reply {
-  senderId: {
-    _id: string;
-    firstName?: string;
-    lastName?: string;
-    email: string;
-  };
-  message: string;
-  createdAt: string;
-}
-
-interface Report {
-  _id: string;
-  userId: {
-    _id: string;
-    firstName?: string;
-    lastName?: string;
-    email: string;
-  };
-  typeReport: 'Help' | 'Bug' | 'Advice';
-  title: string;
-  description: string;
-  status: 'Pending' | 'InProgress' | 'Resolved' | 'Closed';
-  replies: Reply[];
-  createdAt: string;
-  updatedAt: string;
-}
+} from "lucide-react";
+import { reportGetAPI } from "../../api/reportAPI/GET";
+import { reportPostAPI } from "../../api/reportAPI/POST";
+import { reportPatchAPI } from "../../api/reportAPI/PATCH";
+import { Report } from "../../types/report";
+import "./styles/ReportDetailScreen.css";
 
 const ReportDetailScreen: React.FC = () => {
   const navigate = useNavigate();
   const { reportId } = useParams<{ reportId: string }>();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
-  const [replyMessage, setReplyMessage] = useState('');
+  const [replyMessage, setReplyMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  const userStr = localStorage.getItem('user');
+  const userStr = localStorage.getItem("user");
   const currentUser = userStr ? JSON.parse(userStr) : null;
-  
+
   // Check role - handle both roleName and roleId.name
   const getRoleName = () => {
     if (currentUser?.roleName) return currentUser.roleName;
-    if (currentUser?.roleId && typeof currentUser.roleId === 'object' && 'name' in currentUser.roleId) {
+    if (currentUser?.roleId && typeof currentUser.roleId === "object" && "name" in currentUser.roleId) {
       return currentUser.roleId.name;
     }
-    return '';
+    return "";
   };
-  
+
   const roleName = getRoleName();
-  const isStaffOrAdmin = roleName === 'Staff' || roleName === 'Admin' || roleName === 'staff' || roleName === 'admin';
-  
+  const isStaffOrAdmin = roleName === "Staff" || roleName === "Admin";
+
   useEffect(() => {
     if (reportId) {
       loadReportDetail();
@@ -80,7 +53,7 @@ const ReportDetailScreen: React.FC = () => {
     setLoading(true);
     try {
       const res = await reportGetAPI.getReportById(reportId);
-      if (res.status === 'success' && res.data) {
+      if (res.status === "success" && res.data) {
         // Backend returns report object directly in res.data, not res.data.data
         setReport(res.data);
       }
@@ -96,8 +69,8 @@ const ReportDetailScreen: React.FC = () => {
     setSending(true);
     try {
       const res = await reportPostAPI.addReply(reportId, { message: replyMessage.trim() });
-      if (res.status === 'success') {
-        setReplyMessage('');
+      if (res.status === "success") {
+        setReplyMessage("");
         loadReportDetail();
       }
     } catch (error) {
@@ -106,19 +79,19 @@ const ReportDetailScreen: React.FC = () => {
     }
   };
 
-  const handleUpdateStatus = async (newStatus: 'Pending' | 'InProgress' | 'Resolved' | 'Closed') => {
+  const handleUpdateStatus = async (newStatus: "Pending" | "InProgress" | "Resolved" | "Closed") => {
     if (!reportId) return;
     setUpdatingStatus(true);
     try {
       const res = await reportPatchAPI.updateStatus(reportId, { status: newStatus });
-      if (res.status === 'success') {
+      if (res.status === "success") {
         setShowStatusModal(false);
         loadReportDetail();
       } else {
-        alert('Không thể cập nhật trạng thái: ' + (res.message || 'Lỗi không xác định'));
+        alert("Không thể cập nhật trạng thái: " + (res.message || "Lỗi không xác định"));
       }
     } catch (error) {
-      alert('Lỗi khi cập nhật trạng thái');
+      alert("Lỗi khi cập nhật trạng thái");
     } finally {
       setUpdatingStatus(false);
     }
@@ -126,11 +99,11 @@ const ReportDetailScreen: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'Help':
+      case "Help":
         return <HelpCircle size={24} />;
-      case 'Bug':
+      case "Bug":
         return <Bug size={24} />;
-      case 'Advice':
+      case "Advice":
         return <Lightbulb size={24} />;
       default:
         return <HelpCircle size={24} />;
@@ -139,12 +112,12 @@ const ReportDetailScreen: React.FC = () => {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'Help':
-        return 'Trợ giúp';
-      case 'Bug':
-        return 'Báo lỗi';
-      case 'Advice':
-        return 'Góp ý';
+      case "Help":
+        return "Trợ giúp";
+      case "Bug":
+        return "Báo lỗi";
+      case "Advice":
+        return "Góp ý";
       default:
         return type;
     }
@@ -152,14 +125,14 @@ const ReportDetailScreen: React.FC = () => {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'Pending':
-        return 'Chờ xử lý';
-      case 'InProgress':
-        return 'Đang xử lý';
-      case 'Resolved':
-        return 'Đã giải quyết';
-      case 'Closed':
-        return 'Đã đóng';
+      case "Pending":
+        return "Chờ xử lý";
+      case "InProgress":
+        return "Đang xử lý";
+      case "Resolved":
+        return "Đã giải quyết";
+      case "Closed":
+        return "Đã đóng";
       default:
         return status;
     }
@@ -167,13 +140,13 @@ const ReportDetailScreen: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Pending':
+      case "Pending":
         return <Clock size={16} />;
-      case 'InProgress':
+      case "InProgress":
         return <AlertCircle size={16} />;
-      case 'Resolved':
+      case "Resolved":
         return <CheckCircle size={16} />;
-      case 'Closed':
+      case "Closed":
         return <CheckCircle size={16} />;
       default:
         return <Clock size={16} />;
@@ -191,12 +164,12 @@ const ReportDetailScreen: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -204,11 +177,11 @@ const ReportDetailScreen: React.FC = () => {
     return (
       <div className="report-detail-container">
         <div className="report-header">
-          <button className="back-button" onClick={() => navigate('/support')}>
+          <button className="back-button" onClick={() => navigate("/support")}>
             <ArrowLeft size={24} />
           </button>
           <h1>Chi tiết báo cáo</h1>
-          <div style={{ width: '40px' }} />
+          <div style={{ width: "40px" }} />
         </div>
         <div className="loading-state">
           <div className="spinner" />
@@ -222,11 +195,11 @@ const ReportDetailScreen: React.FC = () => {
     return (
       <div className="report-detail-container">
         <div className="report-header">
-          <button className="back-button" onClick={() => navigate('/support')}>
+          <button className="back-button" onClick={() => navigate("/support")}>
             <ArrowLeft size={24} />
           </button>
           <h1>Chi tiết báo cáo</h1>
-          <div style={{ width: '40px' }} />
+          <div style={{ width: "40px" }} />
         </div>
         <div className="empty-state">
           <p>Không tìm thấy báo cáo</p>
@@ -238,11 +211,11 @@ const ReportDetailScreen: React.FC = () => {
   return (
     <div className="report-detail-container">
       <div className="report-header">
-        <button className="back-button" onClick={() => navigate('/support')}>
+        <button className="back-button" onClick={() => navigate("/support")}>
           <ArrowLeft size={24} />
         </button>
         <h1>Chi tiết báo cáo</h1>
-        <div style={{ width: '40px' }} />
+        <div style={{ width: "40px" }} />
       </div>
 
       <div className="report-detail-content">
@@ -300,10 +273,7 @@ const ReportDetailScreen: React.FC = () => {
               {report.replies.map((reply, index) => {
                 const isMyMessage = reply.senderId._id === currentUser?._id;
                 return (
-                  <div
-                    key={index}
-                    className={`message-container ${isMyMessage ? 'my-message' : 'other-message'}`}
-                  >
+                  <div key={index} className={`message-container ${isMyMessage ? "my-message" : "other-message"}`}>
                     <div className="message-bubble">
                       <div className="message-sender">{getUserFullName(reply.senderId)}</div>
                       <div className="message-text">{reply.message}</div>
@@ -317,7 +287,7 @@ const ReportDetailScreen: React.FC = () => {
         </div>
 
         {/* Reply Input */}
-        {report.status !== 'Closed' && (
+        {report.status !== "Closed" && (
           <div className="reply-input-section">
             <div className="reply-input-container">
               <textarea
@@ -327,11 +297,7 @@ const ReportDetailScreen: React.FC = () => {
                 onChange={(e) => setReplyMessage(e.target.value)}
                 maxLength={500}
               />
-              <button
-                className="send-button"
-                onClick={handleSendReply}
-                disabled={!replyMessage.trim() || sending}
-              >
+              <button className="send-button" onClick={handleSendReply} disabled={!replyMessage.trim() || sending}>
                 <Send size={20} />
               </button>
             </div>
@@ -346,13 +312,12 @@ const ReportDetailScreen: React.FC = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Chọn trạng thái</h3>
             <div className="status-options">
-              {(['Pending', 'InProgress', 'Resolved', 'Closed'] as const).map((status) => (
+              {(["Pending", "InProgress", "Resolved", "Closed"] as const).map((status) => (
                 <button
                   key={status}
-                  className={`status-option ${report.status === status ? 'active' : ''}`}
+                  className={`status-option ${report.status === status ? "active" : ""}`}
                   onClick={() => handleUpdateStatus(status)}
-                  disabled={updatingStatus}
-                >
+                  disabled={updatingStatus}>
                   {getStatusLabel(status)}
                 </button>
               ))}

@@ -1,41 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Bug,
-  HelpCircle,
-  Lightbulb,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Search,
-} from 'lucide-react';
-import { reportGetAPI } from '../../api/reportAPI/GET';
-import './styles/StaffSupportScreen.css';
-
-interface Report {
-  _id: string;
-  typeReport: 'Help' | 'Bug' | 'Advice';
-  title: string;
-  description: string;
-  status: 'Pending' | 'InProgress' | 'Resolved' | 'Closed';
-  userId: {
-    _id: string;
-    firstName?: string;
-    lastName?: string;
-    email: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-  replies: any[];
-}
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Bug, HelpCircle, Lightbulb, Clock, CheckCircle, AlertCircle, Search } from "lucide-react";
+import { reportGetAPI } from "../../api/reportAPI/GET";
+import { Report } from "../../types/report";
+import "./styles/StaffSupportScreen.css";
 
 const StaffSupportScreen: React.FC = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     loadReports();
@@ -46,7 +21,7 @@ const StaffSupportScreen: React.FC = () => {
     try {
       // Backend /all endpoint doesn't support status filter, so we get all and filter on frontend
       const res = await reportGetAPI.getAllReports(undefined, 1, 50);
-      if (res.status === 'success' && res.data) {
+      if (res.status === "success" && res.data) {
         // Backend returns array directly in res.data, not res.data.data
         const reportsArray = Array.isArray(res.data) ? res.data : [];
         setReports(reportsArray);
@@ -59,11 +34,11 @@ const StaffSupportScreen: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'Help':
+      case "Help":
         return <HelpCircle size={18} />;
-      case 'Bug':
+      case "Bug":
         return <Bug size={18} />;
-      case 'Advice':
+      case "Advice":
         return <Lightbulb size={18} />;
       default:
         return <HelpCircle size={18} />;
@@ -72,12 +47,12 @@ const StaffSupportScreen: React.FC = () => {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'Help':
-        return 'Trợ giúp';
-      case 'Bug':
-        return 'Báo lỗi';
-      case 'Advice':
-        return 'Góp ý';
+      case "Help":
+        return "Trợ giúp";
+      case "Bug":
+        return "Báo lỗi";
+      case "Advice":
+        return "Góp ý";
       default:
         return type;
     }
@@ -85,14 +60,14 @@ const StaffSupportScreen: React.FC = () => {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'Pending':
-        return 'Chờ xử lý';
-      case 'InProgress':
-        return 'Đang xử lý';
-      case 'Resolved':
-        return 'Đã giải quyết';
-      case 'Closed':
-        return 'Đã đóng';
+      case "Pending":
+        return "Chờ xử lý";
+      case "InProgress":
+        return "Đang xử lý";
+      case "Resolved":
+        return "Đã giải quyết";
+      case "Closed":
+        return "Đã đóng";
       default:
         return status;
     }
@@ -100,13 +75,13 @@ const StaffSupportScreen: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Pending':
+      case "Pending":
         return <Clock size={16} />;
-      case 'InProgress':
+      case "InProgress":
         return <AlertCircle size={16} />;
-      case 'Resolved':
+      case "Resolved":
         return <CheckCircle size={16} />;
-      case 'Closed':
+      case "Closed":
         return <CheckCircle size={16} />;
       default:
         return <Clock size={16} />;
@@ -124,38 +99,37 @@ const StaffSupportScreen: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const filteredReports = reports
-    .filter((report) => {
-      // Filter by status
-      if (statusFilter !== 'all' && report.status !== statusFilter) {
-        return false;
-      }
-      // Filter by search term
-      return (
-        report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getUserFullName(report.userId).toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    });
+  const filteredReports = reports.filter((report) => {
+    // Filter by status
+    if (statusFilter !== "all" && report.status !== statusFilter) {
+      return false;
+    }
+    // Filter by search term
+    return (
+      report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getUserFullName(report.userId).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   return (
     <div className="staff-support-container">
       {/* Header */}
       <div className="support-header">
-        <button className="back-button" onClick={() => navigate('/dashboard')}>
+        <button className="back-button" onClick={() => navigate("/dashboard")}>
           <ArrowLeft size={24} />
         </button>
         <h1>Quản lý hỗ trợ</h1>
-        <div style={{ width: '40px' }} />
+        <div style={{ width: "40px" }} />
       </div>
 
       {/* Filters */}
@@ -172,33 +146,28 @@ const StaffSupportScreen: React.FC = () => {
 
         <div className="filter-buttons">
           <button
-            className={`filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('all')}
-          >
+            className={`filter-btn ${statusFilter === "all" ? "active" : ""}`}
+            onClick={() => setStatusFilter("all")}>
             Tất cả
           </button>
           <button
-            className={`filter-btn ${statusFilter === 'Pending' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('Pending')}
-          >
+            className={`filter-btn ${statusFilter === "Pending" ? "active" : ""}`}
+            onClick={() => setStatusFilter("Pending")}>
             Chờ xử lý
           </button>
           <button
-            className={`filter-btn ${statusFilter === 'InProgress' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('InProgress')}
-          >
+            className={`filter-btn ${statusFilter === "InProgress" ? "active" : ""}`}
+            onClick={() => setStatusFilter("InProgress")}>
             Đang xử lý
           </button>
           <button
-            className={`filter-btn ${statusFilter === 'Resolved' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('Resolved')}
-          >
+            className={`filter-btn ${statusFilter === "Resolved" ? "active" : ""}`}
+            onClick={() => setStatusFilter("Resolved")}>
             Đã giải quyết
           </button>
           <button
-            className={`filter-btn ${statusFilter === 'Closed' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('Closed')}
-          >
+            className={`filter-btn ${statusFilter === "Closed" ? "active" : ""}`}
+            onClick={() => setStatusFilter("Closed")}>
             Đã đóng
           </button>
         </div>
@@ -219,11 +188,7 @@ const StaffSupportScreen: React.FC = () => {
         ) : (
           <div className="reports-list">
             {filteredReports.map((report) => (
-              <div
-                key={report._id}
-                className="report-card"
-                onClick={() => navigate(`/support/${report._id}`)}
-              >
+              <div key={report._id} className="report-card" onClick={() => navigate(`/support/${report._id}`)}>
                 <div className="report-card-header">
                   <div className="report-type-badge">
                     <span className={`type-icon type-${report.typeReport.toLowerCase()}`}>
