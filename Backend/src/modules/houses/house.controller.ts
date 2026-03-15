@@ -87,4 +87,16 @@ export class houseController extends GenericController<IHouse> {
             res.status(500).json(responseWrapper("error", "Internal Server Error", error))
         }
     }
+
+    updateHouse = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params
+            const result = await this.HouseService.updateHouse(id, req.body)
+            return res
+                .status(200)
+                .json(responseWrapper("success", "Thanh cong", result))
+        } catch (err: any) {
+            res.status(500).json(responseWrapper("error", "Internal Server Error", err))
+        }
+    }
 }

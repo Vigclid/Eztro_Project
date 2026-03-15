@@ -1,4 +1,5 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { IHouse } from "../types/house";
 
 export type RootStackParamList = {
   auth: {
@@ -72,7 +73,7 @@ export type AuthStackParamList = {
   otpVerification: { email: string; tempToken: string } | undefined;
   createNewPassword: { email: string } | undefined;
   changePasswordSuccessful: { fromMain?: boolean } | undefined;
-  createBoardingHouse: undefined;
+  createBoardingHouse: { houseData?: IHouse } | undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

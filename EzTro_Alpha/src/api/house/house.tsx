@@ -38,3 +38,18 @@ export const postHouseApi = {
         }
     }
 }
+
+export const putHouseApi = {
+
+    async updateHouse(houseId: string, houseData: any) {
+        try {
+            const res = await apiService.put(
+                `${houseApi}${houseId}`,
+                houseData
+            )
+            return res.data
+        } catch (err: any) {
+            throw err;
+        }
+    }
+}
