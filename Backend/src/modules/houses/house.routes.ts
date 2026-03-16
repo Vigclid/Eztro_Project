@@ -14,9 +14,13 @@ const HouseController = new houseController(
 router.route('/landlord/all')
     .get(authenticate, HouseController.getAllHousesByLandlordId)
 
+router.route('/landlord/delete')
+    .get(authenticate, HouseController.getHouseToDelete)
+
 router.route('/:id')
     .get(authenticate, HouseController.getHouseById)
     .put(authenticate, HouseController.updateHouse)
+    .delete(authenticate, HouseController.deleteHouse)
 
 router.route('/')
     .post(authenticate, HouseController.createNewHouse)
