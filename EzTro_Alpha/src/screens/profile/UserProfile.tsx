@@ -29,7 +29,22 @@ export const UserProfile: React.FC = () => {
   const styles = UserProfileStyle(theme.theme);
   const navigation = useNavigation<NavigationProp>();
 
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, role } = useSelector((state: RootState) => state.auth);
+
+  const roleValue =
+    (typeof user?.roleId === "object" ? user?.roleId?.name : user?.roleId) ||
+    user?.roleName ||
+    role ||
+    "";
+
+  const roleLabelMap: Record<string, string> = {
+    Landlord: "Chủ trọ",
+    Tenant: "Người thuê",
+    Staff: "Nhân viên",
+    Admin: "Quản trị viên",
+  };
+
+  const roleLabel = roleLabelMap[String(roleValue)] || "Người dùng";
 
   useEffect(() => {
     if (!user) {
@@ -69,7 +84,7 @@ export const UserProfile: React.FC = () => {
                 <View style={styles.badgeIcon}>
                   <Icon name="home" size={26} color={theme.theme.color} />
                 </View>
-                <Text style={styles.badgeText}>Chủ trọ</Text>
+                <Text style={styles.badgeText}>{roleLabel}</Text>
               </TouchableOpacity>
             </View>
           </View>

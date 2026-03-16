@@ -20,6 +20,7 @@ import { MainStackParamList } from "../../navigation/navigation.type";
 import { getRoomApi, postRoomApi } from "../../api/room/room";
 import { getUserApi } from "../../api/user/user";
 import { ApiResponse } from "../../types/app.common";
+import { Trash2 } from 'lucide-react-native';
 import { IRoom, IVirtualTenant } from "../../types/room";
 import { IUser } from "../../types/users";
 import {
@@ -101,6 +102,18 @@ const CreateNewRoomScreen = () => {
   const [searchingTenants, setSearchingTenants] = useState(false);
   const [tenantResults, setTenantResults] = useState<IUser[]>([]);
   const [invitingTenant, setInvitingTenant] = useState(false);
+  const [editingVirtualIndex, setEditingVirtualIndex] = useState<number | null>(null);
+  const [editingVirtualTenant, setEditingVirtualTenant] = useState<{
+    tenantName: string;
+    phoneNumber: string;
+    joinDate: string;
+  }>({
+    tenantName: "",
+    phoneNumber: "",
+    joinDate: new Date().toISOString().slice(0, 10),
+  });
+  const [showVirtualTenantDatePicker, setShowVirtualTenantDatePicker] =
+    useState(false);
 
   useEffect(() => {
     if (editingRoom) {
@@ -272,8 +285,8 @@ const CreateNewRoomScreen = () => {
       Alert.alert(
         "Lỗi",
         error?.response?.data?.message ||
-          error?.message ||
-          "Không thể tạo mã mời lúc này."
+        error?.message ||
+        "Không thể tạo mã mời lúc này."
       );
     } finally {
       setGeneratingCode(false);
@@ -304,8 +317,8 @@ const CreateNewRoomScreen = () => {
               Alert.alert(
                 "Lỗi",
                 error?.response?.data?.message ||
-                  error?.message ||
-                  "Không thể xóa thành viên lúc này"
+                error?.message ||
+                "Không thể xóa thành viên lúc này"
               );
             }
           },
@@ -369,12 +382,87 @@ const CreateNewRoomScreen = () => {
       Alert.alert(
         "Lỗi",
         error?.response?.data?.message ||
-          error?.message ||
-          "Không thể gửi lời mời lúc này."
+        error?.message ||
+        "Không thể gửi lời mời lúc này."
       );
     } finally {
       setInvitingTenant(false);
     }
+  };
+
+  const keepDigitsOnly = (text: string) => text.replace(/\D/g, "");
+
+  const handleStartEditVirtualTenant = (tenant: IVirtualTenant, index: number) => {
+    setEditingVirtualIndex(index);
+    setEditingVirtualTenant({
+      tenantName: tenant.tenantName || "",
+      phoneNumber: tenant.phoneNumber || "",
+      joinDate: tenant.joinDate
+        ? new Date(tenant.joinDate).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+    });
+  };
+
+  const handleCancelEditVirtualTenant = () => {
+    setEditingVirtualIndex(null);
+    setEditingVirtualTenant({
+      tenantName: "",
+      phoneNumber: "",
+      joinDate: new Date().toISOString().slice(0, 10),
+    });
+    setShowVirtualTenantDatePicker(false);
+  };
+
+  const handleSaveEditVirtualTenant = async () => {
+    if (editingVirtualIndex === null) return;
+
+    if (
+      !editingVirtualTenant.tenantName.trim() ||
+      !editingVirtualTenant.phoneNumber.trim() ||
+      !editingVirtualTenant.joinDate
+    ) {
+      Alert.alert("Thông báo", "Vui lòng nhập đầy đủ thông tin người thuê.");
+      return;
+    }
+
+    const updated = tenants.map((tenant, idx) =>
+      idx === editingVirtualIndex
+        ? {
+            tenantName: editingVirtualTenant.tenantName.trim(),
+            phoneNumber: editingVirtualTenant.phoneNumber.trim(),
+            joinDate: new Date(editingVirtualTenant.joinDate),
+          }
+        : tenant
+    );
+
+    if (isEditMode && editingRoom?._id) {
+      try {
+        const raw = await postRoomApi.updateRoom(editingRoom._id, {
+          virtualTenants: updated,
+        });
+        const res = raw as ApiResponse<IRoom>;
+        if (res.status === "success" || res.status === true) {
+          setTenants(updated);
+          onRefresh?.();
+          handleCancelEditVirtualTenant();
+          Alert.alert("Thành công", "Đã cập nhật thông tin người thuê.");
+        } else {
+          Alert.alert(
+            "Lỗi",
+            res.message || "Không thể cập nhật người thuê, vui lòng thử lại."
+          );
+        }
+      } catch (error: any) {
+        Alert.alert(
+          "Lỗi",
+          error?.message || "Không thể cập nhật người thuê, vui lòng thử lại."
+        );
+      }
+      return;
+    }
+
+    setTenants(updated);
+    handleCancelEditVirtualTenant();
   };
 
 
@@ -658,7 +746,7 @@ const CreateNewRoomScreen = () => {
                         style={styles.tenantRemoveButton}
                         onPress={() => handleRemoveRoomMember(member)}
                       >
-                        <Text style={styles.tenantRemoveText}>X</Text>
+                        <Trash2 size={20} color={COLORS.RED_TEXT} />
                       </TouchableOpacity>
                     </View>
                   );
@@ -682,61 +770,148 @@ const CreateNewRoomScreen = () => {
                       </Text>
                     )}
                   </View>
-                  <TouchableOpacity
-                    style={styles.tenantRemoveButton}
-                    onPress={() => {
-                      Alert.alert(
-                        "Xác nhận",
-                        `Xóa ${t.tenantName} khỏi phòng?`,
-                        [
-                          { text: "Hủy", style: "cancel" },
-                          {
-                            text: "Xóa",
-                            style: "destructive",
-                            onPress: async () => {
-                              const updated = tenants.filter(
-                                (_prev, i) => i !== index,
-                              );
+                  <View style={styles.tenantActionGroup}>
+                    <TouchableOpacity
+                      style={styles.tenantEditButton}
+                      onPress={() => handleStartEditVirtualTenant(t, index)}
+                    >
+                      <Text style={styles.tenantEditText}>Sửa</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.tenantRemoveButton}
+                      onPress={() => {
+                        Alert.alert(
+                          "Xác nhận",
+                          `Xóa ${t.tenantName} khỏi phòng?`,
+                          [
+                            { text: "Hủy", style: "cancel" },
+                            {
+                              text: "Xóa",
+                              style: "destructive",
+                              onPress: async () => {
+                                const updated = tenants.filter(
+                                  (_prev, i) => i !== index,
+                                );
 
-                              if (isEditMode && editingRoom?._id) {
-                                try {
-                                  const raw = await postRoomApi.updateRoom(
-                                    editingRoom._id,
-                                    { virtualTenants: updated },
-                                  );
-                                  const res = raw as ApiResponse<IRoom>;
-                                  if (
-                                    res.status === "success" ||
-                                    res.status === true
-                                  ) {
-                                    setTenants(updated);
-                                  } else {
+                                if (isEditMode && editingRoom?._id) {
+                                  try {
+                                    const raw = await postRoomApi.updateRoom(
+                                      editingRoom._id,
+                                      { virtualTenants: updated },
+                                    );
+                                    const res = raw as ApiResponse<IRoom>;
+                                    if (
+                                      res.status === "success" ||
+                                      res.status === true
+                                    ) {
+                                      setTenants(updated);
+                                    } else {
+                                      Alert.alert(
+                                        "Lỗi",
+                                        res.message ||
+                                          "Không thể xóa người thuê, vui lòng thử lại.",
+                                      );
+                                    }
+                                  } catch (error: any) {
                                     Alert.alert(
                                       "Lỗi",
-                                      res.message ||
+                                      error?.message ||
                                         "Không thể xóa người thuê, vui lòng thử lại.",
                                     );
                                   }
-                                } catch (error: any) {
-                                  Alert.alert(
-                                    "Lỗi",
-                                    error?.message ||
-                                      "Không thể xóa người thuê, vui lòng thử lại.",
-                                  );
+                                } else {
+                                  setTenants(updated);
                                 }
-                              } else {
-                                setTenants(updated);
-                              }
+                              },
                             },
-                          },
-                        ],
-                      );
-                    }}
-                  >
-                    <Text style={styles.tenantRemoveText}>X</Text>
-                  </TouchableOpacity>
+                          ],
+                        );
+                      }}
+                    >
+                      <Trash2 size={20} color={COLORS.RED_TEXT} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
+
+              {editingVirtualIndex !== null && (
+                <View style={styles.editVirtualCard}>
+                  <Text style={styles.tenantsTitle}>Chỉnh sửa thông tin người thuê</Text>
+
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Họ và tên"
+                    placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+                    value={editingVirtualTenant.tenantName}
+                    onChangeText={(text) =>
+                      setEditingVirtualTenant((prev) => ({
+                        ...prev,
+                        tenantName: text,
+                      }))
+                    }
+                  />
+
+                  <TextInput
+                    style={[styles.input, { marginTop: SPACING.SMALL }]}
+                    placeholder="Số điện thoại"
+                    placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+                    keyboardType="phone-pad"
+                    value={editingVirtualTenant.phoneNumber}
+                    onChangeText={(text) =>
+                      setEditingVirtualTenant((prev) => ({
+                        ...prev,
+                        phoneNumber: keepDigitsOnly(text),
+                      }))
+                    }
+                  />
+
+                  <TouchableOpacity
+                    style={[styles.dateInput, { marginTop: SPACING.SMALL }]}
+                    onPress={() => setShowVirtualTenantDatePicker(true)}
+                  >
+                    <Text style={styles.dateText}>
+                      {editingVirtualTenant.joinDate || "Chọn ngày vào ở"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showVirtualTenantDatePicker && (
+                    <DateTimePicker
+                      value={
+                        editingVirtualTenant.joinDate
+                          ? new Date(editingVirtualTenant.joinDate)
+                          : new Date()
+                      }
+                      mode="date"
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={(_event: any, selectedDate?: Date) => {
+                        setShowVirtualTenantDatePicker(false);
+                        if (selectedDate) {
+                          setEditingVirtualTenant((prev) => ({
+                            ...prev,
+                            joinDate: selectedDate.toISOString().slice(0, 10),
+                          }));
+                        }
+                      }}
+                    />
+                  )}
+
+                  <View style={styles.editVirtualActions}>
+                    <TouchableOpacity
+                      style={[styles.btnCancel, { flex: 1 }]}
+                      onPress={handleCancelEditVirtualTenant}
+                    >
+                      <Text style={styles.btnCancelText}>Hủy</Text>
+                    </TouchableOpacity>
+                    <View style={{ width: 12 }} />
+                    <TouchableOpacity
+                      style={[styles.searchButton, { flex: 1 }]}
+                      onPress={handleSaveEditVirtualTenant}
+                    >
+                      <Text style={styles.searchButtonText}>Lưu chỉnh sửa</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           )}
         </ScrollView>
@@ -951,6 +1126,41 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 12,
   },
+  tenantActionGroup: {
+    marginLeft: SPACING.SMALL,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tenantEditButton: {
+    minWidth: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER_GRAY,
+    backgroundColor: COLORS.WHITE,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  tenantEditText: {
+    color: COLORS.TEXT_SECONDARY,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  editVirtualCard: {
+    marginTop: SPACING.SMALL,
+    backgroundColor: COLORS.WHITE,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER_GRAY_ALPHA,
+    borderRadius: BORDER_RADIUS.CREATE_INPUT,
+    padding: SPACING.MEDIUM,
+  },
+  editVirtualActions: {
+    marginTop: SPACING.SMALL,
+    flexDirection: "row",
+    alignItems: "center",
+  },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -960,7 +1170,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.CREATE_INPUT,
     paddingHorizontal: SPACING.MEDIUM,
     paddingVertical: 12,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: COLORS.GREEN_PRIMARY,
     justifyContent: "center",
     alignItems: "center",
   },
