@@ -13,7 +13,9 @@ export const connectDB = async (): Promise<void> => {
     });
 
     isConnected = true;
+    console.log("Connect DB Successfull ✅")
   } catch (error) {
+    console.log("Error connect DB ❌")
     process.exit(1);
   }
 };
