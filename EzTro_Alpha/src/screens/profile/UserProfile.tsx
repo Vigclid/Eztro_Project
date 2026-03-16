@@ -1,6 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
+  Bell,
   ChevronRight,
   Edit,
   HelpCircle,
@@ -30,6 +31,30 @@ export const UserProfile: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const { user } = useSelector((state: RootState) => state.auth);
+
+  // Get role name from user object
+  const getRoleName = () => {
+    if (user?.roleName) return user.roleName;
+    if (
+      user?.roleId &&
+      typeof user.roleId === "object" &&
+      "name" in user.roleId
+    ) {
+      return user.roleId.name;
+    }
+    return "Người dùng";
+  };
+
+  const roleName = getRoleName();
+
+  // Map role name to Vietnamese
+  const getRoleDisplayName = (role: string) => {
+    const roleMap: { [key: string]: string } = {
+      Landlord: "Chủ trọ",
+      Tenant: "Người thuê",
+    };
+    return roleMap[role] || role;
+  };
 
   useEffect(() => {
     if (!user) {
@@ -69,7 +94,9 @@ export const UserProfile: React.FC = () => {
                 <View style={styles.badgeIcon}>
                   <Icon name="home" size={26} color={theme.theme.color} />
                 </View>
-                <Text style={styles.badgeText}>Chủ trọ</Text>
+                <Text style={styles.badgeText}>
+                  {getRoleDisplayName(roleName)}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -155,21 +182,42 @@ export const UserProfile: React.FC = () => {
             </View>
             <View style={[styles.sectionCardSettings, SHADOW.CARD]}>
               <View style={styles.sectionItemRow}>
-                <View style={styles.sectionIcon}>
-                  <HelpCircle size={26} color={COLORS.GRADIENT_START} />
-                </View>
-                <View style={styles.sectionItemContent}>
-                  <View style={styles.sectionItemTitleContainerLarge}>
-                    <Text style={styles.sectionItemTitle}>
-                      Trợ giúp & Hỗ trợ
-                    </Text>
+                <View style={styles.sectionItem}>
+                  <View style={styles.sectionIcon}>
+                    <Bell size={26} color={COLORS.GRADIENT_START} />
                   </View>
-                  <View>
-                    <Text style={styles.sectionItemDescription}>
-                      Câu hỏi thường gặp, liên hệ
-                    </Text>
+                  <View style={styles.sectionItemContent}>
+                    <View style={styles.sectionItemTitleContainer}>
+                      <Text style={styles.sectionItemTitle}>Thông báo</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.sectionItemDescription}>
+                        Quản lý thông báo ứng dụng
+                      </Text>
+                    </View>
                   </View>
                 </View>
+                <TouchableOpacity
+                  style={styles.sectionItemRow}
+                  activeOpacity={0.7}
+                  onPress={() => appNavigator.goToSupportScreen()}
+                >
+                  <View style={styles.sectionIcon}>
+                    <HelpCircle size={26} color={COLORS.GRADIENT_START} />
+                  </View>
+                  <View style={styles.sectionItemContent}>
+                    <View style={styles.sectionItemTitleContainerLarge}>
+                      <Text style={styles.sectionItemTitle}>
+                        Trợ giúp & Hỗ trợ
+                      </Text>
+                    </View>
+                    <View>
+                      <Text style={styles.sectionItemDescription}>
+                        Trợ giúp, báo lỗi, góp ý
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
               </View>
               <TouchableOpacity
                 style={styles.sectionItemRow}

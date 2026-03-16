@@ -21,7 +21,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const storedToken = await AsyncStorage.getItem("accessToken");
         const storedUser = await AsyncStorage.getItem("user");
         if (storedToken) dispatch(setAccessToken(storedToken));
-        if (storedUser) dispatch(setUser(JSON.parse(storedUser)));
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          // Transform roleId object to roleName string if needed
+          if (user && user.roleId && typeof user.roleId === "object") {
+            user.roleName = user.roleId.name;
+          }
+          dispatch(setUser(user));
+        }
       } catch (err) {}
     };
     loadAuth();

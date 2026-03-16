@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from "react";
 import TenantNavBar from "../../components/layout/TenantNavBar";
-import { TrackingInvoiceStatus } from "../../screens/boardingHouse/TrackingInvoiceStatus";
+import { TrackingInvoiceStatus } from "../../screens/invoice/TrackingInvoiceStatus";
 import { UserProfile } from "../../screens/profile/UserProfile";
 import TenantHomeScreen from "../../screens/tenant/TenantHomeScreen";
 

@@ -5,3 +5,5 @@ declare module "express-serve-static-core" {
     user?: { id: number; role: string };
   }
 }
+
+export {};

@@ -29,6 +29,7 @@ import {
     Settings,
     type LucideIcon,
 } from "lucide-react-native";
+import { appNavigator } from "../../navigation/navigationActions";
 
 type DetailsRouteProps = RouteProp<MainStackParamList, 'boardingHouseDetailsScreen'>;
 
@@ -286,16 +287,16 @@ export const BoardingHouseDetailsScreen = () => {
                 }
 
                 return {
-                _id: room._id,
-                houseId: room.houseId,
-                area: undefined,
-                floor: undefined,
-                roomName: room.roomName,
-                rentalFee: room.rentalFee,
-                status: room.status,
-                rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
-                virtualTenants: room.virtualTenants || [],
-                accountTenants,
+                    _id: room._id,
+                    houseId: room.houseId,
+                    area: undefined,
+                    floor: undefined,
+                    roomName: room.roomName,
+                    rentalFee: room.rentalFee,
+                    status: room.status,
+                    rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
+                    virtualTenants: room.virtualTenants || [],
+                    accountTenants,
                 };
             }));
             setRooms(mappedRooms);
@@ -357,11 +358,13 @@ export const BoardingHouseDetailsScreen = () => {
                         <View>
                             <Text style={styles.headerTitle}>Chi tiết cụm trọ</Text>
                         </View>
-                        <View style={styles.headerIcon}>
+                        <TouchableOpacity
+                            onPress={() => appNavigator.goToCreateBoardingHousePage(boardingHouse)}
+                            style={styles.headerIcon}>
                             <Pen
                                 color={COLORS.WHITE}
                             />
-                        </View>
+                        </TouchableOpacity>
                     </LinearGradient>
 
                     <View style={styles.contentContainer}>
@@ -425,19 +428,21 @@ export const BoardingHouseDetailsScreen = () => {
                                     </View>
                                     <View
                                         style={
-                                            boardingHouse?.housePackage?.isExpired
+                                            boardingHouse?.housePackage?.isExpired ||
+                                                !currentPackage
                                                 ? styles.packageExpiredBadge
                                                 : styles.packageActiveBadge
                                         }
                                     >
                                         <Text
                                             style={
-                                                boardingHouse?.housePackage?.isExpired
+                                                boardingHouse?.housePackage?.isExpired ||
+                                                    !currentPackage
                                                     ? styles.packageExpiredText
                                                     : styles.packageActiveText
                                             }
                                         >
-                                            {boardingHouse?.housePackage?.isExpired ? "Hết hạn" : "Đang hiệu lực"}
+                                            {boardingHouse?.housePackage?.isExpired || !currentPackage ? "Hết hạn" : "Đang hiệu lực"}
                                         </Text>
                                     </View>
                                 </View>

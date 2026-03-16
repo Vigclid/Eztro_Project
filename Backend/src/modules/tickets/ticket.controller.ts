@@ -1,14 +1,8 @@
+/// <reference path="../../interfaces/express.d.ts" />
 import { Request, Response, NextFunction } from "express";
 import { TicketService } from "./ticket.service";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
-
-// Extend Request type to include user property
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    role: string;
-  };
-}
+import jwt from "jsonwebtoken";
 
 export class TicketController {
   private ticketService: TicketService;
@@ -18,22 +12,22 @@ export class TicketController {
   }
 
   // Tạo ticket bởi tenant
-  createByTenant = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  createByTenant = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
-
+      const { id } = jwt.decode(token) as { id: string };
+      
       const { title, description, categories } = req.body;
 
       if (!title || !description || !categories || categories.length === 0) {
-        return res
-          .status(400)
-          .json(responseWrapper("error", "Title, description và categories là bắt buộc"));
+        res.status(400).json(responseWrapper("error", "Title, description và categories là bắt buộc"));
+        return;
       }
 
-      const ticket = await this.ticketService.createTicketByTenant(userId.toString(), {
+      const ticket = await this.ticketService.createTicketByTenant(id, {
         title,
         description,
         categories,
@@ -46,28 +40,22 @@ export class TicketController {
   };
 
   // Tạo ticket bởi landlord
-  createByLandlord = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  createByLandlord = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-
-      if (!userId) {
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
-
+      const { id } = jwt.decode(token) as { id: string };
+      
       const { title, description, categories, houseId, roomId } = req.body;
 
       if (!title || !description || !categories || !houseId || !roomId) {
-        return res
-          .status(400)
-          .json(
-            responseWrapper(
-              "error",
-              "Title, description, categories, houseId và roomId là bắt buộc"
-            )
-          );
+        res.status(400).json(responseWrapper("error", "Title, description, categories, houseId và roomId là bắt buộc"));
+        return;
       }
 
-      const ticket = await this.ticketService.createTicketByLandlord(userId.toString(), {
+      const ticket = await this.ticketService.createTicketByLandlord(id, {
         title,
         description,
         categories,
@@ -96,7 +84,8 @@ export class TicketController {
     try {
       const ticket = await this.ticketService.getByIdPopulated(req.params.id);
       if (!ticket) {
-        return res.status(404).json(responseWrapper("error", "Ticket không tồn tại"));
+        res.status(404).json(responseWrapper("error", "Ticket không tồn tại"));
+        return;
       }
       res.json(responseWrapper("success", "Lấy ticket thành công", ticket));
     } catch (error) {
@@ -105,14 +94,15 @@ export class TicketController {
   };
 
   // Lấy tickets của landlord
-  getByLandlord = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  getByLandlord = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
-
-      const tickets = await this.ticketService.getTicketsByLandlord(userId.toString());
+      const { id } = jwt.decode(token) as { id: string };
+      
+      const tickets = await this.ticketService.getTicketsByLandlord(id);
       res.json(responseWrapper("success", "Lấy danh sách tickets thành công", tickets));
     } catch (error) {
       next(error);
@@ -120,14 +110,15 @@ export class TicketController {
   };
 
   // Lấy tickets của tenant
-  getByTenant = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  getByTenant = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
-
-      const tickets = await this.ticketService.getTicketsByTenant(userId.toString());
+      const { id } = jwt.decode(token) as { id: string };
+      
+      const tickets = await this.ticketService.getTicketsByTenant(id);
       res.json(responseWrapper("success", "Lấy danh sách tickets thành công", tickets));
     } catch (error) {
       next(error);
@@ -157,21 +148,23 @@ export class TicketController {
   };
 
   // Thêm reply vào ticket
-  addReply = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  addReply = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
-
+      const { id } = jwt.decode(token) as { id: string };
+      
       const { ticketId } = req.params;
       const { content } = req.body;
 
       if (!content) {
-        return res.status(400).json(responseWrapper("error", "Content là bắt buộc"));
+        res.status(400).json(responseWrapper("error", "Content là bắt buộc"));
+        return;
       }
 
-      const ticket = await this.ticketService.addReply(ticketId, userId.toString(), content);
+      const ticket = await this.ticketService.addReply(ticketId, id, content);
       res.json(responseWrapper("success", "Thêm reply thành công", ticket));
     } catch (error) {
       next(error);
@@ -185,9 +178,8 @@ export class TicketController {
       const { status } = req.body;
 
       if (!status || !["pending", "processing", "completed"].includes(status)) {
-        return res
-          .status(400)
-          .json(responseWrapper("error", "Status phải là pending, processing hoặc completed"));
+        res.status(400).json(responseWrapper("error", "Status phải là pending, processing hoặc completed"));
+        return;
       }
 
       const ticket = await this.ticketService.updateStatus(ticketId, status);
@@ -202,7 +194,8 @@ export class TicketController {
     try {
       const result = await this.ticketService.delete(req.params.id);
       if (!result) {
-        return res.status(404).json(responseWrapper("error", "Ticket không tồn tại"));
+        res.status(404).json(responseWrapper("error", "Ticket không tồn tại"));
+        return;
       }
       res.json(responseWrapper("success", "Xóa ticket thành công", result));
     } catch (error) {
