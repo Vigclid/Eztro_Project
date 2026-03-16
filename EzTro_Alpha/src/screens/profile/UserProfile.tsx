@@ -1,13 +1,13 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  Bell,
   ChevronRight,
   Edit,
   HelpCircle,
   LogOut,
   Mail,
   Phone,
+  Settings,
   User,
   Wallet,
 } from "lucide-react-native";
@@ -154,21 +154,6 @@ export const UserProfile: React.FC = () => {
               <Text style={styles.sectionTitle}>Cài đặt</Text>
             </View>
             <View style={[styles.sectionCardSettings, SHADOW.CARD]}>
-              <View style={styles.sectionItem}>
-                <View style={styles.sectionIcon}>
-                  <Bell size={26} color={COLORS.GRADIENT_START} />
-                </View>
-                <View style={styles.sectionItemContent}>
-                  <View style={styles.sectionItemTitleContainer}>
-                    <Text style={styles.sectionItemTitle}>Thông báo</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.sectionItemDescription}>
-                      Quản lý thông báo ứng dụng
-                    </Text>
-                  </View>
-                </View>
-              </View>
               <View style={styles.sectionItemRow}>
                 <View style={styles.sectionIcon}>
                   <HelpCircle size={26} color={COLORS.GRADIENT_START} />
@@ -186,6 +171,25 @@ export const UserProfile: React.FC = () => {
                   </View>
                 </View>
               </View>
+              <TouchableOpacity
+                style={styles.sectionItemRow}
+                activeOpacity={0.7}
+                onPress={() => appNavigator.goToSettingScreen()}
+              >
+                <View style={styles.sectionIcon}>
+                  <Settings size={26} color={COLORS.GRADIENT_START} />
+                </View>
+                <View style={styles.sectionItemContent}>
+                  <View style={styles.sectionItemTitleContainer}>
+                    <Text style={styles.sectionItemTitle}>Cài đặt</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.sectionItemDescription}>
+                      Tuỳ chỉnh ứng dụng
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             </View>
           </View>
           <LinearGradient

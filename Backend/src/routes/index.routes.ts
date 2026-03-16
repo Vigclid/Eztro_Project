@@ -8,8 +8,8 @@ import v1RoomRoutes from "./v1/room.routes";
 import v1InvoiceRoutes from "./v1/invoice.routes";
 import v1TicketRoutes from "./v1/ticket.routes";
 import v1PackageRoutes from './v1/package.routes';
-
 import v1NotificationRoutes from "./v1/notification.routes";
+import v1SettingRoutes from "./v1/setting.routes";
 const router = Router();
 
 router.use(authRouter);
@@ -23,6 +23,7 @@ router.use(
   v1InvoiceRoutes,
   v1TicketRoutes,
   v1PackageRoutes,
-  v1NotificationRoutes
+  v1NotificationRoutes,
+  v1SettingRoutes
 );
 export default router;

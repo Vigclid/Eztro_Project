@@ -15,6 +15,7 @@ import {PackagePaymentScreen} from '../../screens/payment/PackagePaymentScreen';
 import { QRScanScreen } from "../../screens/payment/QRScanScreen";
 import { NotificationScreen } from "../../screens/notification/NotificationScreen";
 import { CreateNotificationScreen } from "../../screens/notification/CreateNotificationScreen";
+import { SettingScreen } from "../../screens/profile/SettingScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +36,7 @@ const MainStack = () => (
     <Stack.Screen name="qrScanScreen" component={QRScanScreen} />
     <Stack.Screen name="notificationScreen" component={NotificationScreen} />
     <Stack.Screen name="createNotificationScreen" component={CreateNotificationScreen} />
+    <Stack.Screen name="settingScreen" component={SettingScreen} />
   </Stack.Navigator>
 );
 

@@ -136,4 +136,8 @@ export const appNavigator = {
   goToNotificationScreen() {
     navigate("mainstack", { screen: "notificationScreen" });
   },
+
+  goToSettingScreen() {
+    navigate("mainstack", { screen: "settingScreen" });
+  },
 };

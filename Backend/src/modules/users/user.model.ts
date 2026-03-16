@@ -1,5 +1,6 @@
 import mongoose, { Document, Types } from "mongoose";
 import { IRole } from "../roles/role.model";
+import settingModel, { DEFAULT_SETTING_VALUES } from "../settings/settings.model";
 
 export interface IUser extends Document {
   email: string;
@@ -41,5 +42,16 @@ const UserSchema = new mongoose.Schema<IUser>(
     versionKey: false,
   }
 );
+
+UserSchema.post("save", async function (doc) {
+  if ((doc as any).__wasNew) {
+    await settingModel.create({ userId: doc._id, ...DEFAULT_SETTING_VALUES });
+  }
+});
+
+UserSchema.pre("save", function (next) {
+  (this as any).__wasNew = this.isNew;
+  next();
+});
 
 export default mongoose.model<IUser>("users", UserSchema);

@@ -62,6 +62,7 @@ export type MainStackParamList = {
 };
   notificationScreen: undefined;
   createNotificationScreen: undefined;
+  settingScreen: undefined;
 };
 export type AuthStackParamList = {
   welcome: undefined;
