@@ -1,7 +1,18 @@
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { getHouseApi } from "../../api/house/house";
+import { getInvoiceApi, postInvoiceApi } from "../../api/invoice/invoice";
+import InvoiceDetailCard from "../../components/invoice/InvoiceDetailCard";
+import RoomInforCard from "../../components/invoice/RoomInforCard";
 import { AppButton } from "../../components/misc/AppButton";
 import {
   BORDER_RADIUS,
@@ -10,25 +21,20 @@ import {
   IMAGE_SIZE,
   SPACING,
 } from "../../constants/theme";
-import { NavigationProp } from "../../navigation/navigation.type";
-import RoomInforCard from "../../components/invoice/RoomInforCard";
-import InvoiceDetailCard from "../../components/invoice/InvoiceDetailCard";
-import { getHouseApi } from "../../api/house/house";
+import { appNavigator } from "../../navigation/navigationActions";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
-import { getInvoiceApi, postInvoiceApi } from "../../api/invoice/invoice";
 import { IRoomInvoice } from "../../types/invoice";
 import { formatCurrencyVND } from "../../utils/currency";
-import { appNavigator } from "../../navigation/navigationActions";
 
-export const CreateInvoices = () => {
-  const navigation = useNavigation<NavigationProp>();
-
+export const CreateInvoices: React.FC = () => {
   const [houses, setHouses] = useState<IHouse[]>([]);
-  const [selectedHouseId, setSelectedHouseId] = useState<string | undefined>("");
+  const [selectedHouseId, setSelectedHouseId] = useState<string | undefined>(
+    "",
+  );
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<any>(null);
-  const selectedHouse = houses.find(h => h._id === selectedHouseId);
+  const selectedHouse = houses.find((h) => h._id === selectedHouseId);
   const [roomsSelection, setRoomsSelection] = useState<IRoomInvoice[]>([]);
 
   useFocusEffect(
@@ -38,16 +44,16 @@ export const CreateInvoices = () => {
       const { getAllHousesByLandlordId } = getHouseApi;
       const getAllHouses = async () => {
         try {
-          const res = (await getAllHousesByLandlordId(controller.signal)) as ApiResponse<
-            IHouse[]
-          >;
+          const res = (await getAllHousesByLandlordId(
+            controller.signal,
+          )) as ApiResponse<IHouse[]>;
           if (res.status === "success") {
             setHouses(res.data as IHouse[]);
             if (res.data && res.data.length > 0) {
               setSelectedHouseId(res.data[0]._id);
             }
           }
-        } catch (err) { }
+        } catch (err) {}
       };
       getAllHouses();
       return () => {
@@ -72,16 +78,18 @@ export const CreateInvoices = () => {
         try {
           const res = (await getRoomsForInvoiceCreation(
             selectedHouseId,
-            controller.signal
+            controller.signal,
           )) as ApiResponse<IRoomInvoice[]>;
           if (res.status === "success" && res.data) {
-            const withSelection: IRoomInvoice[] = (res.data as IRoomInvoice[]).map(inv => ({
+            const withSelection: IRoomInvoice[] = (
+              res.data as IRoomInvoice[]
+            ).map((inv) => ({
               ...inv,
-              isSelected: false
+              isSelected: false,
             }));
             setRoomsSelection(withSelection);
           }
-        } catch (err) { }
+        } catch (err) {}
       };
 
       fetchRooms();
@@ -89,22 +97,22 @@ export const CreateInvoices = () => {
       return () => {
         controller.abort();
       };
-    }, [selectedHouseId])
+    }, [selectedHouseId]),
   );
 
   const selectedCount = useMemo(
     () => roomsSelection.filter((room) => room.isSelected).length,
-    [roomsSelection]
+    [roomsSelection],
   );
 
   const totalCount = roomsSelection.length;
 
   const totalAmount = useMemo(() => {
     return roomsSelection
-      .filter(room => room.isSelected)
+      .filter((room) => room.isSelected)
       .reduce((total, room) => {
-        return total + room.totalAmount
-      }, 0)
+        return total + room.totalAmount;
+      }, 0);
   }, [selectedCount]);
 
   const toggleSelectAll = () => {
@@ -113,30 +121,34 @@ export const CreateInvoices = () => {
       prev.map((room) => ({
         ...room,
         isSelected: nextSelected,
-      }))
+      })),
     );
   };
 
   const toggleRoomSelection = (roomId: string | undefined) => {
     setRoomsSelection((prev) =>
       prev.map((room) =>
-        room.roomId === roomId ? { ...room, isSelected: !room.isSelected } : room
-      )
+        room.roomId === roomId
+          ? { ...room, isSelected: !room.isSelected }
+          : room,
+      ),
     );
   };
 
   const handleUpdateRoom = (updatedRoom: IRoomInvoice) => {
-    setRoomsSelection(prevRooms =>
-      prevRooms.map(room => room.roomId === updatedRoom.roomId ? updatedRoom : room)
+    setRoomsSelection((prevRooms) =>
+      prevRooms.map((room) =>
+        room.roomId === updatedRoom.roomId ? updatedRoom : room,
+      ),
     );
     setSelectedRoomDetail(updatedRoom);
   };
 
   const handleCreateNewInvoices = async () => {
-    const selectedRooms = roomsSelection.filter(room => room.isSelected);
-    const { createNewInvoices } = postInvoiceApi
+    const selectedRooms = roomsSelection.filter((room) => room.isSelected);
+    const { createNewInvoices } = postInvoiceApi;
 
-    const data = selectedRooms.map(room => ({
+    const data = selectedRooms.map((room) => ({
       roomId: room.roomId,
       status: "processing",
       previousElectricityNumber: room.previousElectricityNumber,
@@ -147,17 +159,16 @@ export const CreateInvoices = () => {
       waterCharge: room.waterCost,
       totalAmount: room.totalAmount,
       utilities: room.utilities,
-    }))
+    }));
 
     try {
-      const res = await createNewInvoices(data) as ApiResponse<any[]>;
+      const res = (await createNewInvoices(data)) as ApiResponse<any[]>;
       if (res.status === "success") {
-        Alert.alert("Tạo hóa đơn hàng loạt thành công!")
-        appNavigator.goToViewBoardingHousePage()
+        Alert.alert("Tạo hóa đơn hàng loạt thành công!");
+        appNavigator.goToViewBoardingHousePage();
       }
-    } catch (err) {
-    }
-  }
+    } catch (err) {}
+  };
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -168,19 +179,9 @@ export const CreateInvoices = () => {
       >
         <View style={styles.headerDivider} />
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Image
-              source={{
-                uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/6j9znJEUUf/e693ktri_expires_30_days.png",
-              }}
-              resizeMode="stretch"
-              style={styles.headerLogo}
-            />
-          </TouchableOpacity>
           <View>
             <Text style={styles.headerTitle}>{"Tạo hóa đơn hàng loạt"}</Text>
           </View>
-          <View style={styles.headerSpacer} />
         </View>
       </LinearGradient>
       <ScrollView
@@ -198,7 +199,9 @@ export const CreateInvoices = () => {
               onPress={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <View style={styles.houseNameWrapper}>
-                <Text style={styles.houseNameText}>{selectedHouse?.houseName}</Text>
+                <Text style={styles.houseNameText}>
+                  {selectedHouse?.houseName}
+                </Text>
               </View>
 
               <Text style={styles.chevronIcon}>▼</Text>
@@ -212,7 +215,7 @@ export const CreateInvoices = () => {
                     key={house._id}
                     style={[
                       styles.dropdownItem,
-                      index === houses.length - 1 && { borderBottomWidth: 0 }
+                      index === houses.length - 1 && { borderBottomWidth: 0 },
                     ]}
                     onPress={() => {
                       setSelectedHouseId(house._id);
@@ -222,7 +225,8 @@ export const CreateInvoices = () => {
                     <Text
                       style={[
                         styles.dropdownText,
-                        selectedHouseId === house._id && styles.dropdownTextSelected
+                        selectedHouseId === house._id &&
+                          styles.dropdownTextSelected,
                       ]}
                     >
                       {house.houseName}
@@ -245,7 +249,9 @@ export const CreateInvoices = () => {
 
           <View style={styles.summaryColumn}>
             <Text style={styles.summaryLabel}>Tổng tiền</Text>
-            <Text style={styles.summaryValue}>{formatCurrencyVND(totalAmount)}</Text>
+            <Text style={styles.summaryValue}>
+              {formatCurrencyVND(totalAmount)}
+            </Text>
           </View>
         </View>
 
@@ -291,7 +297,7 @@ export const CreateInvoices = () => {
           disabled={selectedCount === 0}
           title={`Tạo hóa đơn (${selectedCount})`}
           onPress={() => {
-            handleCreateNewInvoices()
+            handleCreateNewInvoices();
           }}
         />
       </View>
@@ -315,8 +321,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     width: "100%",
     marginBottom: SPACING.HEADER_MARGIN_BOTTOM,
     marginTop: SPACING.HEADER_MARGIN_BOTTOM,
@@ -423,7 +428,7 @@ const styles = StyleSheet.create({
   },
   dropdownTextSelected: {
     fontWeight: "bold",
-    color: COLORS.GREEN_PRIMARY || '#00A152',
+    color: COLORS.GREEN_PRIMARY || "#00A152",
   },
   summaryCard: {
     flexDirection: "row",
