@@ -29,22 +29,27 @@ export const UserProfile: React.FC = () => {
   const styles = UserProfileStyle(theme.theme);
   const navigation = useNavigation<NavigationProp>();
 
-  const { user, role } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
-  const roleValue =
-    (typeof user?.roleId === "object" ? user?.roleId?.name : user?.roleId) ||
-    user?.roleName ||
-    role ||
-    "";
-
-  const roleLabelMap: Record<string, string> = {
-    Landlord: "Chủ trọ",
-    Tenant: "Người thuê",
-    Staff: "Nhân viên",
-    Admin: "Quản trị viên",
+  // Get role name from user object
+  const getRoleName = () => {
+    if (user?.roleName) return user.roleName;
+    if (user?.roleId && typeof user.roleId === "object" && "name" in user.roleId) {
+      return user.roleId.name;
+    }
+    return "Người dùng";
   };
 
-  const roleLabel = roleLabelMap[String(roleValue)] || "Người dùng";
+  const roleName = getRoleName();
+
+  // Map role name to Vietnamese
+  const getRoleDisplayName = (role: string) => {
+    const roleMap: { [key: string]: string } = {
+      Landlord: "Chủ trọ",
+      Tenant: "Người thuê",
+    };
+    return roleMap[role] || role;
+  };
 
   useEffect(() => {
     if (!user) {
@@ -84,7 +89,7 @@ export const UserProfile: React.FC = () => {
                 <View style={styles.badgeIcon}>
                   <Icon name="home" size={26} color={theme.theme.color} />
                 </View>
-                <Text style={styles.badgeText}>{roleLabel}</Text>
+                <Text style={styles.badgeText}>{getRoleDisplayName(roleName)}</Text>
               </TouchableOpacity>
             </View>
           </View>

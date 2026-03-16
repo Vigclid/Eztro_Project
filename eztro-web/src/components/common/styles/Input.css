@@ -1,0 +1,86 @@
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-full-width {
+  width: 100%;
+}
+
+.input-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-with-icon-left {
+  padding-left: 40px;
+}
+
+.input-with-icon-right {
+  padding-right: 40px;
+}
+
+.input-icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.input-icon-left {
+  left: 12px;
+}
+
+.input-icon-right {
+  right: 12px;
+}
+
+.input-error {
+  border-color: #ef4444;
+}
+
+.input-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.input-message {
+  font-size: 14px;
+}
+
+.input-error-message {
+  color: #ef4444;
+}
+
+.input-helper-text {
+  color: #6b7280;
+}

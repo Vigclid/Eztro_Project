@@ -4,16 +4,19 @@ import BoardingHouseDetailsScreen from "../../screens/boardingHouse/BoardingHous
 import CreateNewRoomScreen from "../../screens/room/CreateNewRoomScreen";
 import AddTenantScreen from "../../screens/room/AddTenantScreen";
 import { CreateBoardingHouseScreen } from "../../screens/boardingHouse/CreateBoardingHouseScreen";
-import { CreateInvoices } from "../../screens/boardingHouse/CreateInvoices";
+import { CreateInvoices } from "../../screens/invoice/CreateInvoices";
 import { EditProfilePage } from "../../screens/profile/EditProfilePage";
 import { ChangePasswordSuccessfulPage } from "../../screens/auth/ChangePasswordSuccessfulPage";
 import { CreateNewPasswordScreen } from "../../screens/auth/CreateNewPasswordScreen";
 import { TicketListScreen } from "../../screens/ticket/TicketListScreen";
 import { CreateTicketScreen } from "../../screens/ticket/CreateTicketScreen";
 import { TicketDetailScreen } from "../../screens/ticket/TicketDetailScreen";
-import {PackagePaymentScreen} from '../../screens/payment/PackagePaymentScreen';
+import { PackagePaymentScreen } from "../../screens/payment/PackagePaymentScreen";
 import { QRScanScreen } from "../../screens/payment/QRScanScreen";
 import { NotificationScreen } from "../../screens/notification/NotificationScreen";
+import { SupportScreen } from "../../screens/support/SupportScreen";
+import { MyReportsScreen } from "../../screens/support/MyReportsScreen";
+import { ReportDetailScreen } from "../../screens/support/ReportDetailScreen";
 import { CreateNotificationScreen } from "../../screens/notification/CreateNotificationScreen";
 
 const Stack = createNativeStackNavigator();
@@ -35,6 +38,9 @@ const MainStack = () => (
     <Stack.Screen name="qrScanScreen" component={QRScanScreen} />
     <Stack.Screen name="notificationScreen" component={NotificationScreen} />
     <Stack.Screen name="createNotificationScreen" component={CreateNotificationScreen} />
+    <Stack.Screen name="supportScreen" component={SupportScreen} />
+    <Stack.Screen name="myReportsScreen" component={MyReportsScreen} />
+    <Stack.Screen name="reportDetailScreen" component={ReportDetailScreen} />
   </Stack.Navigator>
 );
 

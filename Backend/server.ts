@@ -18,11 +18,17 @@ app.use(cookieParser());
 // CORS
 const isProduction = process.env.NODE_ENV === "production";
 const clientOrigin = isProduction ? process.env.CLIENT_URL_PROD : process.env.CLIENT_URL_DEV;
-const allowedOrigins = [clientOrigin, "https://h5.zdn.vn"].filter(Boolean) as string[];
+// Support multiple dev origins for mobile app and web app
+const allowedOrigins = [
+  clientOrigin, 
+  "http://localhost:3000",  // Mobile app web version
+  "http://localhost:5173",  // Vite web app
+  "https://h5.zdn.vn"
+].filter(Boolean) as string[];
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })
 );

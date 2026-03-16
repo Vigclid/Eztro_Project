@@ -1,3 +1,4 @@
+import { IHouse } from "../types/house";
 import * as NavigationService from "./navigationService";
 import { navigate } from "./navigationService";
 
@@ -44,8 +45,11 @@ export const appNavigator = {
       params: { fromMain },
     });
   },
-  goToCreateBoardingHouseAuth() {
-    navigate("auth", { screen: "createBoardingHouse" });
+  goToCreateBoardingHouseAuth(houseData?: IHouse) {
+    navigate("auth", {
+      screen: "createBoardingHouse",
+      params: { houseData },
+    });
   },
   goToChangePasswordPage() {
     navigate("auth", { screen: "changePasswordPage" });
@@ -68,10 +72,17 @@ export const appNavigator = {
     navigate("mainscreen", { screen: "trackingInvoiceStatus" });
   },
 
+  goToCreateInvoicesScreen() {
+    navigate("mainscreen", { screen: "createInvoicesScreen" });
+  },
+
   // ─── MAIN STACK ───────────────────────────────────────────────────────────
 
-  goToCreateBoardingHousePage() {
-    navigate("mainstack", { screen: "createBoardingHousePage" });
+  goToCreateBoardingHousePage(houseData?: IHouse) {
+    navigate("mainstack", {
+      screen: "createBoardingHousePage",
+      params: { houseData },
+    });
   },
 
   goToEditProfile() {
@@ -99,10 +110,7 @@ export const appNavigator = {
     });
   },
 
-  goToCreateNewRoomScreen(
-    houseId: string | undefined,
-    room?: import("../types/room").IRoom,
-  ) {
+  goToCreateNewRoomScreen(houseId: string | undefined, room?: import("../types/room").IRoom) {
     navigate("mainstack", {
       screen: "createNewRoomScreen",
       params: { houseId, room },
@@ -114,10 +122,6 @@ export const appNavigator = {
       screen: "addTenantScreen",
       params: { roomId, room },
     });
-  },
-
-  goToCreateInvoicesScreen() {
-    navigate("mainstack", { screen: "createInvoicesScreen" });
   },
 
   goToPackagePaymentScreen(houseData?: any) {
@@ -133,7 +137,23 @@ export const appNavigator = {
       params: { houseData, packageId, paymentType },
     });
   },
+
   goToNotificationScreen() {
     navigate("mainstack", { screen: "notificationScreen" });
+  },
+
+  goToSupportScreen() {
+    navigate("mainstack", { screen: "supportScreen" });
+  },
+
+  goToMyReportsScreen() {
+    navigate("mainstack", { screen: "myReportsScreen" });
+  },
+
+  goToReportDetailScreen(reportId: string) {
+    navigate("mainstack", {
+      screen: "reportDetailScreen",
+      params: { reportId },
+    });
   },
 };

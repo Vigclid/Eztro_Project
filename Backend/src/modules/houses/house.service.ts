@@ -14,7 +14,7 @@ export class houseService extends GenericService<IHouse> {
     getAllHousesByLandlordId = async (landlordId: string) => {
         return await houseModel.find({ landlordId })
     }
-    
+
     createNewHouse = async (data: Partial<IHouse>) => {
         const newHouse = new houseModel({
             ...data,
@@ -22,4 +22,7 @@ export class houseService extends GenericService<IHouse> {
         return (await houseModel.create(newHouse))
     };
 
+    updateHouse = async (id: string, data: Partial<IHouse>) => {
+        return await houseModel.findByIdAndUpdate(id, data, { new: true })
+    }
 }
