@@ -3,7 +3,7 @@ import { uploadImage } from "../../utils/imageUtils";
 import roomMemberModel from "../rooms/roomMember.model";
 import userModel from "../users/user.model";
 import invoiceModel, { IInvoice, InvoiceZalo } from "./invoice.model";
-import mongoose, { PipelineStage } from "mongoose";
+import mongoose, { PipelineStage, Types } from "mongoose";
 import roomModel from "../rooms/room.model";
 
 
@@ -37,8 +37,125 @@ export class invoiceService extends GenericService<IInvoice> {
     return await invoiceModel.insertMany(newInvoices);
   };
 
+  // Landlord finalizes one or many invoices: processing → payment-processing
+  finalizeInvoices = async (invoiceIds: string[]) => {
+    const objectIds = invoiceIds.map((id) => new Types.ObjectId(id));
+    return await invoiceModel.updateMany(
+      { _id: { $in: objectIds }, status: "processing" },
+      { $set: { status: "payment-processing" } }
+    );
+  };
+
+  // Tenant fetches their invoices (payment-processing / tenant-confirmed for their room)
+  getInvoicesByTenant = async (userId: string) => {
+    const member = await roomMemberModel.findOne({
+      userId: new Types.ObjectId(userId),
+      status: "Đang Thuê",
+    });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          roomId: member.roomId,
+          status: { $in: ["payment-processing", "tenant-confirmed"] },
+        },
+      },
+      {
+        $lookup: {
+          from: "rooms",
+          localField: "roomId",
+          foreignField: "_id",
+          as: "roomDetail",
+        },
+      },
+      { $unwind: "$roomDetail" },
+      {
+        $lookup: {
+          from: "houses",
+          localField: "roomDetail.houseId",
+          foreignField: "_id",
+          as: "houseDetail",
+        },
+      },
+      { $unwind: "$houseDetail" },
+      {
+        $project: {
+          _id: 1,
+          status: 1,
+          utilities: 1,
+          rentalFee: 1,
+          previousElectricityNumber: 1,
+          currentElectricityNumber: 1,
+          previousWaterNumber: 1,
+          currentWaterNumber: 1,
+          electricityCharge: 1,
+          waterCharge: 1,
+          transactionImage: 1,
+          totalAmount: 1,
+          createDate: 1,
+          roomId: {
+            $mergeObjects: ["$roomDetail", { houseId: "$houseDetail" }],
+          },
+        },
+      },
+      { $sort: { createDate: -1 } },
+    ];
+
+    return await invoiceModel.aggregate(pipeline);
+  };
+
+  // Tenant confirms payment by uploading transaction image: payment-processing → tenant-confirmed
+  tenantConfirmInvoice = async (invoiceId: string, transactionImageBase64?: string) => {
+    const invoice = await invoiceModel.findOne({
+      _id: new Types.ObjectId(invoiceId),
+      status: "payment-processing",
+    });
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
+
+    if (transactionImageBase64) {
+      const res = await uploadImage(transactionImageBase64, 1, false);
+      invoice.transactionImage = res.secure_url;
+    }
+
+    invoice.status = "tenant-confirmed";
+    await invoice.save();
+    return invoice;
+  };
+
+  // Landlord accepts tenant-confirmed invoice: tenant-confirmed → completed, then auto-create next cycle
+  landlordAcceptInvoice = async (invoiceId: string) => {
+    const invoice = await invoiceModel.findOne({
+      _id: new Types.ObjectId(invoiceId),
+      status: "tenant-confirmed",
+    });
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
+
+    invoice.status = "completed";
+    await invoice.save();
+
+    // Auto-create next billing cycle invoice with previous readings carried forward
+    const utilitiesTotal = invoice.utilities?.reduce((sum, u) => sum + (u.value ?? 0), 0) ?? 0;
+    const nextInvoice = new invoiceModel({
+      roomId: invoice.roomId,
+      status: "processing",
+      rentalFee: invoice.rentalFee ?? 0,
+      previousElectricityNumber: invoice.currentElectricityNumber ?? 0,
+      currentElectricityNumber: invoice.currentElectricityNumber ?? 0,
+      previousWaterNumber: invoice.currentWaterNumber ?? 0,
+      currentWaterNumber: invoice.currentWaterNumber ?? 0,
+      electricityCharge: 0,
+      waterCharge: 0,
+      utilities: invoice.utilities ?? [],
+      totalAmount: (invoice.rentalFee ?? 0) + utilitiesTotal,
+    });
+
+    await invoiceModel.insertMany([nextInvoice]);
+    return invoice;
+  };
+
   getFilteredInvoices = async (filters: {
-    landLordId?: string; // Thêm tham số này vào filter
+    landLordId?: string;
     houseId?: string;
     month?: any;
     year?: any;
@@ -51,7 +168,11 @@ export class invoiceService extends GenericService<IInvoice> {
     const query: any = {};
 
     if (status && status !== "all") {
-      query.status = status === "paid" ? "completed" : "processing";
+      if (status === "paid") {
+        query.status = "completed";
+      } else if (status === "unpaid") {
+        query.status = { $in: ["processing", "payment-processing", "tenant-confirmed"] };
+      }
     }
 
     if (month || year) {
@@ -103,12 +224,14 @@ export class invoiceService extends GenericService<IInvoice> {
         _id: 1,
         status: 1,
         utilities: 1,
+        rentalFee: 1,
         previousElectricityNumber: 1,
         currentElectricityNumber: 1,
         previousWaterNumber: 1,
         currentWaterNumber: 1,
         electricityCharge: 1,
         waterCharge: 1,
+        transactionImage: 1,
         totalAmount: 1,
         createDate: 1,
         roomId: {
@@ -201,40 +324,38 @@ export class invoiceService extends GenericService<IInvoice> {
           as: "latestInvoice",
         },
       },
-      // BƯỚC TRUNG GIAN: Xử lý hết các giá trị null/undefined và tính Usage
       {
         $addFields: {
           safePreviousElectricity: {
-            $ifNull: [{ $arrayElemAt: ["$latestInvoice.currentElectricityNumber", 0] }, 0]
+            $ifNull: [{ $arrayElemAt: ["$latestInvoice.currentElectricityNumber", 0] }, 0],
           },
           safePreviousWater: {
-            $ifNull: [{ $arrayElemAt: ["$latestInvoice.currentWaterNumber", 0] }, 0]
+            $ifNull: [{ $arrayElemAt: ["$latestInvoice.currentWaterNumber", 0] }, 0],
           },
           safeCurrentElectricity: { $ifNull: ["$currentElectricityNumber", 0] },
           safeCurrentWater: { $ifNull: ["$currentWaterNumber", 0] },
           safeElectricityPrice: { $ifNull: ["$houseInfo.defaultElectricityCharge", 0] },
           safeWaterPrice: { $ifNull: ["$houseInfo.defaultWaterCharge", 0] },
-          safeRentalFee: { $ifNull: ["$rentalFee", 0] }
-        }
+          safeRentalFee: { $ifNull: ["$rentalFee", 0] },
+        },
       },
       {
         $addFields: {
           calcElectricityUsage: {
-            $max: [{ $subtract: ["$safeCurrentElectricity", "$safePreviousElectricity"] }, 0]
+            $max: [{ $subtract: ["$safeCurrentElectricity", "$safePreviousElectricity"] }, 0],
           },
           calcWaterUsage: {
-            $max: [{ $subtract: ["$safeCurrentWater", "$safePreviousWater"] }, 0]
+            $max: [{ $subtract: ["$safeCurrentWater", "$safePreviousWater"] }, 0],
           },
           calcUtilitiesCost: {
             $cond: {
               if: { $isArray: "$houseInfo.defaultUtilitesCharge" },
               then: { $sum: "$houseInfo.defaultUtilitesCharge.value" },
-              else: 0
-            }
-          }
-        }
+              else: 0,
+            },
+          },
+        },
       },
-      // BƯỚC CUỐI: Project kết quả sạch
       {
         $project: {
           roomId: "$_id",
@@ -250,39 +371,28 @@ export class invoiceService extends GenericService<IInvoice> {
                   { $arrayElemAt: ["$realTenantUser.firstName", 0] },
                 ],
               },
-              else: {
-                $cond: {
-                  if: { $gt: [{ $size: "$virtualTenants" }, 0] },
-                  then: { $arrayElemAt: ["$virtualTenants.tenantName", 0] },
-                  else: "Chưa có thông tin",
-                },
-              },
+              else: "Chưa có thông tin",
             },
           },
-
           electricityPrice: "$safeElectricityPrice",
           waterPrice: "$safeWaterPrice",
           utilities: { $ifNull: ["$houseInfo.defaultUtilitesCharge", []] },
-
           previousElectricityNumber: "$safePreviousElectricity",
           previousWaterNumber: "$safePreviousWater",
           currentElectricityNumber: "$safeCurrentElectricity",
           currentWaterNumber: "$safeCurrentWater",
-
           electricityUsage: "$calcElectricityUsage",
           waterUsage: "$calcWaterUsage",
-
           electricityCost: { $multiply: ["$calcElectricityUsage", "$safeElectricityPrice"] },
           waterCost: { $multiply: ["$calcWaterUsage", "$safeWaterPrice"] },
           utilitiesCost: "$calcUtilitiesCost",
-
           totalAmount: {
             $add: [
               "$safeRentalFee",
               { $multiply: ["$calcElectricityUsage", "$safeElectricityPrice"] },
               { $multiply: ["$calcWaterUsage", "$safeWaterPrice"] },
-              "$calcUtilitiesCost"
-            ]
+              "$calcUtilitiesCost",
+            ],
           },
         },
       },

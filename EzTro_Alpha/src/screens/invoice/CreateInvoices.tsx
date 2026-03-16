@@ -139,6 +139,7 @@ export const CreateInvoices = () => {
     const data = selectedRooms.map(room => ({
       roomId: room.roomId,
       status: "processing",
+      rentalFee: room.rentalFee,
       previousElectricityNumber: room.previousElectricityNumber,
       currentElectricityNumber: room.currentElectricityNumber,
       previousWaterNumber: room.previousWaterNumber,

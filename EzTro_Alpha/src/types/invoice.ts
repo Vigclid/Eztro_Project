@@ -1,5 +1,7 @@
 import { IRoom } from "./room";
 
+export type InvoiceStatus = "processing" | "payment-processing" | "tenant-confirmed" | "completed";
+
 export interface IInvoice {
     _id: string | undefined,
     roomId: IRoom | undefined,
@@ -7,9 +9,11 @@ export interface IInvoice {
         key: string,
         value: number
     }[] | undefined,
-    status: string | undefined,
+    status: InvoiceStatus | undefined,
+    rentalFee: number | undefined,
     electricityImage: string | undefined,
     waterImage: string | undefined,
+    transactionImage: string | undefined,
     previousElectricityNumber: number | undefined,
     currentElectricityNumber: number | undefined,
     previousWaterNumber: number | undefined,

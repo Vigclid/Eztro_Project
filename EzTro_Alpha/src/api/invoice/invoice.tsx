@@ -39,7 +39,16 @@ export const getInvoiceApi = {
         } catch (err: any) {
             throw err
         }
-    }
+    },
+
+    async getMyInvoicesAsTenant() {
+        try {
+            const res = await apiService.get(`${invoiceApi}tenant/my`)
+            return res.data
+        } catch (err: any) {
+            throw err
+        }
+    },
 }
 
 export const postInvoiceApi = {
@@ -60,6 +69,40 @@ export const postInvoiceApi = {
                 `${invoiceApi}create/many`,
                 invoicesData
             )
+            return res.data
+        } catch (err: any) {
+            throw err;
+        }
+    },
+}
+
+export const patchInvoiceApi = {
+    // Landlord: finalize one or many invoices processing → payment-processing
+    async finalizeInvoices(invoiceIds: string[]) {
+        try {
+            const res = await apiService.patch(`${invoiceApi}finalize/many`, { invoiceIds })
+            return res.data
+        } catch (err: any) {
+            throw err;
+        }
+    },
+
+    // Tenant: upload transaction image + confirm payment → tenant-confirmed
+    async tenantConfirmInvoice(invoiceId: string, transactionImage?: string) {
+        try {
+            const res = await apiService.patch(`${invoiceApi}${invoiceId}/tenant-confirm`, {
+                transactionImage,
+            })
+            return res.data
+        } catch (err: any) {
+            throw err;
+        }
+    },
+
+    // Landlord: accept tenant-confirmed invoice → completed + auto-create next invoice
+    async landlordAcceptInvoice(invoiceId: string) {
+        try {
+            const res = await apiService.patch(`${invoiceApi}${invoiceId}/accept`, {})
             return res.data
         } catch (err: any) {
             throw err;
