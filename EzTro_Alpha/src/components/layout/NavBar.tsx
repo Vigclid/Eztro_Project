@@ -1,22 +1,28 @@
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useContext } from "react";
-import { Platform, StyleSheet, Text, TouchableOpacity } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
-import { useDispatch, useSelector } from "react-redux";
+import { Bell } from "lucide-react-native";
+import { useSelector } from "react-redux";
 import { ThemeContext } from "../../context/ThemeContext";
-import { logoutAsync } from "../../features/auth/authSlice";
-import { AppDispatch, RootState } from "../../stores/store";
+import { appNavigator } from "../../navigation/navigationActions";
+import { RootState } from "../../stores/store";
 
-const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
+const NavBar = ({ state, navigation }: BottomTabBarProps) => {
   const { theme } = useContext(ThemeContext);
   const insets = useSafeAreaInsets();
   const currentRouteName = state.routes[state.index].name;
   const isActive = (routeName: string) => currentRouteName === routeName;
+  const unreadCount = useSelector((s: RootState) => s.notification.unreadCount);
 
   // const isRootScreen = () => {
   //   const currentRouteName = state.routes[state.index].name;
@@ -33,14 +39,6 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
   //     navigation.goBack();
   //   }
   // };
-
-  const logout = async () => {
-    await dispatch(logoutAsync());
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "auth" as never }],
-    });
-  };
 
   return (
     <LinearGradient
@@ -74,20 +72,24 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
           Trang chủ
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.item}>
-        <Icon name="apartment" size={36} color={theme.color3} />
-        <Text style={{ color: theme.color3 }}>Nhà trọ</Text>
-      </TouchableOpacity>
       <TouchableOpacity
         style={styles.item}
-        onPress={() =>
-          (navigation.getParent() as any)?.navigate("mainstack", {
-            screen: "createInvoicesScreen",
-          })
-        }
+        onPress={() => navigation.navigate("createInvoicesScreen")}
       >
-        <Icon name="credit-card" size={36} color={theme.color3} />
-        <Text style={{ color: theme.color3 }}>Hóa đơn</Text>
+        <Icon
+          name="credit-card"
+          size={36}
+          color={isActive("createInvoicesScreen") ? theme.color : theme.color3}
+        />
+        <Text
+          style={{
+            color: isActive("createInvoicesScreen")
+              ? theme.color
+              : theme.color3,
+          }}
+        >
+          Hóa đơn
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.item}
@@ -106,6 +108,31 @@ const NavBar = ({ state, navigation, descriptors }: BottomTabBarProps) => {
           }}
         >
           Tra soát
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => appNavigator.goToNotificationScreen()}
+      >
+        <View style={styles.iconWrap}>
+          <Bell
+            size={36}
+            color={isActive("notificationScreen") ? theme.color : theme.color3}
+          />
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          )}
+        </View>
+        <Text
+          style={{
+            color: isActive("notificationScreen") ? theme.color : theme.color3,
+          }}
+        >
+          Thông báo
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -143,6 +170,28 @@ const styles = StyleSheet.create({
   },
   item: {
     alignItems: "center",
+  },
+  iconWrap: {
+    position: "relative",
+  },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#E7000A",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: "rgba(28,28,30,0.78)",
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
   },
 });
 

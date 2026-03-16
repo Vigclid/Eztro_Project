@@ -1,7 +1,8 @@
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,35 +31,84 @@ import {
   Waves,
 } from "lucide-react-native"
 import { appNavigator } from "../../navigation/navigationActions";
+import { formatCurrencyVND } from "../../utils/currency";
+import { putHouseApi } from "../../api/house/house";
+import { ApiResponse } from "../../types/app.common";
+import { IHouse } from "../../types/house";
 
+const handlePriceChange = (text: string, setter: (val: number | undefined) => void) => {
+  const numericValue = text.replace(/[^0-9]/g, "");
+  if (numericValue === "") {
+    setter(undefined);
+  } else {
+    setter(Number(numericValue));
+  }
+};
 export const CreateBoardingHouseScreen: React.FC = () => {
+  const route = useRoute()
+  const houseData = (route.params as any)?.houseData
   const navigation = useNavigation<NavigationProp>();
   const [name, onChangeName] = useState("");
   const [address, onChangeAddress] = useState("");
   const [roomCount, onChangeRoomCount] = useState("");
-  const [defaultPrice, onChangeDefaultPrice] = useState("");
+  const [defaultPrice, onChangeDefaultPrice] = useState<number>();
   const [description, onChangeDescription] = useState("");
   const [paymentDay, onChangePaymentDay] = useState("");
-  const [defaultElectricityCharge, onChangeDefaultElectricityCharge] = useState("");
-  const [defaultWaterCharge, onChangeDefaultWaterCharge] = useState("");
+  const [defaultElectricityCharge, onChangeDefaultElectricityCharge] = useState<number>();
+  const [defaultWaterCharge, onChangeDefaultWaterCharge] = useState<number>();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (houseData) {
+        onChangeName(houseData.houseName)
+        onChangeAddress(houseData.address)
+        onChangeDefaultPrice(houseData.defaultPrice || 0)
+        onChangeDescription(houseData.description)
+        onChangeDefaultElectricityCharge(houseData.defaultElectricityCharge)
+        onChangeDefaultWaterCharge(houseData.defaultWaterCharge)
+      }
+    }, [houseData])
+  )
 
   const handleCancel = () => {
     navigation.goBack();
   };
 
 
-  const handleSave = () => {
-    const data = {
-    houseName: name,
-    address,
-    roomCount: Number(roomCount),
-    defaultPrice: Number(defaultPrice),
-    description,
-    paymentDay: Number(paymentDay),
-    defaultElectricityCharge: Number(defaultElectricityCharge),
-    defaultWaterCharge: Number(defaultWaterCharge),
-  };
-    appNavigator.goToPackagePaymentScreen(data)
+  const handleSave = async () => {
+    if (houseData) {
+      const { updateHouse } = putHouseApi
+      try {
+        const res = await updateHouse(houseData._id, {
+          houseName: name,
+          address,
+          roomCount: Number(roomCount),
+          defaultPrice,
+          description,
+          paymentDay: Number(paymentDay),
+          defaultElectricityCharge,
+          defaultWaterCharge,
+        }) as ApiResponse<IHouse>
+        if (res.status === "success") {
+          Alert.alert('Cập nhật cụm trọ thành công!')
+          navigation.goBack()
+        }
+      } catch (err) { }
+
+    } else {
+      const data = {
+        houseName: name,
+        address,
+        roomCount: Number(roomCount),
+        defaultPrice,
+        description,
+        paymentDay: Number(paymentDay),
+        defaultElectricityCharge,
+        defaultWaterCharge,
+      };
+      appNavigator.goToPackagePaymentScreen(data)
+    }
+
   }
   return (
     <SafeAreaProvider style={styles.container}>
@@ -77,7 +127,7 @@ export const CreateBoardingHouseScreen: React.FC = () => {
               <Building2 size={32} color={COLORS.WHITE} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>{"Thêm cụm trọ mới"}</Text>
+              <Text style={styles.headerTitle}>{houseData ? "Chỉnh sửa nhà trọ" : "Thêm cụm trọ mới"}</Text>
             </View>
             <View style={styles.headerSpacer} />
           </LinearGradient>
@@ -113,21 +163,23 @@ export const CreateBoardingHouseScreen: React.FC = () => {
           </View>
 
           <View style={styles.rowSection}>
-            <View style={styles.halfWidthSection}>
-              <View style={styles.labelContainer}>
-                <View style={styles.formIcon}>
-                  <House size={20} color={COLORS.GREEN_PRIMARY} />
+            {!houseData && (
+              <View style={styles.halfWidthSection}>
+                <View style={styles.labelContainer}>
+                  <View style={styles.formIcon}>
+                    <House size={20} color={COLORS.GREEN_PRIMARY} />
+                  </View>
+                  <Text style={styles.label}>{"Số phòng"}</Text>
                 </View>
-                <Text style={styles.label}>{"Số phòng"}</Text>
+                <TextInput
+                  placeholder="10"
+                  value={roomCount}
+                  onChangeText={onChangeRoomCount}
+                  style={styles.textInput}
+                  keyboardType="numeric"
+                />
               </View>
-              <TextInput
-                placeholder="10"
-                value={roomCount}
-                onChangeText={onChangeRoomCount}
-                style={styles.textInput}
-                keyboardType="numeric"
-              />
-            </View>
+            )}
             <View style={styles.halfWidthSectionRight}>
               <View style={styles.labelContainer}>
                 <View style={styles.formIcon}>
@@ -137,10 +189,10 @@ export const CreateBoardingHouseScreen: React.FC = () => {
               </View>
               <TextInput
                 placeholder="2000000"
-                value={defaultPrice}
-                onChangeText={onChangeDefaultPrice}
-                style={styles.textInput}
                 keyboardType="numeric"
+                value={formatCurrencyVND(defaultPrice)}
+                onChangeText={(text) => handlePriceChange(text, onChangeDefaultPrice)}
+                style={styles.textInput}
               />
             </View>
           </View>
@@ -155,8 +207,8 @@ export const CreateBoardingHouseScreen: React.FC = () => {
               </View>
               <TextInput
                 placeholder="3000"
-                value={defaultElectricityCharge}
-                onChangeText={onChangeDefaultElectricityCharge}
+                value={formatCurrencyVND(defaultElectricityCharge)}
+                onChangeText={(text) => handlePriceChange(text, onChangeDefaultElectricityCharge)}
                 style={styles.textInput}
                 keyboardType="numeric"
               />
@@ -170,8 +222,8 @@ export const CreateBoardingHouseScreen: React.FC = () => {
               </View>
               <TextInput
                 placeholder="3000"
-                value={defaultWaterCharge}
-                onChangeText={onChangeDefaultWaterCharge}
+                value={formatCurrencyVND(defaultWaterCharge)}
+                onChangeText={(text) => handlePriceChange(text, onChangeDefaultWaterCharge)}
                 style={styles.textInput}
                 keyboardType="numeric"
               />
@@ -328,7 +380,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   textInput: {
-    color: COLORS.PLACEHOLDER_GRAY,
+    color: COLORS.BLACK,
     fontSize: FONT_SIZE.CREATE_FORM_INPUT,
     fontWeight: "bold",
     backgroundColor: COLORS.WHITE_SEMI_TRANSPARENT,
@@ -375,7 +427,7 @@ const styles = StyleSheet.create({
     // marginBottom: SPACING.CREATE_DESCRIPTION_MARGIN_BOTTOM,
   },
   descriptionInput: {
-    color: COLORS.PLACEHOLDER_GRAY,
+    color: COLORS.BLACK,
     fontSize: FONT_SIZE.CREATE_FORM_DESCRIPTION,
     minHeight: SPACING.CREATE_DESCRIPTION_TEXT_MARGIN_BOTTOM,
   },
