@@ -2,6 +2,7 @@ import { Server as HttpServer } from "http";
 import { Server as SocketServer, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import { SocketRooms } from "./socket.rooms";
+import { initChatSocketHandlers } from "../../modules/chat/chat.socket";
 
 let io: SocketServer;
 
@@ -26,6 +27,9 @@ export function initSocketGateway(httpServer: HttpServer): SocketServer {
     const userId = (socket as any).userId as string;
     socket.join(SocketRooms.user(userId));
   });
+
+  // Initialize chat socket handlers
+  initChatSocketHandlers(io);
 
   return io;
 }

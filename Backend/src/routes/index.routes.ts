@@ -10,10 +10,12 @@ import v1TicketRoutes from "./v1/ticket.routes";
 import v1PackageRoutes from "./v1/package.routes";
 import v1NotificationRoutes from "./v1/notification.routes";
 import v1ReportRoutes from "./v1/report.routes";
+import chatRoutes from "../modules/chat/chat.routes";
 
 const router = Router();
 
 router.use(authRouter);
+router.use("/chat", chatRoutes);
 router.use(
   "/v1",
   v1UserRoutes,
