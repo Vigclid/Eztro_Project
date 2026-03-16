@@ -21,6 +21,15 @@ export const getHouseApi = {
         } catch (err: any) {
             throw err
         }
+    },
+
+    async getHouseDelete(signal?: AbortSignal) {
+        try {
+            const res = await apiService.get(`${houseApi}landlord/delete`, { signal })
+            return res.data
+        } catch (err: any) {
+            throw err
+        }
     }
 }
 
@@ -50,6 +59,20 @@ export const putHouseApi = {
             return res.data
         } catch (err: any) {
             throw err;
+        }
+    }
+}
+
+export const deleteHouseApi = {
+
+    async deleteHouse(houseId: string) {
+        try {
+            const res = await apiService.delete(
+                `${houseApi}${houseId}`
+            )
+            return res.data
+        } catch (err: any) {
+            throw err
         }
     }
 }

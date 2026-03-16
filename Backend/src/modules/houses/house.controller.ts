@@ -99,4 +99,30 @@ export class houseController extends GenericController<IHouse> {
             res.status(500).json(responseWrapper("error", "Internal Server Error", err))
         }
     }
+
+    getHouseToDelete = async (req: Request, res: Response) => {
+        try {
+            const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
+                id: string;
+            };
+            const result = await this.HouseService.getHouseToDelete(id)
+            return res
+                .status(200)
+                .json(responseWrapper("success", "Thanh cong", result))
+        } catch (err: any) {
+            res.status(500).json(responseWrapper("error", "Internal Server Error", err))
+        }
+    }
+
+    deleteHouse = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params
+            const result = await this.HouseService.deleteHouse(id)
+            return res
+                .status(200)
+                .json(responseWrapper("success", "Thanh cong", result))
+        } catch (err: any) {
+            res.status(500).json(responseWrapper("error", "Internal Server Error", err))
+        }
+    }
 }

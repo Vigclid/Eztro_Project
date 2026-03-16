@@ -162,4 +162,8 @@ export const appNavigator = {
       params: { reportId },
     });
   },
+
+  goToDeleteBoardingHouseScreen() {
+    navigate("mainstack", { screen: "deleteBoardingHouseScreen" })
+  }
 };

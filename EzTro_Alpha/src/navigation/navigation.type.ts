@@ -82,6 +82,7 @@ export type MainStackParamList = {
   supportScreen: undefined;
   myReportsScreen: undefined;
   reportDetailScreen: { reportId: string };
+  deleteBoardingHouseScreen: undefined;
 };
 
 export type AuthStackParamList = {

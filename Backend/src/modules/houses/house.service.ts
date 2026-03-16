@@ -1,5 +1,6 @@
 import { GenericService } from "../../core/services/base.service";
 import houseModel, { IHouse } from "./house.model";
+import mongoose from "mongoose";
 // import { uploadImage } from "../../utils/imageUtils";
 
 export class houseService extends GenericService<IHouse> {
@@ -24,5 +25,42 @@ export class houseService extends GenericService<IHouse> {
 
     updateHouse = async (id: string, data: Partial<IHouse>) => {
         return await houseModel.findByIdAndUpdate(id, data, { new: true })
+    }
+
+    getHouseToDelete = async (landlordId: string) => {
+        return await houseModel.aggregate([
+            {
+                $match: { landlordId: new mongoose.Types.ObjectId(landlordId) }
+            },
+            {
+                $lookup: {
+                    from: 'rooms',
+                    localField: '_id',
+                    foreignField: 'houseId',
+                    as: 'rooms'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    houseName: 1,
+                    address: 1,
+                    totalRooms: { $size: '$rooms' },
+                    rentedRooms: {
+                        $size: {
+                            $filter: {
+                                input: '$rooms',
+                                as: 'room',
+                                cond: { $eq: ['$$room.status', 'Đang Thuê'] }
+                            }
+                        }
+                    }
+                }
+            }
+        ])
+    }
+
+    deleteHouse = async (id: string) => {
+        return await houseModel.findByIdAndDelete(id)
     }
 }

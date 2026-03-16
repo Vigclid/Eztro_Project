@@ -26,3 +26,11 @@ export interface IHouse {
     houseImgs: string[] | undefined
     housePackage?: IHousePackageInfo | null
 }
+
+export interface IHouseDelete {
+    _id: string
+    houseName: string
+    address: string
+    totalRooms: number
+    rentedRooms: number
+}
