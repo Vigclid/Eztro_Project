@@ -181,43 +181,20 @@ export const UserProfile: React.FC = () => {
               <Text style={styles.sectionTitle}>Cài đặt</Text>
             </View>
             <View style={[styles.sectionCardSettings, SHADOW.CARD]}>
-              <View style={styles.sectionItemRow}>
-                <View style={styles.sectionItem}>
-                  <View style={styles.sectionIcon}>
-                    <Bell size={26} color={COLORS.GRADIENT_START} />
+              <View style={styles.sectionItem}>
+                <View style={styles.sectionIcon}>
+                  <Bell size={26} color={COLORS.GRADIENT_START} />
+                </View>
+                <View style={styles.sectionItemContent}>
+                  <View style={styles.sectionItemTitleContainer}>
+                    <Text style={styles.sectionItemTitle}>Thông báo</Text>
                   </View>
-                  <View style={styles.sectionItemContent}>
-                    <View style={styles.sectionItemTitleContainer}>
-                      <Text style={styles.sectionItemTitle}>Thông báo</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.sectionItemDescription}>
-                        Quản lý thông báo ứng dụng
-                      </Text>
-                    </View>
+                  <View>
+                    <Text style={styles.sectionItemDescription}>
+                      Quản lý thông báo ứng dụng
+                    </Text>
                   </View>
                 </View>
-                <TouchableOpacity
-                  style={styles.sectionItemRow}
-                  activeOpacity={0.7}
-                  onPress={() => appNavigator.goToSupportScreen()}
-                >
-                  <View style={styles.sectionIcon}>
-                    <HelpCircle size={26} color={COLORS.GRADIENT_START} />
-                  </View>
-                  <View style={styles.sectionItemContent}>
-                    <View style={styles.sectionItemTitleContainerLarge}>
-                      <Text style={styles.sectionItemTitle}>
-                        Trợ giúp & Hỗ trợ
-                      </Text>
-                    </View>
-                    <View>
-                      <Text style={styles.sectionItemDescription}>
-                        Trợ giúp, báo lỗi, góp ý
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
               </View>
               <TouchableOpacity
                 style={styles.sectionItemRow}
@@ -234,6 +211,27 @@ export const UserProfile: React.FC = () => {
                   <View>
                     <Text style={styles.sectionItemDescription}>
                       Tuỳ chỉnh ứng dụng
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sectionItemRow}
+                activeOpacity={0.7}
+                onPress={() => appNavigator.goToSupportScreen()}
+              >
+                <View style={styles.sectionIcon}>
+                  <HelpCircle size={26} color={COLORS.GRADIENT_START} />
+                </View>
+                <View style={styles.sectionItemContent}>
+                  <View style={styles.sectionItemTitleContainerLarge}>
+                    <Text style={styles.sectionItemTitle}>
+                      Trợ giúp & Hỗ trợ
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={styles.sectionItemDescription}>
+                      Trợ giúp, báo lỗi, góp ý
                     </Text>
                   </View>
                 </View>
