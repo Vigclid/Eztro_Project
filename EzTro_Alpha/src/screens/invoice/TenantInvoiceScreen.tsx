@@ -2,9 +2,11 @@ import { useFocusEffect } from "@react-navigation/native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
+  Easing,
   Image,
   RefreshControl,
   ScrollView,
@@ -13,8 +15,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  aiInvoiceApi,
+  getInvoiceApi,
+  patchInvoiceApi,
+} from "../../api/invoice/invoice";
 import { getPaymentApi } from "../../api/payment/payment";
-import { getInvoiceApi, patchInvoiceApi } from "../../api/invoice/invoice";
 import { AppButton } from "../../components/misc/AppButton";
 import { COLORS } from "../../constants/theme";
 import { ApiResponse } from "../../types/app.common";
@@ -22,12 +28,107 @@ import { IInvoice } from "../../types/invoice";
 import { IPayment } from "../../types/payment";
 
 type Tab = "pending" | "history";
+type AIStatus = "idle" | "checking" | "valid" | "invalid";
 
 const PENDING_STATUS_LABEL: Record<string, string> = {
   "payment-processing": "CHỜ THANH TOÁN",
   "tenant-confirmed": "ĐÃ XÁC NHẬN",
 };
 
+// ─── Animated AI check overlay ───────────────────────────────────────────────
+const AICheckOverlay: React.FC<{
+  status: AIStatus;
+  message: string;
+}> = ({ status, message }) => {
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (status === "checking") {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+      Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ).start();
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.12,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+    } else if (status === "valid" || status === "invalid") {
+      spinAnim.stopAnimation();
+      pulseAnim.stopAnimation();
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      fadeAnim.setValue(0);
+    }
+  }, [status]);
+
+  if (status === "idle") return null;
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
+  const bgColor =
+    status === "checking"
+      ? "rgba(0,0,0,0.55)"
+      : status === "valid"
+        ? "rgba(27,141,50,0.82)"
+        : "rgba(198,40,40,0.82)";
+
+  return (
+    <Animated.View
+      style={[
+        styles.aiOverlay,
+        { backgroundColor: bgColor, opacity: fadeAnim },
+      ]}
+    >
+      {status === "checking" ? (
+        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <Animated.Text
+            style={[styles.aiSpinner, { transform: [{ rotate: spin }] }]}
+          >
+            ⚙
+          </Animated.Text>
+          <Text style={styles.aiOverlayText}>AI đang kiểm tra...</Text>
+        </Animated.View>
+      ) : (
+        <View style={{ alignItems: "center" }}>
+          <Text style={styles.aiResultIcon}>
+            {status === "valid" ? "✓" : "✕"}
+          </Text>
+          <Text style={styles.aiOverlayText}>{message}</Text>
+        </View>
+      )}
+    </Animated.View>
+  );
+};
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 export const TenantInvoiceScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [invoices, setInvoices] = useState<IInvoice[]>([]);
@@ -36,7 +137,10 @@ export const TenantInvoiceScreen: React.FC = () => {
   const [pendingImage, setPendingImage] = useState<{
     invoiceId: string;
     uri: string;
+    base64: string;
   } | null>(null);
+  const [aiStatus, setAiStatus] = useState<AIStatus>("idle");
+  const [aiMessage, setAiMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -74,7 +178,8 @@ export const TenantInvoiceScreen: React.FC = () => {
   const formatCurrency = (amount: number | undefined) =>
     (amount || 0).toLocaleString("vi-VN") + " đ";
 
-  const pickImage = async (invoiceId: string) => {
+  // Pick image → read base64 → trigger AI check
+  const pickImage = async (invoiceId: string, invoiceAmount: number) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Thông báo", "Cần cấp quyền truy cập thư viện ảnh");
@@ -85,21 +190,72 @@ export const TenantInvoiceScreen: React.FC = () => {
       allowsEditing: true,
       quality: 0.8,
     });
-    if (!result.canceled) {
-      setPendingImage({ invoiceId, uri: result.assets[0].uri });
+    if (result.canceled) return;
+
+    const uri = result.assets[0].uri;
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: "base64",
+    });
+    const base64String = `data:image/jpeg;base64,${base64}`;
+
+    setPendingImage({ invoiceId, uri, base64: base64String });
+    setAiStatus("idle");
+    setAiMessage("");
+
+    // Auto-trigger AI check
+    runAICheck(base64String, invoiceAmount);
+  };
+
+  const runAICheck = async (base64String: string, invoiceAmount: number) => {
+    setAiStatus("checking");
+    try {
+      const res = (await aiInvoiceApi.verifyTransactionImage(
+        base64String,
+        invoiceAmount,
+      )) as ApiResponse<{
+        isTransactionReceipt: boolean;
+        amountMatches: boolean;
+        message: string;
+      }>;
+
+      if (res.status === "success" && res.data) {
+        const { isTransactionReceipt, amountMatches, message } = res.data;
+        const valid = isTransactionReceipt && amountMatches;
+        setAiStatus(valid ? "valid" : "invalid");
+        setAiMessage(message);
+      } else {
+        setAiStatus("invalid");
+        setAiMessage("Không thể xác minh ảnh");
+      }
+    } catch {
+      setAiStatus("invalid");
+      setAiMessage("Lỗi kiểm tra, vui lòng thử lại");
     }
   };
 
   const handleConfirm = async (invoiceId: string) => {
+    // If AI flagged the image, warn the user before proceeding
+    if (aiStatus === "invalid") {
+      Alert.alert(
+        "Cảnh báo từ AI",
+        `${aiMessage}\n\nBạn vẫn muốn gửi xác nhận này?`,
+        [
+          { text: "Hủy", style: "cancel" },
+          { text: "Vẫn gửi", onPress: () => doConfirm(invoiceId) },
+        ],
+      );
+      return;
+    }
+    await doConfirm(invoiceId);
+  };
+
+  const doConfirm = async (invoiceId: string) => {
     setSubmitting(true);
     try {
-      let base64String: string | undefined;
-      if (pendingImage?.invoiceId === invoiceId && pendingImage.uri) {
-        const base64 = await FileSystem.readAsStringAsync(pendingImage.uri, {
-          encoding: "base64",
-        });
-        base64String = `data:image/jpeg;base64,${base64}`;
-      }
+      const base64String =
+        pendingImage?.invoiceId === invoiceId
+          ? pendingImage?.base64
+          : undefined;
 
       const res = (await patchInvoiceApi.tenantConfirmInvoice(
         invoiceId,
@@ -109,6 +265,8 @@ export const TenantInvoiceScreen: React.FC = () => {
       if (res.status === "success") {
         Alert.alert("Thành công", "Xác nhận thanh toán thành công!");
         setPendingImage(null);
+        setAiStatus("idle");
+        setAiMessage("");
         await fetchInvoices();
       }
     } catch {
@@ -165,9 +323,20 @@ export const TenantInvoiceScreen: React.FC = () => {
           const isExpanded = expandedId === inv._id;
           const hasPending = pendingImage?.invoiceId === inv._id;
           const isPaymentProcessing = inv.status === "payment-processing";
+          const showAI = hasPending && aiStatus !== "idle";
+
+          // Confirm button state
+          const confirmDisabled =
+            submitting || (hasPending && aiStatus === "checking");
+          const confirmTitle = submitting
+            ? "Đang xử lý..."
+            : aiStatus === "checking" && hasPending
+              ? "Đang kiểm tra..."
+              : "Xác nhận đã thanh toán";
 
           return (
             <View key={inv._id} style={styles.card}>
+              {/* Card header */}
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() =>
@@ -211,6 +380,7 @@ export const TenantInvoiceScreen: React.FC = () => {
 
               {isExpanded && renderInvoiceBreakdown(inv)}
 
+              {/* Total */}
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Tổng cộng</Text>
                 <Text style={styles.totalAmount}>
@@ -218,18 +388,31 @@ export const TenantInvoiceScreen: React.FC = () => {
                 </Text>
               </View>
 
+              {/* Tenant action */}
               {isPaymentProcessing && (
                 <View style={styles.actionArea}>
+                  {/* Image picker with AI overlay */}
                   <TouchableOpacity
                     style={styles.uploadBtn}
-                    onPress={() => pickImage(inv._id as string)}
+                    onPress={() =>
+                      pickImage(inv._id as string, inv.totalAmount ?? 0)
+                    }
+                    disabled={aiStatus === "checking" && hasPending}
                   >
                     {hasPending ? (
-                      <Image
-                        source={{ uri: pendingImage!.uri }}
-                        style={styles.previewImage}
-                        resizeMode="cover"
-                      />
+                      <View style={styles.imageWrapper}>
+                        <Image
+                          source={{ uri: pendingImage!.uri }}
+                          style={styles.previewImage}
+                          resizeMode="cover"
+                        />
+                        {showAI && (
+                          <AICheckOverlay
+                            status={aiStatus}
+                            message={aiMessage}
+                          />
+                        )}
+                      </View>
                     ) : inv.transactionImage ? (
                       <Image
                         source={{ uri: inv.transactionImage }}
@@ -243,14 +426,29 @@ export const TenantInvoiceScreen: React.FC = () => {
                     )}
                   </TouchableOpacity>
 
+                  {/* Re-check button shown when AI flagged invalid */}
+                  {hasPending && aiStatus === "invalid" && (
+                    <TouchableOpacity
+                      style={styles.recheckBtn}
+                      onPress={() =>
+                        runAICheck(pendingImage!.base64, inv.totalAmount ?? 0)
+                      }
+                    >
+                      <Text style={styles.recheckBtnText}>
+                        Kiểm tra lại với AI
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   <AppButton
-                    title={submitting ? "Đang xử lý..." : "Xác nhận đã thanh toán"}
-                    disabled={submitting}
+                    title={confirmTitle}
+                    disabled={confirmDisabled}
                     onPress={() => handleConfirm(inv._id as string)}
                   />
                 </View>
               )}
 
+              {/* Already confirmed */}
               {inv.status === "tenant-confirmed" && inv.transactionImage && (
                 <View style={styles.confirmedImageArea}>
                   <Text style={styles.confirmedLabel}>
@@ -290,9 +488,7 @@ export const TenantInvoiceScreen: React.FC = () => {
             <View key={payment._id} style={styles.card}>
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={() =>
-                  setExpandedId(isExpanded ? null : payment._id)
-                }
+                onPress={() => setExpandedId(isExpanded ? null : payment._id)}
               >
                 <View style={styles.cardHeader}>
                   <View style={{ flex: 1 }}>
@@ -305,7 +501,9 @@ export const TenantInvoiceScreen: React.FC = () => {
                     <Text style={styles.dateText}>
                       Thanh toán:{" "}
                       {payment.createdAt
-                        ? new Date(payment.createdAt).toLocaleDateString("vi-VN")
+                        ? new Date(payment.createdAt).toLocaleDateString(
+                            "vi-VN",
+                          )
                         : "N/A"}
                     </Text>
                   </View>
@@ -350,7 +548,6 @@ export const TenantInvoiceScreen: React.FC = () => {
         <Text style={styles.headerTitle}>Hóa đơn của tôi</Text>
       </LinearGradient>
 
-      {/* Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "pending" && styles.activeTab]}
@@ -411,7 +608,12 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, color: "#999", fontWeight: "bold" },
   activeTabText: { color: COLORS.GREEN_PRIMARY },
   tabBadge: { color: COLORS.GREEN_PRIMARY, fontWeight: "bold" },
-  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 60 },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 60,
+  },
   emptyText: { fontSize: 15, color: "#999" },
   list: { paddingHorizontal: 15, paddingVertical: 10, paddingBottom: 30 },
   card: {
@@ -492,13 +694,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 56,
+    overflow: "hidden",
   },
   uploadBtnText: {
     color: COLORS.GREEN_PRIMARY,
     fontSize: 14,
     fontWeight: "600",
   },
+  imageWrapper: { width: "100%", position: "relative" },
   previewImage: { width: "100%", height: 160, borderRadius: 8 },
+  // AI overlay sits on top of the preview image
+  aiOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+  },
+  aiSpinner: { fontSize: 40, color: "#FFF", textAlign: "center" },
+  aiOverlayText: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "bold",
+    marginTop: 6,
+    textAlign: "center",
+  },
+  aiResultIcon: { fontSize: 36, color: "#FFF", fontWeight: "bold" },
+  recheckBtn: {
+    borderWidth: 1,
+    borderColor: "#E65100",
+    borderRadius: 8,
+    paddingVertical: 8,
+    alignItems: "center",
+  },
+  recheckBtnText: { color: "#E65100", fontSize: 13, fontWeight: "600" },
   confirmedImageArea: { marginTop: 12 },
   confirmedLabel: { fontSize: 13, color: "#666", marginBottom: 6 },
   confirmedImage: {

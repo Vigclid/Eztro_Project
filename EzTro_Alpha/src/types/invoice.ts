@@ -26,6 +26,7 @@ export interface IInvoice {
 
 export interface IRoomInvoice {
     _id: string | undefined;
+    invoiceId?: string;
     roomId: string | undefined;
     roomName: string;
     rentalFee: number;

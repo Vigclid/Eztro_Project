@@ -155,18 +155,23 @@ export const TrackingInvoiceStatus: React.FC = () => {
     now.getFullYear() - 2,
   ];
 
+  // Exclude processing drafts — they live in CreateInvoices screen
+  const nonDraftInvoices = useMemo(
+    () => invoices.filter((inv) => inv.status !== "processing"),
+    [invoices],
+  );
+
   const displayInvoices = useMemo(() => {
-    if (statusFilter === "all") return invoices;
+    if (statusFilter === "all") return nonDraftInvoices;
     if (statusFilter === "paid")
-      return invoices.filter((inv) => inv.status === "completed");
-    return invoices.filter((inv) => inv.status !== "completed");
-  }, [invoices, statusFilter]);
+      return nonDraftInvoices.filter((inv) => inv.status === "completed");
+    return nonDraftInvoices.filter((inv) => inv.status !== "completed");
+  }, [nonDraftInvoices, statusFilter]);
 
   // Summary stats derived from current displayed set
   const stats = useMemo(() => {
-    const all = invoices;
+    const all = nonDraftInvoices;
     return {
-      processing: all.filter((i) => i.status === "processing").length,
       paymentProcessing: all.filter((i) => i.status === "payment-processing")
         .length,
       tenantConfirmed: all.filter((i) => i.status === "tenant-confirmed")
@@ -176,49 +181,10 @@ export const TrackingInvoiceStatus: React.FC = () => {
         .filter((i) => i.status === "completed")
         .reduce((s, i) => s + (i.totalAmount || 0), 0),
     };
-  }, [invoices]);
-
-  const processingIds = useMemo(
-    () =>
-      displayInvoices
-        .filter((inv) => inv.status === "processing")
-        .map((inv) => inv._id as string),
-    [displayInvoices],
-  );
+  }, [nonDraftInvoices]);
 
   const formatCurrency = (amount: number | undefined) =>
     (amount || 0).toLocaleString("vi-VN") + " đ";
-
-  const handleFinalizeOne = async (invoiceId: string) => {
-    try {
-      await patchInvoiceApi.finalizeInvoices([invoiceId]);
-      await fetchInvoices();
-    } catch {
-      Alert.alert("Lỗi", "Không thể chốt hóa đơn");
-    }
-  };
-
-  const handleFinalizeAll = () => {
-    if (processingIds.length === 0) return;
-    Alert.alert(
-      "Chốt hóa đơn hàng loạt",
-      `Chốt ${processingIds.length} hóa đơn đang soạn?`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Chốt tất cả",
-          onPress: async () => {
-            try {
-              await patchInvoiceApi.finalizeInvoices(processingIds);
-              await fetchInvoices();
-            } catch {
-              Alert.alert("Lỗi", "Không thể chốt hóa đơn");
-            }
-          },
-        },
-      ],
-    );
-  };
 
   const handleAccept = (invoiceId: string) => {
     Alert.alert("Xác nhận thu tiền", "Bạn đã nhận được tiền từ khách thuê?", [
@@ -290,13 +256,6 @@ export const TrackingInvoiceStatus: React.FC = () => {
       {/* Stats strip */}
       <View style={styles.statsStrip}>
         <View style={styles.statItem}>
-          <Text style={[styles.statCount, { color: "#E65100" }]}>
-            {stats.processing}
-          </Text>
-          <Text style={styles.statLabel}>Đang soạn</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
           <Text style={[styles.statCount, { color: "#1565C0" }]}>
             {stats.paymentProcessing}
           </Text>
@@ -350,18 +309,6 @@ export const TrackingInvoiceStatus: React.FC = () => {
           </TouchableOpacity>
         ))}
       </View>
-
-      {/* Bulk finalize button */}
-      {processingIds.length > 0 && statusFilter !== "paid" && (
-        <TouchableOpacity
-          style={styles.bulkFinalizeBtn}
-          onPress={handleFinalizeAll}
-        >
-          <Text style={styles.bulkFinalizeBtnText}>
-            Chốt tất cả đang soạn ({processingIds.length})
-          </Text>
-        </TouchableOpacity>
-      )}
 
       {/* Invoice list */}
       <ScrollView
@@ -463,15 +410,8 @@ export const TrackingInvoiceStatus: React.FC = () => {
                   </>
                 )}
 
-                {inv.status === "processing" && (
-                  <View style={styles.actionButtonContainer}>
-                    <AppButton
-                      title="Chốt hóa đơn"
-                      onPress={() => handleFinalizeOne(inv._id as string)}
-                    />
-                  </View>
-                )}
-                {inv.status === "tenant-confirmed" && (
+                {(inv.status === "tenant-confirmed" ||
+                  inv.status === "payment-processing") && (
                   <View style={styles.actionButtonContainer}>
                     <AppButton
                       title="Xác nhận đã thu tiền"
