@@ -8,6 +8,7 @@ import v1RoomRoutes from "./v1/room.routes";
 import v1InvoiceRoutes from "./v1/invoice.routes";
 import v1TicketRoutes from "./v1/ticket.routes";
 import v1PackageRoutes from "./v1/package.routes";
+import v1SettingRoutes from "./v1/setting.routes";
 import v1NotificationRoutes from "./v1/notification.routes";
 import v1ReportRoutes from "./v1/report.routes";
 
@@ -25,6 +26,7 @@ router.use(
   v1TicketRoutes,
   v1PackageRoutes,
   v1NotificationRoutes,
+  v1SettingRoutes,
   v1ReportRoutes
 );
 export default router;

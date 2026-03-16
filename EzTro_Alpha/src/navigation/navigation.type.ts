@@ -78,6 +78,7 @@ export type MainStackParamList = {
   };
   notificationScreen: undefined;
   createNotificationScreen: undefined;
+  settingScreen: undefined;
   supportScreen: undefined;
   myReportsScreen: undefined;
   reportDetailScreen: { reportId: string };

@@ -110,7 +110,10 @@ export const appNavigator = {
     });
   },
 
-  goToCreateNewRoomScreen(houseId: string | undefined, room?: import("../types/room").IRoom) {
+  goToCreateNewRoomScreen(
+    houseId: string | undefined,
+    room?: import("../types/room").IRoom,
+  ) {
     navigate("mainstack", {
       screen: "createNewRoomScreen",
       params: { houseId, room },
@@ -142,6 +145,9 @@ export const appNavigator = {
     navigate("mainstack", { screen: "notificationScreen" });
   },
 
+  goToSettingScreen() {
+    navigate("mainstack", { screen: "settingScreen" });
+  },
   goToSupportScreen() {
     navigate("mainstack", { screen: "supportScreen" });
   },
