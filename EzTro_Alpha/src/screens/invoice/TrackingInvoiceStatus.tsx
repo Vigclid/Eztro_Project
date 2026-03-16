@@ -6,6 +6,7 @@ import {
   FlatList,
   Image,
   Modal,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,7 +21,7 @@ import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
 import { IInvoice, InvoiceStatus } from "../../types/invoice";
 
-// Must be declared before STATUS_CONFIG
+// Declared before STATUS_CONFIG to avoid reference-before-declare
 const badgeStyles = StyleSheet.create({
   processing: {
     backgroundColor: "#FFF3E0",
@@ -96,6 +97,7 @@ export const TrackingInvoiceStatus: React.FC = () => {
   );
   const [invoices, setInvoices] = useState<IInvoice[]>([]);
   const [boardingHouses, setBoardingHouses] = useState<IHouse[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { getInvoicesByFilter } = getInvoiceApi;
   const { getAllHousesByLandlordId } = getHouseApi;
@@ -111,8 +113,14 @@ export const TrackingInvoiceStatus: React.FC = () => {
         IInvoice[]
       >;
       if (res.status === "success") setInvoices(res.data || []);
-    } catch (err) {}
+    } catch {}
   }, [selectedHouse.id, selMonth, selYear, getInvoicesByFilter]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchInvoices();
+    setRefreshing(false);
+  }, [fetchInvoices]);
 
   useFocusEffect(
     useCallback(() => {
@@ -122,7 +130,7 @@ export const TrackingInvoiceStatus: React.FC = () => {
             IHouse[]
           >;
           if (res.status === "success") setBoardingHouses(res.data || []);
-        } catch (err) {}
+        } catch {}
       };
       getAllHouses();
     }, [getAllHousesByLandlordId]),
@@ -153,6 +161,22 @@ export const TrackingInvoiceStatus: React.FC = () => {
       return invoices.filter((inv) => inv.status === "completed");
     return invoices.filter((inv) => inv.status !== "completed");
   }, [invoices, statusFilter]);
+
+  // Summary stats derived from current displayed set
+  const stats = useMemo(() => {
+    const all = invoices;
+    return {
+      processing: all.filter((i) => i.status === "processing").length,
+      paymentProcessing: all.filter((i) => i.status === "payment-processing")
+        .length,
+      tenantConfirmed: all.filter((i) => i.status === "tenant-confirmed")
+        .length,
+      completed: all.filter((i) => i.status === "completed").length,
+      revenue: all
+        .filter((i) => i.status === "completed")
+        .reduce((s, i) => s + (i.totalAmount || 0), 0),
+    };
+  }, [invoices]);
 
   const processingIds = useMemo(
     () =>
@@ -244,6 +268,7 @@ export const TrackingInvoiceStatus: React.FC = () => {
         <Text style={styles.headerTitle}>Quản lý Thu Chi Phòng</Text>
       </LinearGradient>
 
+      {/* Filter row */}
       <View style={styles.filterRow}>
         <FilterColumn
           label="Nhà trọ"
@@ -262,6 +287,51 @@ export const TrackingInvoiceStatus: React.FC = () => {
         />
       </View>
 
+      {/* Stats strip */}
+      <View style={styles.statsStrip}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statCount, { color: "#E65100" }]}>
+            {stats.processing}
+          </Text>
+          <Text style={styles.statLabel}>Đang soạn</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statCount, { color: "#1565C0" }]}>
+            {stats.paymentProcessing}
+          </Text>
+          <Text style={styles.statLabel}>Chờ TT</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statCount, { color: "#6A1B9A" }]}>
+            {stats.tenantConfirmed}
+          </Text>
+          <Text style={styles.statLabel}>Cần XN</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statCount, { color: COLORS.GREEN_PRIMARY }]}>
+            {stats.completed}
+          </Text>
+          <Text style={styles.statLabel}>Đã thu</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={[styles.statItem, { flex: 2 }]}>
+          <Text
+            style={[
+              styles.statCount,
+              { color: COLORS.GREEN_PRIMARY, fontSize: 13 },
+            ]}
+            numberOfLines={1}
+          >
+            {formatCurrency(stats.revenue)}
+          </Text>
+          <Text style={styles.statLabel}>Doanh thu</Text>
+        </View>
+      </View>
+
+      {/* Status tabs */}
       <View style={styles.tabContainer}>
         {["all", "unpaid", "paid"].map((t) => (
           <TouchableOpacity
@@ -281,6 +351,7 @@ export const TrackingInvoiceStatus: React.FC = () => {
         ))}
       </View>
 
+      {/* Bulk finalize button */}
       {processingIds.length > 0 && statusFilter !== "paid" && (
         <TouchableOpacity
           style={styles.bulkFinalizeBtn}
@@ -292,110 +363,129 @@ export const TrackingInvoiceStatus: React.FC = () => {
         </TouchableOpacity>
       )}
 
-      <ScrollView contentContainerStyle={styles.list}>
-        {displayInvoices.map((inv) => {
-          const isExpanded = expandedInvoiceId === inv._id;
-          return (
-            <View key={inv._id} style={styles.card}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() =>
-                  setExpandedInvoiceId(isExpanded ? null : (inv._id ?? null))
-                }
-              >
-                <View style={styles.cardHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.roomName}>
-                      {inv.roomId?.roomName || "N/A"}
-                    </Text>
-                    <Text style={styles.houseNameSub}>
-                      {inv.roomId?.houseId?.houseName || "Cơ sở nhà trọ"}
-                    </Text>
-                    <Text style={styles.rentalDateText}>
-                      Ngày tạo:{" "}
-                      {inv.createDate
-                        ? new Date(inv.createDate).toLocaleDateString("vi-VN")
-                        : "N/A"}
-                    </Text>
+      {/* Invoice list */}
+      <ScrollView
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {displayInvoices.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Không có hóa đơn nào</Text>
+          </View>
+        ) : (
+          displayInvoices.map((inv) => {
+            const isExpanded = expandedInvoiceId === inv._id;
+            return (
+              <View key={inv._id} style={styles.card}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    setExpandedInvoiceId(isExpanded ? null : (inv._id ?? null))
+                  }
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.roomName}>
+                        {inv.roomId?.roomName || "N/A"}
+                      </Text>
+                      <Text style={styles.houseNameSub}>
+                        {inv.roomId?.houseId?.houseName || "Cơ sở nhà trọ"}
+                      </Text>
+                      <Text style={styles.rentalDateText}>
+                        {new Date(
+                          inv.createDate ?? Date.now(),
+                        ).toLocaleDateString("vi-VN")}
+                      </Text>
+                    </View>
+                    <View style={styles.cardRight}>
+                      {renderBadge(inv.status)}
+                      <Text style={styles.cardTotal}>
+                        {formatCurrency(inv.totalAmount)}
+                      </Text>
+                    </View>
                   </View>
-                  {renderBadge(inv.status)}
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
 
-              {isExpanded && (
-                <>
-                  <View style={styles.breakdownList}>
-                    <View style={styles.breakdownRow}>
-                      <Text style={styles.breakdownLabel}>Tiền phòng</Text>
-                      <Text style={styles.breakdownAmount}>
-                        {formatCurrency(inv.rentalFee ?? inv.roomId?.rentalFee)}
-                      </Text>
-                    </View>
-                    <View style={styles.breakdownRow}>
-                      <Text style={styles.breakdownLabel}>Tiền điện</Text>
-                      <Text style={styles.breakdownAmount}>
-                        {formatCurrency(inv.electricityCharge)}
-                      </Text>
-                    </View>
-                    <View style={styles.breakdownRow}>
-                      <Text style={styles.breakdownLabel}>Tiền nước</Text>
-                      <Text style={styles.breakdownAmount}>
-                        {formatCurrency(inv.waterCharge)}
-                      </Text>
-                    </View>
-                    {inv.utilities?.map((u: any, index: number) => (
-                      <View key={index} style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>{u.key}</Text>
+                {isExpanded && (
+                  <>
+                    <View style={styles.breakdownList}>
+                      <View style={styles.breakdownRow}>
+                        <Text style={styles.breakdownLabel}>Tiền phòng</Text>
                         <Text style={styles.breakdownAmount}>
-                          {formatCurrency(u.value)}
+                          {formatCurrency(
+                            inv.rentalFee ?? inv.roomId?.rentalFee,
+                          )}
                         </Text>
                       </View>
-                    ))}
-                  </View>
-
-                  <View style={styles.totalRow}>
-                    <Text style={styles.totalLabel}>Tổng cộng</Text>
-                    <Text style={styles.totalAmountText}>
-                      {formatCurrency(inv.totalAmount)}
-                    </Text>
-                  </View>
-
-                  {inv.transactionImage && (
-                    <View style={styles.transactionImageContainer}>
-                      <Text style={styles.transactionImageLabel}>
-                        Ảnh chuyển khoản:
-                      </Text>
-                      <Image
-                        source={{ uri: inv.transactionImage }}
-                        style={styles.transactionImage}
-                        resizeMode="contain"
-                      />
+                      <View style={styles.breakdownRow}>
+                        <Text style={styles.breakdownLabel}>Tiền điện</Text>
+                        <Text style={styles.breakdownAmount}>
+                          {formatCurrency(inv.electricityCharge)}
+                        </Text>
+                      </View>
+                      <View style={styles.breakdownRow}>
+                        <Text style={styles.breakdownLabel}>Tiền nước</Text>
+                        <Text style={styles.breakdownAmount}>
+                          {formatCurrency(inv.waterCharge)}
+                        </Text>
+                      </View>
+                      {inv.utilities?.map((u: any, index: number) => (
+                        <View key={index} style={styles.breakdownRow}>
+                          <Text style={styles.breakdownLabel}>{u.key}</Text>
+                          <Text style={styles.breakdownAmount}>
+                            {formatCurrency(u.value)}
+                          </Text>
+                        </View>
+                      ))}
                     </View>
-                  )}
-                </>
-              )}
 
-              {inv.status === "processing" && (
-                <View style={styles.actionButtonContainer}>
-                  <AppButton
-                    title="Chốt hóa đơn"
-                    onPress={() => handleFinalizeOne(inv._id as string)}
-                  />
-                </View>
-              )}
-              {inv.status === "tenant-confirmed" && (
-                <View style={styles.actionButtonContainer}>
-                  <AppButton
-                    title="Xác nhận đã thu tiền"
-                    onPress={() => handleAccept(inv._id as string)}
-                  />
-                </View>
-              )}
-            </View>
-          );
-        })}
+                    <View style={styles.totalRow}>
+                      <Text style={styles.totalLabel}>Tổng cộng</Text>
+                      <Text style={styles.totalAmountText}>
+                        {formatCurrency(inv.totalAmount)}
+                      </Text>
+                    </View>
+
+                    {inv.transactionImage && (
+                      <View style={styles.transactionImageContainer}>
+                        <Text style={styles.transactionImageLabel}>
+                          Ảnh chuyển khoản:
+                        </Text>
+                        <Image
+                          source={{ uri: inv.transactionImage }}
+                          style={styles.transactionImage}
+                          resizeMode="contain"
+                        />
+                      </View>
+                    )}
+                  </>
+                )}
+
+                {inv.status === "processing" && (
+                  <View style={styles.actionButtonContainer}>
+                    <AppButton
+                      title="Chốt hóa đơn"
+                      onPress={() => handleFinalizeOne(inv._id as string)}
+                    />
+                  </View>
+                )}
+                {inv.status === "tenant-confirmed" && (
+                  <View style={styles.actionButtonContainer}>
+                    <AppButton
+                      title="Xác nhận đã thu tiền"
+                      onPress={() => handleAccept(inv._id as string)}
+                    />
+                  </View>
+                )}
+              </View>
+            );
+          })
+        )}
       </ScrollView>
 
+      {/* Picker modal */}
       <Modal visible={!!activePicker} transparent animationType="fade">
         <TouchableOpacity
           style={styles.modalOverlay}
@@ -452,6 +542,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F7FA" },
   header: { paddingTop: 50, paddingBottom: 20, alignItems: "center" },
   headerTitle: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
+
   filterRow: {
     flexDirection: "row",
     backgroundColor: "#FFF",
@@ -477,8 +568,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E9ECEF",
   },
-  valueText: { fontSize: 13, color: "#333", fontWeight: "600", flex: 1 },
+  valueText: { fontSize: 12, color: "#333", fontWeight: "600", flex: 1 },
   arrow: { fontSize: 10, color: "#CCC" },
+
+  statsStrip: {
+    flexDirection: "row",
+    backgroundColor: "#FFF",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEE",
+    alignItems: "center",
+  },
+  statItem: { flex: 1, alignItems: "center" },
+  statCount: { fontSize: 16, fontWeight: "bold" },
+  statLabel: { fontSize: 10, color: "#999", marginTop: 2 },
+  statDivider: { width: 1, height: 30, backgroundColor: "#EEE" },
+
   tabContainer: {
     flexDirection: "row",
     margin: 15,
@@ -491,6 +597,7 @@ const styles = StyleSheet.create({
   activeTab: { backgroundColor: "#FFF", elevation: 2 },
   tabText: { fontSize: 13, color: "#999", fontWeight: "bold" },
   activeTabText: { color: COLORS.GREEN_PRIMARY },
+
   bulkFinalizeBtn: {
     marginHorizontal: 15,
     marginBottom: 10,
@@ -500,7 +607,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   bulkFinalizeBtnText: { color: "#FFF", fontSize: 13, fontWeight: "bold" },
-  list: { paddingHorizontal: 15, paddingBottom: 20 },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 60,
+  },
+  emptyText: { fontSize: 15, color: "#999" },
+
+  list: { paddingHorizontal: 15, paddingBottom: 30 },
   card: {
     backgroundColor: "#FFF",
     borderRadius: 16,
@@ -516,9 +632,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
-  roomName: { fontSize: 18, fontWeight: "bold", color: "#1A1A1A" },
+  cardRight: { alignItems: "flex-end", gap: 4 },
+  roomName: { fontSize: 16, fontWeight: "bold", color: "#1A1A1A" },
   houseNameSub: { fontSize: 13, color: "#666", marginTop: 2 },
   rentalDateText: { fontSize: 12, color: "#999", marginTop: 2 },
+  cardTotal: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: COLORS.GREEN_PRIMARY,
+    marginTop: 4,
+  },
+
   breakdownList: {
     borderTopWidth: 1,
     borderTopColor: "#F0F0F0",
@@ -533,6 +657,7 @@ const styles = StyleSheet.create({
   },
   breakdownLabel: { fontSize: 14, color: "#777" },
   breakdownAmount: { fontSize: 14, color: "#333", fontWeight: "500" },
+
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -547,6 +672,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.GREEN_PRIMARY,
   },
+
   transactionImageContainer: { marginTop: 12 },
   transactionImageLabel: { fontSize: 13, color: "#666", marginBottom: 6 },
   transactionImage: {
@@ -555,7 +681,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#F0F0F0",
   },
+
   actionButtonContainer: { marginTop: 15 },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

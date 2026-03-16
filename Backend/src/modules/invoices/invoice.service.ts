@@ -3,9 +3,9 @@ import { uploadImage } from "../../utils/imageUtils";
 import roomMemberModel from "../rooms/roomMember.model";
 import userModel from "../users/user.model";
 import invoiceModel, { IInvoice, InvoiceZalo } from "./invoice.model";
+import paymentModel from "../payment/payment.model";
 import mongoose, { PipelineStage, Types } from "mongoose";
 import roomModel from "../rooms/room.model";
-
 
 export class invoiceService extends GenericService<IInvoice> {
   constructor() {
@@ -37,7 +37,6 @@ export class invoiceService extends GenericService<IInvoice> {
     return await invoiceModel.insertMany(newInvoices);
   };
 
-  // Landlord finalizes one or many invoices: processing → payment-processing
   finalizeInvoices = async (invoiceIds: string[]) => {
     const objectIds = invoiceIds.map((id) => new Types.ObjectId(id));
     return await invoiceModel.updateMany(
@@ -46,7 +45,6 @@ export class invoiceService extends GenericService<IInvoice> {
     );
   };
 
-  // Tenant fetches their invoices (payment-processing / tenant-confirmed for their room)
   getInvoicesByTenant = async (userId: string) => {
     const member = await roomMemberModel.findOne({
       userId: new Types.ObjectId(userId),
@@ -105,7 +103,6 @@ export class invoiceService extends GenericService<IInvoice> {
     return await invoiceModel.aggregate(pipeline);
   };
 
-  // Tenant confirms payment by uploading transaction image: payment-processing → tenant-confirmed
   tenantConfirmInvoice = async (invoiceId: string, transactionImageBase64?: string) => {
     const invoice = await invoiceModel.findOne({
       _id: new Types.ObjectId(invoiceId),
@@ -123,7 +120,6 @@ export class invoiceService extends GenericService<IInvoice> {
     return invoice;
   };
 
-  // Landlord accepts tenant-confirmed invoice: tenant-confirmed → completed, then auto-create next cycle
   landlordAcceptInvoice = async (invoiceId: string) => {
     const invoice = await invoiceModel.findOne({
       _id: new Types.ObjectId(invoiceId),
@@ -134,7 +130,18 @@ export class invoiceService extends GenericService<IInvoice> {
     invoice.status = "completed";
     await invoice.save();
 
-    // Auto-create next billing cycle invoice with previous readings carried forward
+    const member = await roomMemberModel.findOne({
+      roomId: invoice.roomId,
+      role: "TENANT",
+      status: "Đang Thuê",
+    });
+    if (member) {
+      await paymentModel.create({
+        userId: member.userId,
+        invoiceId: invoice._id,
+      });
+    }
+
     const utilitiesTotal = invoice.utilities?.reduce((sum, u) => sum + (u.value ?? 0), 0) ?? 0;
     const nextInvoice = new invoiceModel({
       roomId: invoice.roomId,

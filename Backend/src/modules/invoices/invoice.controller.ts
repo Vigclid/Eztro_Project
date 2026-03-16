@@ -52,7 +52,6 @@ export class invoiceController extends GenericController<IInvoice> {
     }
   };
 
-  // PATCH /finalize/many — Landlord finalizes one or many invoices: processing → payment-processing
   finalizeInvoices = async (req: Request, res: Response) => {
     try {
       const { invoiceIds } = req.body as { invoiceIds: string[] };
@@ -66,7 +65,6 @@ export class invoiceController extends GenericController<IInvoice> {
     }
   };
 
-  // GET /tenant/my — Tenant fetches their pending invoices
   getMyInvoicesAsTenant = async (req: Request, res: Response) => {
     const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
       id: string;
@@ -82,7 +80,6 @@ export class invoiceController extends GenericController<IInvoice> {
     }
   };
 
-  // PATCH /:id/tenant-confirm — Tenant confirms payment with transaction image
   tenantConfirmInvoice = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -99,7 +96,6 @@ export class invoiceController extends GenericController<IInvoice> {
     }
   };
 
-  // PATCH /:id/accept — Landlord accepts tenant-confirmed invoice → completed + auto-creates next invoice
   landlordAcceptInvoice = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
