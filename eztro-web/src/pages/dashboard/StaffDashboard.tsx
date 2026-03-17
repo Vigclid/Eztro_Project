@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Users,
   DollarSign,
@@ -15,9 +15,9 @@ import {
   Settings,
   BarChart3,
   Shield,
-} from 'lucide-react';
-import { reportGetAPI } from '../../api/reportAPI/GET';
-import './styles/StaffDashboard.css';
+} from "lucide-react";
+import { reportGetAPI } from "../../api/reportAPI/GET";
+import "./styles/StaffDashboard.css";
 
 interface DashboardStats {
   users: {
@@ -55,19 +55,23 @@ const StaffDashboard: React.FC = () => {
     activity: { today: 0, total: 0, uniqueUsers: 0, successRate: 0 },
   });
 
-  const userStr = localStorage.getItem('user');
+  const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
-  
+
   const getRoleName = () => {
     if (user?.roleName) return user.roleName;
-    if (user?.roleId && typeof user.roleId === 'object' && 'name' in user.roleId) {
+    if (
+      user?.roleId &&
+      typeof user.roleId === "object" &&
+      "name" in user.roleId
+    ) {
       return user.roleId.name;
     }
-    return 'Unknown';
+    return "Unknown";
   };
 
   const roleName = getRoleName();
-  const isAdmin = roleName === 'Admin' || roleName === 'admin';
+  const isAdmin = roleName === "Admin" || roleName === "admin";
 
   useEffect(() => {
     loadDashboardData();
@@ -78,35 +82,52 @@ const StaffDashboard: React.FC = () => {
     try {
       // Load reports data
       const reportsRes = await reportGetAPI.getAllReports();
-      
-      if (reportsRes.status === 'success' && reportsRes.data) {
+
+      if (reportsRes.status === "success" && reportsRes.data) {
         const reports = Array.isArray(reportsRes.data) ? reportsRes.data : [];
-        
+
         // Calculate report statistics
-        const pending = reports.filter(r => r.status === 'Pending').length;
-        const inProgress = reports.filter(r => r.status === 'InProgress').length;
-        const resolved = reports.filter(r => r.status === 'Resolved').length;
-        const closed = reports.filter(r => r.status === 'Closed').length;
-        
+        const pending = reports.filter((r) => r.status === "Pending").length;
+        const inProgress = reports.filter(
+          (r) => r.status === "InProgress",
+        ).length;
+        const resolved = reports.filter((r) => r.status === "Resolved").length;
+
         setStats({
           users: { total: 156, active: 142 }, // TODO: Load from users API
           revenue: { total: 45000000, paid: 38, pending: 12 }, // TODO: Load from invoices API
-          tickets: { 
-            total: reports.length, 
-            open: pending, 
-            inProgress: inProgress, 
+          tickets: {
+            total: reports.length,
+            open: pending,
+            inProgress: inProgress,
             highPriority: pending, // Using pending as high priority for now
-            resolved: resolved 
+            resolved: resolved,
           },
-          activity: { today: 234, total: 1847, uniqueUsers: 89, successRate: 94 }, // TODO: Load from activity API
+          activity: {
+            today: 234,
+            total: 1847,
+            uniqueUsers: 89,
+            successRate: 94,
+          }, // TODO: Load from activity API
         });
       } else {
         // Fallback to mock data if API fails
         setStats({
           users: { total: 156, active: 142 },
           revenue: { total: 45000000, paid: 38, pending: 12 },
-          tickets: { total: 0, open: 0, inProgress: 0, highPriority: 0, resolved: 0 },
-          activity: { today: 234, total: 1847, uniqueUsers: 89, successRate: 94 },
+          tickets: {
+            total: 0,
+            open: 0,
+            inProgress: 0,
+            highPriority: 0,
+            resolved: 0,
+          },
+          activity: {
+            today: 234,
+            total: 1847,
+            uniqueUsers: 89,
+            successRate: 94,
+          },
         });
       }
     } catch (error) {
@@ -114,7 +135,13 @@ const StaffDashboard: React.FC = () => {
       setStats({
         users: { total: 156, active: 142 },
         revenue: { total: 45000000, paid: 38, pending: 12 },
-        tickets: { total: 0, open: 0, inProgress: 0, highPriority: 0, resolved: 0 },
+        tickets: {
+          total: 0,
+          open: 0,
+          inProgress: 0,
+          highPriority: 0,
+          resolved: 0,
+        },
         activity: { today: 234, total: 1847, uniqueUsers: 89, successRate: 94 },
       });
     } finally {
@@ -125,7 +152,10 @@ const StaffDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="loading-container">
-        <div className="loading-spinner" style={{ width: '40px', height: '40px', borderWidth: '4px' }} />
+        <div
+          className="loading-spinner"
+          style={{ width: "40px", height: "40px", borderWidth: "4px" }}
+        />
         <p>Đang tải dữ liệu...</p>
       </div>
     );
@@ -142,12 +172,12 @@ const StaffDashboard: React.FC = () => {
             <div className="header-text">
               <p className="greeting">Xin chào,</p>
               <h2 className="username">
-                {user?.firstName && user?.lastName 
-                  ? `${user.firstName} ${user.lastName}` 
-                  : user?.email?.split('@')[0] || 'Staff'}
+                {user?.firstName && user?.lastName
+                  ? `${user.firstName} ${user.lastName}`
+                  : user?.email?.split("@")[0] || "Staff"}
               </h2>
               <p className="role">
-                {isAdmin ? '🔐 Quản trị viên' : '👤 Nhân viên'}
+                {isAdmin ? "🔐 Quản trị viên" : "👤 Nhân viên"}
               </p>
             </div>
           </div>
@@ -173,7 +203,9 @@ const StaffDashboard: React.FC = () => {
             </div>
             <div className="admin-banner-content">
               <h3>Quyền quản trị viên</h3>
-              <p>Bạn có quyền truy cập đầy đủ vào các tính năng quản lý hệ thống</p>
+              <p>
+                Bạn có quyền truy cập đầy đủ vào các tính năng quản lý hệ thống
+              </p>
             </div>
           </div>
         )}
@@ -188,7 +220,9 @@ const StaffDashboard: React.FC = () => {
               <div className="stat-content">
                 <p className="stat-label">Người dùng</p>
                 <h3 className="stat-value">{stats.users.total}</h3>
-                <p className="stat-change stat-change-positive">+{stats.users.active} hoạt động</p>
+                <p className="stat-change stat-change-positive">
+                  +{stats.users.active} hoạt động
+                </p>
               </div>
             </div>
 
@@ -198,9 +232,12 @@ const StaffDashboard: React.FC = () => {
               </div>
               <div className="stat-content">
                 <p className="stat-label">Doanh thu</p>
-                <h3 className="stat-value">{(stats.revenue.total / 1000000).toFixed(1)}M</h3>
+                <h3 className="stat-value">
+                  {(stats.revenue.total / 1000000).toFixed(1)}M
+                </h3>
                 <p className="stat-change stat-change-positive">
-                  {stats.revenue.paid}/{stats.revenue.paid + stats.revenue.pending} đã thu
+                  {stats.revenue.paid}/
+                  {stats.revenue.paid + stats.revenue.pending} đã thu
                 </p>
               </div>
             </div>
@@ -272,7 +309,9 @@ const StaffDashboard: React.FC = () => {
         )}
 
         <div className="section">
-          <h2 className="section-title">{isAdmin ? 'Quản lý chung' : 'Truy cập nhanh'}</h2>
+          <h2 className="section-title">
+            {isAdmin ? "Quản lý chung" : "Truy cập nhanh"}
+          </h2>
           <div className="actions-grid">
             <button className="action-card">
               <div className="action-icon action-icon-green">
@@ -296,7 +335,10 @@ const StaffDashboard: React.FC = () => {
               <ChevronRight size={24} color="#9ca3af" />
             </button>
 
-            <button className="action-card" onClick={() => navigate('/support')}>
+            <button
+              className="action-card"
+              onClick={() => navigate("/support")}
+            >
               <div className="action-icon action-icon-blue">
                 <LifeBuoy size={24} />
               </div>
@@ -328,7 +370,12 @@ const StaffDashboard: React.FC = () => {
         <div className="section">
           <div className="section-header">
             <h2 className="section-title">Phiếu hỗ trợ</h2>
-            <button className="section-link" onClick={() => navigate('/support')}>Xem tất cả</button>
+            <button
+              className="section-link"
+              onClick={() => navigate("/support")}
+            >
+              Xem tất cả
+            </button>
           </div>
 
           <div className="tickets-summary">

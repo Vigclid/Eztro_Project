@@ -1,11 +1,14 @@
 import { GenericService } from "../../core/services/base.service";
 import { uploadImage } from "../../utils/imageUtils";
 import roomMemberModel from "../rooms/roomMember.model";
+import roomModel from "../rooms/room.model";
+import houseModel from "../houses/house.model";
 import userModel from "../users/user.model";
 import invoiceModel, { IInvoice, InvoiceZalo } from "./invoice.model";
-import mongoose, { PipelineStage } from "mongoose";
-import roomModel from "../rooms/room.model";
-
+import paymentModel from "../payment/payment.model";
+import { notificationService } from "../notification/notification.service";
+import { NOTIFICATION_TYPES } from "../notification/notificationTypes";
+import mongoose, { PipelineStage, Types } from "mongoose";
 
 export class invoiceService extends GenericService<IInvoice> {
   constructor() {
@@ -20,25 +23,358 @@ export class invoiceService extends GenericService<IInvoice> {
     return await invoiceModel.find({ roomId });
   };
 
+  private fillInvoiceDefaults = async (data: Partial<IInvoice>): Promise<Partial<IInvoice>> => {
+    if (!data.roomId) return data;
+
+    const room = await roomModel.findById(data.roomId);
+    if (!room) return data;
+
+    const house = await houseModel.findById(room.houseId);
+
+    const lastInvoice = await invoiceModel
+      .findOne({ roomId: data.roomId, status: { $ne: "processing" } })
+      .sort({ createDate: -1 });
+
+    const prevElectric = lastInvoice?.currentElectricityNumber ?? 0;
+    const prevWater = lastInvoice?.currentWaterNumber ?? 0;
+
+    const defaults: Partial<IInvoice> = {
+      rentalFee: house?.defaultPrice ?? 0,
+      electricityCharge: house?.defaultElectricityCharge ?? 0,
+      waterCharge: house?.defaultWaterCharge ?? 0,
+      utilities: (house?.defaultUtilitesCharge as IInvoice["utilities"]) ?? [],
+      previousElectricityNumber: prevElectric,
+      currentElectricityNumber: prevElectric,
+      previousWaterNumber: prevWater,
+      currentWaterNumber: prevWater,
+    };
+
+    const overrides = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    ) as Partial<IInvoice>;
+
+    return { ...defaults, ...overrides };
+  };
+
   createNewInvoice = async (data: Partial<IInvoice>) => {
-    const newInvoice = new invoiceModel({
-      ...data,
-    });
-    return await invoiceModel.create(newInvoice);
+    const filledData = await this.fillInvoiceDefaults(data);
+    return await invoiceModel.create(new invoiceModel(filledData));
   };
 
   createNewInvoices = async (invoicesData: Partial<IInvoice>[]) => {
-    const newInvoices = invoicesData.map(
-      (data) =>
-        new invoiceModel({
-          ...data,
-        })
+    const filled = await Promise.all(invoicesData.map((d) => this.fillInvoiceDefaults(d)));
+    return await Promise.all(filled.map((d) => new invoiceModel(d).save()));
+  };
+
+  finalizeInvoices = async (invoiceIds: string[], triggeredByUserId?: string) => {
+    const objectIds = invoiceIds.map((id) => new Types.ObjectId(id));
+    const result = await invoiceModel.updateMany(
+      { _id: { $in: objectIds }, status: "processing" },
+      { $set: { status: "payment-processing" } }
     );
-    return await invoiceModel.insertMany(newInvoices);
+    const notifSvc = new notificationService();
+    const updatedInvoices = await invoiceModel.find({ _id: { $in: objectIds } });
+    for (const invoice of updatedInvoices) {
+      const member = await roomMemberModel.findOne({
+        roomId: invoice.roomId,
+        role: "TENANT",
+        status: "Đang Thuê",
+      });
+      if (member) {
+        await notifSvc.send({
+          type: NOTIFICATION_TYPES.LANDLORD_INVOICE,
+          target: { kind: "user", userId: member.userId.toString() },
+          triggeredBy: triggeredByUserId,
+          metadata: {
+            invoiceId: (invoice._id as Types.ObjectId).toString(),
+            amount: invoice.totalAmount ?? 0,
+            roomId: invoice.roomId.toString(),
+          },
+        });
+      }
+    }
+    return result;
+  };
+
+  getProcessingInvoicesByHouse = async (houseId: string) => {
+    const pipeline: PipelineStage[] = [
+      { $match: { status: "processing" } },
+      { $lookup: { from: "rooms", localField: "roomId", foreignField: "_id", as: "roomDetail" } },
+      { $unwind: "$roomDetail" },
+      { $match: { "roomDetail.houseId": new mongoose.Types.ObjectId(houseId) } },
+      {
+        $lookup: {
+          from: "houses",
+          localField: "roomDetail.houseId",
+          foreignField: "_id",
+          as: "houseDetail",
+        },
+      },
+      { $unwind: "$houseDetail" },
+      {
+        $lookup: {
+          from: "room_members",
+          let: { roomId: "$roomId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$roomId", "$$roomId"] },
+                role: "TENANT",
+                status: "Đang Thuê",
+              },
+            },
+          ],
+          as: "tenantMember",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "tenantMember.userId",
+          foreignField: "_id",
+          as: "tenantUser",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          invoiceId: "$_id",
+          roomId: 1,
+          roomName: "$roomDetail.roomName",
+          isVirtualTenant: {
+            $cond: {
+              if: { $gt: [{ $size: "$tenantUser" }, 0] },
+              then: false,
+              else: {
+                $cond: {
+                  if: { $gt: [{ $size: "$roomDetail.virtualTenants" }, 0] },
+                  then: true,
+                  else: false,
+                },
+              },
+            },
+          },
+          tenantName: {
+            $cond: {
+              if: { $gt: [{ $size: "$tenantUser" }, 0] },
+              then: {
+                $concat: [
+                  { $arrayElemAt: ["$tenantUser.lastName", 0] },
+                  " ",
+                  { $arrayElemAt: ["$tenantUser.firstName", 0] },
+                ],
+              },
+              else: {
+                $cond: {
+                  if: { $gt: [{ $size: "$roomDetail.virtualTenants" }, 0] },
+                  then: { $arrayElemAt: ["$roomDetail.virtualTenants.tenantName", 0] },
+                  else: "Chưa có thông tin",
+                },
+              },
+            },
+          },
+          tenantPhone: {
+            $cond: {
+              if: { $gt: [{ $size: "$tenantUser" }, 0] },
+              then: { $arrayElemAt: ["$tenantUser.phoneNumber", 0] },
+              else: {
+                $cond: {
+                  if: { $gt: [{ $size: "$roomDetail.virtualTenants" }, 0] },
+                  then: { $arrayElemAt: ["$roomDetail.virtualTenants.phoneNumber", 0] },
+                  else: null,
+                },
+              },
+            },
+          },
+          rentalFee: 1,
+          electricityPrice: "$houseDetail.defaultElectricityCharge",
+          waterPrice: "$houseDetail.defaultWaterCharge",
+          utilities: 1,
+          previousElectricityNumber: 1,
+          previousWaterNumber: 1,
+          currentElectricityNumber: 1,
+          currentWaterNumber: 1,
+          electricityUsage: {
+            $max: [
+              {
+                $subtract: [
+                  { $ifNull: ["$currentElectricityNumber", 0] },
+                  { $ifNull: ["$previousElectricityNumber", 0] },
+                ],
+              },
+              0,
+            ],
+          },
+          waterUsage: {
+            $max: [
+              {
+                $subtract: [
+                  { $ifNull: ["$currentWaterNumber", 0] },
+                  { $ifNull: ["$previousWaterNumber", 0] },
+                ],
+              },
+              0,
+            ],
+          },
+          electricityCost: "$electricityCharge",
+          waterCost: "$waterCharge",
+          utilitiesCost: {
+            $cond: { if: { $isArray: "$utilities" }, then: { $sum: "$utilities.value" }, else: 0 },
+          },
+          electricityImage: 1,
+          waterImage: 1,
+          totalAmount: 1,
+          isSelected: { $literal: false },
+        },
+      },
+      { $sort: { createDate: -1 } },
+    ];
+    return await invoiceModel.aggregate(pipeline);
+  };
+
+  updateProcessingInvoice = async (invoiceId: string, data: any) => {
+    const exists = await invoiceModel.findOne({
+      _id: new Types.ObjectId(invoiceId),
+      status: "processing",
+    });
+    if (!exists) throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
+    const fields: Record<string, any> = {};
+    const pick = (k: string) => {
+      if (data[k] !== undefined) fields[k] = data[k];
+    };
+    [
+      "rentalFee",
+      "currentElectricityNumber",
+      "currentWaterNumber",
+      "electricityCharge",
+      "waterCharge",
+      "utilities",
+      "totalAmount",
+    ].forEach(pick);
+    return await invoiceModel.findByIdAndUpdate(invoiceId, { $set: fields }, { new: true });
+  };
+
+  getInvoicesByTenant = async (userId: string) => {
+    const member = await roomMemberModel.findOne({
+      userId: new Types.ObjectId(userId),
+      status: "Đang Thuê",
+    });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          roomId: member.roomId,
+          status: { $in: ["payment-processing", "tenant-confirmed"] },
+        },
+      },
+      {
+        $lookup: {
+          from: "rooms",
+          localField: "roomId",
+          foreignField: "_id",
+          as: "roomDetail",
+        },
+      },
+      { $unwind: "$roomDetail" },
+      {
+        $lookup: {
+          from: "houses",
+          localField: "roomDetail.houseId",
+          foreignField: "_id",
+          as: "houseDetail",
+        },
+      },
+      { $unwind: "$houseDetail" },
+      {
+        $project: {
+          _id: 1,
+          status: 1,
+          utilities: 1,
+          rentalFee: 1,
+          previousElectricityNumber: 1,
+          currentElectricityNumber: 1,
+          previousWaterNumber: 1,
+          currentWaterNumber: 1,
+          electricityCharge: 1,
+          waterCharge: 1,
+          transactionImage: 1,
+          totalAmount: 1,
+          createDate: 1,
+          roomId: {
+            $mergeObjects: ["$roomDetail", { houseId: "$houseDetail" }],
+          },
+        },
+      },
+      { $sort: { createDate: -1 } },
+    ];
+
+    return await invoiceModel.aggregate(pipeline);
+  };
+
+  tenantConfirmInvoice = async (invoiceId: string, transactionImageBase64?: string) => {
+    const invoice = await invoiceModel.findOne({
+      _id: new Types.ObjectId(invoiceId),
+      status: "payment-processing",
+    });
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
+
+    if (transactionImageBase64) {
+      const res = await uploadImage(transactionImageBase64, 1, false);
+      invoice.transactionImage = res.secure_url;
+    }
+
+    invoice.status = "tenant-confirmed";
+    await invoice.save();
+    return invoice;
+  };
+
+  landlordAcceptInvoice = async (invoiceId: string) => {
+    const invoice = await invoiceModel.findOne({
+      _id: new Types.ObjectId(invoiceId),
+      status: { $in: ["tenant-confirmed", "payment-processing"] },
+    });
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
+
+    const member = await roomMemberModel.findOne({
+      roomId: invoice.roomId,
+      role: "TENANT",
+      status: "Đang Thuê",
+    });
+
+    invoice.status = "completed";
+    await invoice.save();
+
+    if (member) {
+      await paymentModel.create({
+        userId: member.userId,
+        invoiceId: invoice._id,
+      });
+    }
+
+    // Look up house defaults for the next invoice
+    const room = await roomModel.findById(invoice.roomId);
+    const house = room ? await houseModel.findById(room.houseId) : null;
+
+    const nextInvoice = new invoiceModel({
+      roomId: invoice.roomId,
+      status: "processing",
+      rentalFee: house?.defaultPrice ?? invoice.rentalFee ?? 0,
+      previousElectricityNumber: invoice.currentElectricityNumber ?? 0,
+      currentElectricityNumber: invoice.currentElectricityNumber ?? 0,
+      previousWaterNumber: invoice.currentWaterNumber ?? 0,
+      currentWaterNumber: invoice.currentWaterNumber ?? 0,
+      electricityCharge: house?.defaultElectricityCharge ?? 0,
+      waterCharge: house?.defaultWaterCharge ?? 0,
+      utilities: (house?.defaultUtilitesCharge as IInvoice["utilities"]) ?? invoice.utilities ?? [],
+    });
+
+    await nextInvoice.save();
+    return invoice;
   };
 
   getFilteredInvoices = async (filters: {
-    landLordId?: string; // Thêm tham số này vào filter
+    landLordId?: string;
     houseId?: string;
     month?: any;
     year?: any;
@@ -51,7 +387,11 @@ export class invoiceService extends GenericService<IInvoice> {
     const query: any = {};
 
     if (status && status !== "all") {
-      query.status = status === "paid" ? "completed" : "processing";
+      if (status === "paid") {
+        query.status = "completed";
+      } else if (status === "unpaid") {
+        query.status = { $in: ["processing", "payment-processing", "tenant-confirmed"] };
+      }
     }
 
     if (month || year) {
@@ -82,6 +422,22 @@ export class invoiceService extends GenericService<IInvoice> {
         },
       },
       { $unwind: "$houseDetail" },
+      {
+        $lookup: {
+          from: "room_members",
+          let: { roomId: "$roomId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$roomId", "$$roomId"] },
+                role: "TENANT",
+                status: "Đang Thuê",
+              },
+            },
+          ],
+          as: "tenantMember",
+        },
+      },
     ];
 
     if (landLordId) {
@@ -103,14 +459,29 @@ export class invoiceService extends GenericService<IInvoice> {
         _id: 1,
         status: 1,
         utilities: 1,
+        rentalFee: 1,
         previousElectricityNumber: 1,
         currentElectricityNumber: 1,
         previousWaterNumber: 1,
         currentWaterNumber: 1,
         electricityCharge: 1,
         waterCharge: 1,
+        transactionImage: 1,
         totalAmount: 1,
         createDate: 1,
+        isVirtualTenant: {
+          $cond: {
+            if: { $gt: [{ $size: "$tenantMember" }, 0] },
+            then: false,
+            else: {
+              $cond: {
+                if: { $gt: [{ $size: "$roomDetail.virtualTenants" }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
         roomId: {
           $mergeObjects: ["$roomDetail", { houseId: "$houseDetail" }],
         },
@@ -118,6 +489,125 @@ export class invoiceService extends GenericService<IInvoice> {
     });
 
     return await invoiceModel.aggregate(pipeline);
+  };
+
+  getProcessingInvoiceForTenant = async (userId: string) => {
+    const member = await roomMemberModel.findOne({
+      userId: new Types.ObjectId(userId),
+      status: "Đang Thuê",
+    });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+    return await invoiceModel.findOne({ roomId: member.roomId, status: "processing" });
+  };
+
+  submitMeterReadingByTenant = async (
+    userId: string,
+    data: {
+      waterNumber?: number;
+      waterImage?: string;
+      electricNumber?: number;
+      electricImage?: string;
+    }
+  ) => {
+    const member = await roomMemberModel.findOne({
+      userId: new Types.ObjectId(userId),
+      status: "Đang Thuê",
+    });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+
+    const invoice = await invoiceModel.findOne({ roomId: member.roomId, status: "processing" });
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND");
+
+    if (data.electricImage) {
+      const res = await uploadImage(data.electricImage, 1, false);
+      invoice.electricityImage = res.secure_url;
+    }
+    if (data.waterImage) {
+      const res = await uploadImage(data.waterImage, 1, false);
+      invoice.waterImage = res.secure_url;
+    }
+    if (data.waterNumber !== undefined) invoice.currentWaterNumber = Number(data.waterNumber);
+    if (data.electricNumber !== undefined)
+      invoice.currentElectricityNumber = Number(data.electricNumber);
+
+    await invoice.save();
+    return invoice;
+  };
+
+  getInvoicesForZaloUser = async (phoneNumber: string) => {
+    const user = await userModel.findOne({ phoneNumber });
+    if (!user) throw new Error("USER_NOT_FOUND");
+
+    const member = await roomMemberModel.findOne({ userId: user._id, status: "Đang Thuê" });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          roomId: member.roomId,
+          status: { $in: ["payment-processing", "tenant-confirmed", "completed"] },
+        },
+      },
+      { $lookup: { from: "rooms", localField: "roomId", foreignField: "_id", as: "roomDetail" } },
+      { $unwind: "$roomDetail" },
+      {
+        $lookup: {
+          from: "houses",
+          localField: "roomDetail.houseId",
+          foreignField: "_id",
+          as: "houseDetail",
+        },
+      },
+      { $unwind: "$houseDetail" },
+      {
+        $project: {
+          _id: 1,
+          status: 1,
+          utilities: 1,
+          rentalFee: 1,
+          previousElectricityNumber: 1,
+          currentElectricityNumber: 1,
+          previousWaterNumber: 1,
+          currentWaterNumber: 1,
+          electricityCharge: 1,
+          waterCharge: 1,
+          transactionImage: 1,
+          totalAmount: 1,
+          createDate: 1,
+          roomId: { $mergeObjects: ["$roomDetail", { houseId: "$houseDetail" }] },
+        },
+      },
+      { $sort: { createDate: -1 } },
+    ];
+    return await invoiceModel.aggregate(pipeline);
+  };
+
+  zaloTenantConfirmInvoice = async (
+    phoneNumber: string,
+    invoiceId: string,
+    transactionImageBase64?: string
+  ) => {
+    const user = await userModel.findOne({ phoneNumber });
+    if (!user) throw new Error("USER_NOT_FOUND");
+
+    const member = await roomMemberModel.findOne({ userId: user._id, status: "Đang Thuê" });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+
+    const invoice = await invoiceModel.findOne({
+      _id: new Types.ObjectId(invoiceId),
+      roomId: member.roomId,
+      status: "payment-processing",
+    });
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
+
+    if (transactionImageBase64) {
+      const res = await uploadImage(transactionImageBase64, 1, false);
+      invoice.transactionImage = res.secure_url;
+    }
+
+    invoice.status = "tenant-confirmed";
+    await invoice.save();
+    return invoice;
   };
 
   updateInvoiceWithZalo = async (data: InvoiceZalo) => {
@@ -147,147 +637,5 @@ export class invoiceService extends GenericService<IInvoice> {
 
     await invoice.save();
     return invoice;
-  };
-
-  getRoomsForInvoiceCreation = async (houseId: string) => {
-    const pipeline: PipelineStage[] = [
-      {
-        $match: {
-          houseId: new mongoose.Types.ObjectId(houseId),
-        },
-      },
-      {
-        $lookup: {
-          from: "houses",
-          localField: "houseId",
-          foreignField: "_id",
-          as: "houseInfo",
-        },
-      },
-      { $unwind: "$houseInfo" },
-      {
-        $lookup: {
-          from: "room_members",
-          let: { roomId: "$_id" },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ["$roomId", "$$roomId"] },
-                role: "TENANT",
-                status: "Đang Thuê",
-              },
-            },
-          ],
-          as: "realTenantMember",
-        },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "realTenantMember.userId",
-          foreignField: "_id",
-          as: "realTenantUser",
-        },
-      },
-      {
-        $lookup: {
-          from: "invoices",
-          let: { roomId: "$_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$roomId", "$$roomId"] } } },
-            { $sort: { createDate: -1 } },
-            { $limit: 1 },
-          ],
-          as: "latestInvoice",
-        },
-      },
-      // BƯỚC TRUNG GIAN: Xử lý hết các giá trị null/undefined và tính Usage
-      {
-        $addFields: {
-          safePreviousElectricity: {
-            $ifNull: [{ $arrayElemAt: ["$latestInvoice.currentElectricityNumber", 0] }, 0]
-          },
-          safePreviousWater: {
-            $ifNull: [{ $arrayElemAt: ["$latestInvoice.currentWaterNumber", 0] }, 0]
-          },
-          safeCurrentElectricity: { $ifNull: ["$currentElectricityNumber", 0] },
-          safeCurrentWater: { $ifNull: ["$currentWaterNumber", 0] },
-          safeElectricityPrice: { $ifNull: ["$houseInfo.defaultElectricityCharge", 0] },
-          safeWaterPrice: { $ifNull: ["$houseInfo.defaultWaterCharge", 0] },
-          safeRentalFee: { $ifNull: ["$rentalFee", 0] }
-        }
-      },
-      {
-        $addFields: {
-          calcElectricityUsage: {
-            $max: [{ $subtract: ["$safeCurrentElectricity", "$safePreviousElectricity"] }, 0]
-          },
-          calcWaterUsage: {
-            $max: [{ $subtract: ["$safeCurrentWater", "$safePreviousWater"] }, 0]
-          },
-          calcUtilitiesCost: {
-            $cond: {
-              if: { $isArray: "$houseInfo.defaultUtilitesCharge" },
-              then: { $sum: "$houseInfo.defaultUtilitesCharge.value" },
-              else: 0
-            }
-          }
-        }
-      },
-      // BƯỚC CUỐI: Project kết quả sạch
-      {
-        $project: {
-          roomId: "$_id",
-          roomName: "$roomName",
-          rentalFee: "$safeRentalFee",
-          tenantName: {
-            $cond: {
-              if: { $gt: [{ $size: "$realTenantUser" }, 0] },
-              then: {
-                $concat: [
-                  { $arrayElemAt: ["$realTenantUser.lastName", 0] },
-                  " ",
-                  { $arrayElemAt: ["$realTenantUser.firstName", 0] },
-                ],
-              },
-              else: {
-                $cond: {
-                  if: { $gt: [{ $size: "$virtualTenants" }, 0] },
-                  then: { $arrayElemAt: ["$virtualTenants.tenantName", 0] },
-                  else: "Chưa có thông tin",
-                },
-              },
-            },
-          },
-
-          electricityPrice: "$safeElectricityPrice",
-          waterPrice: "$safeWaterPrice",
-          utilities: { $ifNull: ["$houseInfo.defaultUtilitesCharge", []] },
-
-          previousElectricityNumber: "$safePreviousElectricity",
-          previousWaterNumber: "$safePreviousWater",
-          currentElectricityNumber: "$safeCurrentElectricity",
-          currentWaterNumber: "$safeCurrentWater",
-
-          electricityUsage: "$calcElectricityUsage",
-          waterUsage: "$calcWaterUsage",
-
-          electricityCost: { $multiply: ["$calcElectricityUsage", "$safeElectricityPrice"] },
-          waterCost: { $multiply: ["$calcWaterUsage", "$safeWaterPrice"] },
-          utilitiesCost: "$calcUtilitiesCost",
-
-          totalAmount: {
-            $add: [
-              "$safeRentalFee",
-              { $multiply: ["$calcElectricityUsage", "$safeElectricityPrice"] },
-              { $multiply: ["$calcWaterUsage", "$safeWaterPrice"] },
-              "$calcUtilitiesCost"
-            ]
-          },
-        },
-      },
-    ];
-
-    return await roomModel.aggregate(pipeline);
   };
 }

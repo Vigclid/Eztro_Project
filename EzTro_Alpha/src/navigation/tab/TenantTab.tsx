@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from "react";
 import TenantNavBar from "../../components/layout/TenantNavBar";
-import { TrackingInvoiceStatus } from "../../screens/invoice/TrackingInvoiceStatus";
+import { TenantInvoiceScreen } from "../../screens/invoice/TenantInvoiceScreen";
 import { UserProfile } from "../../screens/profile/UserProfile";
 import TenantHomeScreen from "../../screens/tenant/TenantHomeScreen";
 
@@ -15,7 +15,7 @@ const TenantTab = () => (
     tabBar={(props) => <TenantNavBar {...props} />}
   >
     <Tab.Screen name="tenantHome" component={TenantHomeScreen} />
-    <Tab.Screen name="trackingInvoiceStatus" component={TrackingInvoiceStatus} />
+    <Tab.Screen name="trackingInvoiceStatus" component={TenantInvoiceScreen} />
     <Tab.Screen name="userProfile" component={UserProfile} />
   </Tab.Navigator>
 );
