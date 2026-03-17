@@ -12,12 +12,14 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { ArrowLeft, Send } from 'lucide-react-native';
 import { getTicketApi } from '../../api/ticket/ticketapi';
 import { postTicketApi } from '../../api/ticket/ticketapi';
 import { ITicket } from '../../types/ticket';
 import { COLORS } from '../../constants/theme';
 import { NavigationProp, MainStackParamList } from '../../navigation/navigation.type';
+import { RootState } from '../../stores/store';
 import { styles } from './styles/TicketDetailScreen.styles';
 
 type TicketDetailRouteProp = RouteProp<MainStackParamList, 'ticketDetailScreen'>;
@@ -25,12 +27,27 @@ type TicketDetailRouteProp = RouteProp<MainStackParamList, 'ticketDetailScreen'>
 export const TicketDetailScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<TicketDetailRouteProp>();
+  const { user } = useSelector((state: RootState) => state.auth);
   const { ticketId } = route.params;
 
   const [ticket, setTicket] = useState<ITicket | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
+
+  // Get user role and ID
+  const getUserRole = () => {
+    if (user?.roleName) return user.roleName;
+    if (user?.roleId && typeof user.roleId === 'object' && 'name' in user.roleId) {
+      return (user.roleId as any).name;
+    }
+    return '';
+  };
+  
+  const userRole = getUserRole();
+  const isLandlord = userRole === 'Landlord' || userRole === 'landlord';
+  const isTenant = userRole === 'Tenant' || userRole === 'tenant';
+  const currentUserId = user?._id || user?.id;
 
   useEffect(() => {
     loadTicket();
@@ -51,7 +68,7 @@ export const TicketDetailScreen: React.FC = () => {
   };
 
   const handleSendReply = async () => {
-    if (!replyText.trim() || sending) return;
+    if (!replyText.trim() || sending || !canChat()) return;
 
     try {
       setSending(true);
@@ -64,6 +81,32 @@ export const TicketDetailScreen: React.FC = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  // Check if user can chat
+  const canChat = () => {
+    if (!ticket) return false;
+    
+    // Landlord can always chat
+    if (isLandlord) return true;
+    
+    // Tenant can only chat if landlord has sent at least one reply
+    if (isTenant) {
+      const landlordReplies = ticket.replies?.filter(reply => {
+        const replyUserId = typeof reply.userId === 'object' ? reply.userId._id : reply.userId;
+        const receiverId = typeof ticket.receiverId === 'object' ? ticket.receiverId._id : ticket.receiverId;
+        return replyUserId === receiverId;
+      });
+      return landlordReplies && landlordReplies.length > 0;
+    }
+    
+    return false;
+  };
+
+  // Check if message is from current user (sender) or other user (receiver)
+  const isMyMessage = (reply: any) => {
+    const replyUserId = typeof reply.userId === 'object' ? reply.userId._id : reply.userId;
+    return replyUserId === currentUserId;
   };
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -204,7 +247,10 @@ export const TicketDetailScreen: React.FC = () => {
             
             {ticket.replies && ticket.replies.length > 0 ? (
               ticket.replies.map((reply, index) => (
-                <View key={index} style={styles.replyCard}>
+                <View key={index} style={[
+                  styles.replyCard,
+                  isMyMessage(reply) ? styles.myMessage : styles.otherMessage
+                ]}>
                   <View style={styles.replyHeader}>
                     <Text style={styles.replyAuthor}>
                       {typeof reply.userId === 'object' 
@@ -225,28 +271,36 @@ export const TicketDetailScreen: React.FC = () => {
         </ScrollView>
 
         {/* Reply Input */}
-        <View style={styles.replyInputContainer}>
-          <TextInput
-            style={styles.replyInput}
-            placeholder="Nhập phản hồi..."
-            placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
-            value={replyText}
-            onChangeText={setReplyText}
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, (!replyText.trim() || sending) && styles.sendButtonDisabled]}
-            onPress={handleSendReply}
-            disabled={!replyText.trim() || sending}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color={COLORS.WHITE} />
-            ) : (
-              <Send size={20} color={COLORS.WHITE} />
-            )}
-          </TouchableOpacity>
-        </View>
+        {canChat() ? (
+          <View style={styles.replyInputContainer}>
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Nhập phản hồi..."
+              placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+              value={replyText}
+              onChangeText={setReplyText}
+              multiline
+              maxLength={500}
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, (!replyText.trim() || sending) && styles.sendButtonDisabled]}
+              onPress={handleSendReply}
+              disabled={!replyText.trim() || sending}
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color={COLORS.WHITE} />
+              ) : (
+                <Send size={20} color={COLORS.WHITE} />
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.chatDisabledContainer}>
+            <Text style={styles.chatDisabledText}>
+              {isTenant ? 'Chờ chủ trọ phản hồi để có thể trao đổi' : 'Không thể trao đổi'}
+            </Text>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaProvider>
   );

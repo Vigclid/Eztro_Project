@@ -5,10 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import {
   ArrowLeft,
   Plus,
@@ -16,21 +18,38 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  Trash2,
 } from 'lucide-react-native';
 import { getTicketApi } from '../../api/ticket/ticketapi';
 import { putTicketApi } from '../../api/ticket/ticketapi';
+import { deleteTicketApi } from '../../api/ticket/ticketapi';
 import { ITicket } from '../../types/ticket';
 import { COLORS } from '../../constants/theme';
 import { NavigationProp } from '../../navigation/navigation.type';
+import { RootState } from '../../stores/store';
 import { styles } from './styles/TicketListScreen.styles';
 
 type FilterType = 'all' | 'pending' | 'processing' | 'completed';
 
 export const TicketListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [filter, setFilter] = useState<FilterType>('all');
   const [tickets, setTickets] = useState<ITicket[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Get user role
+  const getUserRole = () => {
+    if (user?.roleName) return user.roleName;
+    if (user?.roleId && typeof user.roleId === 'object' && 'name' in user.roleId) {
+      return (user.roleId as any).name;
+    }
+    return '';
+  };
+  
+  const userRole = getUserRole();
+  const isLandlord = userRole === 'Landlord' || userRole === 'landlord';
+  const isTenant = userRole === 'Tenant' || userRole === 'tenant';
 
   // Reload tickets when screen comes into focus
   useFocusEffect(
@@ -42,7 +61,17 @@ export const TicketListScreen: React.FC = () => {
   const loadTickets = async () => {
     try {
       setLoading(true);
-      const response: any = await getTicketApi.getAllTicketsByLandlord();
+      let response: any;
+      
+      // Use appropriate API based on user role
+      if (isLandlord) {
+        response = await getTicketApi.getAllTicketsByLandlord();
+      } else if (isTenant) {
+        response = await getTicketApi.getAllTicketsByTenant();
+      } else {
+        // Default fallback
+        response = await getTicketApi.getAllTicketsByTenant();
+      }
       
       // apiService wraps the backend response, so we need to access response.data.data
       // Backend returns: { status: "success", data: [...], message: "..." }
@@ -120,6 +149,46 @@ export const TicketListScreen: React.FC = () => {
       loadTickets();
     } catch (error) {
     }
+  };
+
+  const handleDeleteTicket = async (ticketId: string, ticketTitle: string) => {
+    Alert.alert(
+      'Xác nhận xóa',
+      `Bạn có chắc chắn muốn xóa yêu cầu "${ticketTitle}"?`,
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+        },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response: any = await deleteTicketApi.deleteTicket(ticketId);
+              if (response.status) {
+                Alert.alert('Thành công', 'Đã xóa yêu cầu thành công');
+                loadTickets(); // Reload the list
+              } else {
+                Alert.alert('Lỗi', response.error?.message || 'Không thể xóa yêu cầu');
+              }
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể xóa yêu cầu. Vui lòng thử lại.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Check if user can delete this ticket
+  const canDeleteTicket = (ticket: ITicket) => {
+    const currentUserId = user?._id || user?.id;
+    const senderId = typeof ticket.senderId === 'object' ? ticket.senderId._id : ticket.senderId;
+    const receiverId = typeof ticket.receiverId === 'object' ? ticket.receiverId._id : ticket.receiverId;
+    
+    // User can delete their own ticket or landlord can delete tenant tickets
+    return senderId === currentUserId || (isLandlord && receiverId === currentUserId);
   };
   const pendingCount = tickets.filter((t) => t.status === 'pending').length;
   const processingCount = tickets.filter((t) => t.status === 'processing').length;
@@ -216,59 +285,74 @@ export const TicketListScreen: React.FC = () => {
               })}
               activeOpacity={0.7}
             >
-              <View style={styles.ticketHeader}>
-                <View style={styles.ticketInfo}>
-                  {getStatusIcon(ticket.status)}
-                  <View style={styles.ticketTitleContainer}>
-                    <Text style={styles.ticketTitle}>{ticket.title}</Text>
-                    <Text style={styles.ticketLocation}>
-                      {typeof ticket.houseId === 'object' && ticket.houseId?.houseName}
-                      {ticket.roomId && ` - Phòng ${typeof ticket.roomId === 'object' && ticket.roomId?.roomName}`}
-                    </Text>
-                  </View>
+              {/* Top Row: Status Badge and Delete Button */}
+              <View style={styles.cardTopRow}>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) }]}>
+                  <Text style={styles.statusBadgeText}>{getStatusText(ticket.status)}</Text>
                 </View>
+                {canDeleteTicket(ticket) && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTicket(ticket._id, ticket.title);
+                    }}
+                  >
+                    <Trash2 size={16} color="#EF4444" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Title and Location */}
+              <Text style={styles.ticketTitle} numberOfLines={2}>{ticket.title}</Text>
+              <Text style={styles.ticketLocation} numberOfLines={1}>
+                {typeof ticket.houseId === 'object' && ticket.houseId?.houseName}
+                {ticket.roomId && ` • Phòng ${typeof ticket.roomId === 'object' && ticket.roomId?.roomName}`}
+              </Text>
+
+              {/* Description */}
+              <Text style={styles.ticketDescription} numberOfLines={2}>
+                {ticket.description}
+              </Text>
+
+              {/* Bottom Row: Category Badge and Date */}
+              <View style={styles.cardBottomRow}>
                 <View style={getPriorityColor(ticket.categories)}>
                   <Text style={styles.badgeText}>
                     {getPriorityText(ticket.categories)}
                   </Text>
                 </View>
-              </View>
-
-              <Text style={styles.ticketDescription} numberOfLines={2}>
-                {ticket.description}
-              </Text>
-
-              <View style={styles.ticketMeta}>
-                <Text style={styles.metaText}>{getStatusText(ticket.status)}</Text>
-                <Text style={styles.metaText}>
-                  Báo cáo: {new Date(ticket.createdAt).toLocaleDateString('vi-VN')}
+                <Text style={styles.ticketDate}>
+                  {new Date(ticket.createdAt).toLocaleDateString('vi-VN')}
                 </Text>
               </View>
 
-              {ticket.status === 'pending' && (
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={styles.startButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleUpdateStatus(ticket._id, 'processing');
-                    }}
-                  >
-                    <Text style={styles.startButtonText}>Bắt đầu xử lý</Text>
-                  </TouchableOpacity>
+              {/* Action Buttons for Landlord */}
+              {isLandlord && (ticket.status === 'pending' || ticket.status === 'processing') && (
+                <View style={styles.actionRow}>
+                  {ticket.status === 'pending' && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.actionButtonStart]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleUpdateStatus(ticket._id, 'processing');
+                      }}
+                    >
+                      <Text style={styles.actionButtonText}>Bắt đầu</Text>
+                    </TouchableOpacity>
+                  )}
+                  {ticket.status === 'processing' && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.actionButtonComplete]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleUpdateStatus(ticket._id, 'completed');
+                      }}
+                    >
+                      <Text style={styles.actionButtonText}>Hoàn thành</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              )}
-
-              {ticket.status === 'processing' && (
-                <TouchableOpacity
-                  style={styles.completeButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleUpdateStatus(ticket._id, 'completed');
-                  }}
-                >
-                  <Text style={styles.completeButtonText}>Đánh dấu hoàn thành</Text>
-                </TouchableOpacity>
               )}
             </TouchableOpacity>
           ))
