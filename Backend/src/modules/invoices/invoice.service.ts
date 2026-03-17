@@ -38,7 +38,6 @@ export class invoiceService extends GenericService<IInvoice> {
     return await invoiceModel.insertMany(newInvoices);
   };
 
-  // Landlord finalizes invoices: processing → payment-processing + notify tenants
   finalizeInvoices = async (invoiceIds: string[], triggeredByUserId?: string) => {
     const objectIds = invoiceIds.map((id) => new Types.ObjectId(id));
     const result = await invoiceModel.updateMany(
@@ -171,7 +170,6 @@ export class invoiceService extends GenericService<IInvoice> {
     return await invoiceModel.aggregate(pipeline);
   };
 
-  // Update a draft invoice — frontend passes recalculated values, we skip the pre-save hook
   updateProcessingInvoice = async (invoiceId: string, data: any) => {
     const exists = await invoiceModel.findOne({
       _id: new Types.ObjectId(invoiceId),
