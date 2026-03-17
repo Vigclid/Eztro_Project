@@ -17,16 +17,39 @@ import { NavigationProp } from "../../navigation/navigation.type";
 import { RootState } from "../../stores/store";
 
 const WelcomeScreen = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, role } = useSelector((state: RootState) => state.auth);
   const navigation = useNavigation<NavigationProp>();
   useEffect(() => {
     if (user) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "mainscreen" }],
-      });
+      // Get role name from user object
+      const getRoleName = () => {
+        if (user?.roleName) return user.roleName;
+        if (user?.roleId && typeof user.roleId === "object" && "name" in user.roleId) {
+          return (user.roleId as any).name;
+        }
+        return role;
+      };
+
+      const userRole = getRoleName();
+
+      if (userRole === "Tenant") {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "tenantscreen" }],
+        });
+      } else if (userRole === "Staff" || userRole === "Admin") {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "staffRedirect" }],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "mainscreen" }],
+        });
+      }
     }
-  }, []);
+  }, [user, role]);
 
   const handleLoginPress = () => {
     navigation.navigate("auth", { screen: "login" });

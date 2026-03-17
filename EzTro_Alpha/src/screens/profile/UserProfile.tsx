@@ -8,6 +8,7 @@ import {
   LogOut,
   Mail,
   Phone,
+  Settings,
   User,
   Wallet,
 } from "lucide-react-native";
@@ -30,6 +31,30 @@ export const UserProfile: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const { user } = useSelector((state: RootState) => state.auth);
+
+  // Get role name from user object
+  const getRoleName = () => {
+    if (user?.roleName) return user.roleName;
+    if (
+      user?.roleId &&
+      typeof user.roleId === "object" &&
+      "name" in user.roleId
+    ) {
+      return user.roleId.name;
+    }
+    return "Người dùng";
+  };
+
+  const roleName = getRoleName();
+
+  // Map role name to Vietnamese
+  const getRoleDisplayName = (role: string) => {
+    const roleMap: { [key: string]: string } = {
+      Landlord: "Chủ trọ",
+      Tenant: "Người thuê",
+    };
+    return roleMap[role] || role;
+  };
 
   useEffect(() => {
     if (!user) {
@@ -69,7 +94,9 @@ export const UserProfile: React.FC = () => {
                 <View style={styles.badgeIcon}>
                   <Icon name="home" size={26} color={theme.theme.color} />
                 </View>
-                <Text style={styles.badgeText}>Chủ trọ</Text>
+                <Text style={styles.badgeText}>
+                  {getRoleDisplayName(roleName)}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -169,7 +196,30 @@ export const UserProfile: React.FC = () => {
                   </View>
                 </View>
               </View>
-              <View style={styles.sectionItemRow}>
+              <TouchableOpacity
+                style={styles.sectionItemRow}
+                activeOpacity={0.7}
+                onPress={() => appNavigator.goToSettingScreen()}
+              >
+                <View style={styles.sectionIcon}>
+                  <Settings size={26} color={COLORS.GRADIENT_START} />
+                </View>
+                <View style={styles.sectionItemContent}>
+                  <View style={styles.sectionItemTitleContainer}>
+                    <Text style={styles.sectionItemTitle}>Cài đặt</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.sectionItemDescription}>
+                      Tuỳ chỉnh ứng dụng
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sectionItemRow}
+                activeOpacity={0.7}
+                onPress={() => appNavigator.goToSupportScreen()}
+              >
                 <View style={styles.sectionIcon}>
                   <HelpCircle size={26} color={COLORS.GRADIENT_START} />
                 </View>
@@ -181,11 +231,11 @@ export const UserProfile: React.FC = () => {
                   </View>
                   <View>
                     <Text style={styles.sectionItemDescription}>
-                      Câu hỏi thường gặp, liên hệ
+                      Trợ giúp, báo lỗi, góp ý
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
           <LinearGradient

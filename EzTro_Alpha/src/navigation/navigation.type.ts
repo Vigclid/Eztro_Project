@@ -1,4 +1,5 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { IHouse, IUtilitesCharge } from "../types/house";
 
 export type RootStackParamList = {
   auth: {
@@ -13,21 +14,36 @@ export type RootStackParamList = {
     screen: keyof TenantTabParamList;
     params?: TenantTabParamList[keyof TenantTabParamList];
   };
+  staffscreen: {
+    screen: keyof StaffTabParamList;
+    params?: StaffTabParamList[keyof StaffTabParamList];
+  };
   mainstack: {
     screen: keyof MainStackParamList;
     params?: MainStackParamList[keyof MainStackParamList];
   };
+  staffRedirect: undefined;
 };
+
 export type MainTabParamList = {
   blank: undefined;
   userProfile: undefined;
   viewBoardingHousePage: undefined;
   trackingInvoiceStatus: undefined;
+  createInvoicesScreen: undefined;
 };
 
 export type TenantTabParamList = {
   tenantHome: undefined;
   trackingInvoiceStatus: undefined;
+  userProfile: undefined;
+};
+
+export type StaffTabParamList = {
+  staffDashboard: undefined;
+  staffUsers: undefined;
+  staffSupport: undefined;
+  staffActivity: undefined;
   userProfile: undefined;
 };
 
@@ -56,12 +72,20 @@ export type MainStackParamList = {
   ticketDetailScreen: { ticketId: string };
   packagePaymentScreen: { houseData: any | undefined };
   qrScanScreen: {
-    houseData: any,
-    packageId: any,
-    paymentType: any  | undefined
-};
+    houseData: any;
+    packageId: any;
+    paymentType: any | undefined;
+  };
   notificationScreen: undefined;
+  createNotificationScreen: undefined;
+  settingScreen: undefined;
+  supportScreen: undefined;
+  myReportsScreen: undefined;
+  reportDetailScreen: { reportId: string };
+  deleteBoardingHouseScreen: undefined;
+  createFixedServiceFeeScreen: { houseId: string  | undefined, action: string, utility: IUtilitesCharge }
 };
+
 export type AuthStackParamList = {
   welcome: undefined;
   login: undefined;
@@ -71,7 +95,7 @@ export type AuthStackParamList = {
   otpVerification: { email: string; tempToken: string } | undefined;
   createNewPassword: { email: string } | undefined;
   changePasswordSuccessful: { fromMain?: boolean } | undefined;
-  createBoardingHouse: undefined;
+  createBoardingHouse: { houseData?: IHouse } | undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

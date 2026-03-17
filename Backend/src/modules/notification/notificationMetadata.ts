@@ -1,5 +1,18 @@
 // ─── Per-type metadata interfaces ────────────────────────────────────
-
+export interface targetMetadata {
+  kind: string;
+  userId?: string;
+  houseId?: string;
+  roomId: string;
+}
+export interface notificationRequest {
+  type: string;
+  target: targetMetadata;
+  metadata: LandlordNotificationMetadata;
+}
+export interface LandlordNotificationMetadata {
+  message: string;
+}
 export interface SystemAnnouncementMetadata {
   message: string;
 }

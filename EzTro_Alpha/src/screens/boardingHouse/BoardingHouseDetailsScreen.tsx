@@ -29,6 +29,8 @@ import {
     Settings,
     type LucideIcon,
 } from "lucide-react-native";
+import { appNavigator } from "../../navigation/navigationActions";
+import FixedFeeTab from "../../components/boardingHouse/FixedFeeTab";
 
 type DetailsRouteProps = RouteProp<MainStackParamList, 'boardingHouseDetailsScreen'>;
 
@@ -286,16 +288,16 @@ export const BoardingHouseDetailsScreen = () => {
                 }
 
                 return {
-                _id: room._id,
-                houseId: room.houseId,
-                area: undefined,
-                floor: undefined,
-                roomName: room.roomName,
-                rentalFee: room.rentalFee,
-                status: room.status,
-                rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
-                virtualTenants: room.virtualTenants || [],
-                accountTenants,
+                    _id: room._id,
+                    houseId: room.houseId,
+                    area: undefined,
+                    floor: undefined,
+                    roomName: room.roomName,
+                    rentalFee: room.rentalFee,
+                    status: room.status,
+                    rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
+                    virtualTenants: room.virtualTenants || [],
+                    accountTenants,
                 };
             }));
             setRooms(mappedRooms);
@@ -357,11 +359,13 @@ export const BoardingHouseDetailsScreen = () => {
                         <View>
                             <Text style={styles.headerTitle}>Chi tiết cụm trọ</Text>
                         </View>
-                        <View style={styles.headerIcon}>
+                        <TouchableOpacity
+                            onPress={() => appNavigator.goToCreateBoardingHousePage(boardingHouse)}
+                            style={styles.headerIcon}>
                             <Pen
                                 color={COLORS.WHITE}
                             />
-                        </View>
+                        </TouchableOpacity>
                     </LinearGradient>
 
                     <View style={styles.contentContainer}>
@@ -425,19 +429,21 @@ export const BoardingHouseDetailsScreen = () => {
                                     </View>
                                     <View
                                         style={
-                                            boardingHouse?.housePackage?.isExpired
+                                            boardingHouse?.housePackage?.isExpired ||
+                                                !currentPackage
                                                 ? styles.packageExpiredBadge
                                                 : styles.packageActiveBadge
                                         }
                                     >
                                         <Text
                                             style={
-                                                boardingHouse?.housePackage?.isExpired
+                                                boardingHouse?.housePackage?.isExpired ||
+                                                    !currentPackage
                                                     ? styles.packageExpiredText
                                                     : styles.packageActiveText
                                             }
                                         >
-                                            {boardingHouse?.housePackage?.isExpired ? "Hết hạn" : "Đang hiệu lực"}
+                                            {boardingHouse?.housePackage?.isExpired || !currentPackage ? "Hết hạn" : "Đang hiệu lực"}
                                         </Text>
                                     </View>
                                 </View>
@@ -621,51 +627,11 @@ export const BoardingHouseDetailsScreen = () => {
                             </View>
                         ) : (
                             /* --- PHÍ CỐ ĐỊNH TAB DESIGN --- */
-                            <View>
-                                {/* Header Title */}
-                                <View style={styles.mb9}>
-                                    <Text style={styles.listTitle}>Phí cố định</Text>
-                                </View>
-
-                                {/* Manage Badge */}
-                                <TouchableOpacity style={styles.manageBadgeContainer}>
-                                    <LinearGradient
-                                        colors={COLORS.primaryGradient}
-                                        style={styles.manageBadge}
-                                    >
-                                        <View style={[styles.iconTiny]}>
-                                            <Settings
-                                                size={15}
-                                                color={COLORS.WHITE}
-                                            />
-                                        </View>
-                                        <Text style={styles.manageBadgeText}>Quản lý</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-
-                                {/* Empty State Card */}
-                                <View style={styles.emptyCard}>
-                                    <View style={styles.emptyIcon}>
-                                        <Zap
-                                            color={`#d1d5dc`}
-                                            size={100}
-                                        />
-                                    </View>
-                                    {/* Dùng Text icon tia sét nếu chưa có ảnh: ⚡ */}
-                                    {/* <Text style={{fontSize: 50, marginBottom: 16, opacity: 0.3}}>⚡</Text> */}
-
-                                    <Text style={styles.emptyText}>Chưa có phí cố định nào</Text>
-
-                                    <TouchableOpacity onPress={() => alert('Add Fee')}>
-                                        <LinearGradient
-                                            colors={COLORS.primaryGradient}
-                                            style={styles.addFeeBtn}
-                                        >
-                                            <Text style={styles.addFeeBtnText}>Thêm phí cố định</Text>
-                                        </LinearGradient>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
+                            <FixedFeeTab
+                                houseId={boardingHouse._id}
+                                utilites={boardingHouse.defaultUtilitesCharge}
+                                onRefresh={fetchData}
+                            />
                         )}
 
                     </View>

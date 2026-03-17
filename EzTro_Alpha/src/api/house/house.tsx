@@ -14,9 +14,18 @@ export const getHouseApi = {
         }
     },
 
-    async getAllHousesByLandlordId() {
+    async getAllHousesByLandlordId(signal?: AbortSignal) {
         try {
-            const res = await apiService.get(`${houseApi}landlord/all`)
+            const res = await apiService.get(`${houseApi}landlord/all`, { signal })
+            return res.data
+        } catch (err: any) {
+            throw err
+        }
+    },
+
+    async getHouseDelete(signal?: AbortSignal) {
+        try {
+            const res = await apiService.get(`${houseApi}landlord/delete`, { signal })
             return res.data
         } catch (err: any) {
             throw err
@@ -35,6 +44,49 @@ export const postHouseApi = {
             return res.data
         } catch (err: any) {
             throw err;
+        }
+    }
+}
+
+export const putHouseApi = {
+
+    async updateHouse(houseId: string, houseData: any) {
+        try {
+            const res = await apiService.put(
+                `${houseApi}${houseId}`,
+                houseData
+            )
+            return res.data
+        } catch (err: any) {
+            throw err;
+        }
+    }
+}
+
+export const deleteHouseApi = {
+
+    async deleteHouse(houseId: string) {
+        try {
+            const res = await apiService.delete(
+                `${houseApi}${houseId}`
+            )
+            return res.data
+        } catch (err: any) {
+            throw err
+        }
+    }
+}
+
+export const patchHouseApi = {
+    async updateUtility(houseId: string | undefined, payload: any) {
+        try {
+            const res = await apiService.patch(
+                `${houseApi}${houseId}`,
+                payload
+            )
+            return res.data
+        } catch (err: any) {
+            throw err
         }
     }
 }

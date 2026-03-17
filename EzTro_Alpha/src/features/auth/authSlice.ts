@@ -9,12 +9,14 @@ export interface AuthState {
   accessToken: string | null;
   user: IUser | null;
   error: string | null;
+  role: string | null;
 }
 
 const initialState: AuthState = {
   accessToken: null,
   user: null,
   error: null,
+  role: null,
 };
 
 const { NETWORK } = Misc();
@@ -25,10 +27,7 @@ const authAxios: AxiosInstance = axios.create({
 });
 export const loginAsync = createAsyncThunk(
   "auth/login",
-  async (
-    { email, password, role }: { email: string; password: string; role: string },
-    { rejectWithValue },
-  ) => {
+  async ({ email, password, role }: { email: string; password: string; role: string }, { rejectWithValue }) => {
     try {
       const res = await authAxios
         .post(
@@ -49,15 +48,13 @@ export const loginAsync = createAsyncThunk(
       }
 
       const { accessToken, user } = res.data;
-
+      await AsyncStorage.setItem("role", role);
       await AsyncStorage.setItem("accessToken", accessToken);
       await AsyncStorage.setItem("user", JSON.stringify(user));
 
-      return { accessToken, user };
+      return { accessToken, user, role };
     } catch (err: any) {
-      return rejectWithValue(
-        err.response?.data?.message || "Sai email hoặc mật khẩu.",
-      );
+      return rejectWithValue(err.response?.data?.message || "Sai email hoặc mật khẩu.");
     }
   },
 );
@@ -66,6 +63,7 @@ export const logoutAsync = createAsyncThunk("auth/logout", async () => {
   try {
     await authAxios.post(`${environments.SERVER_URI}logout`);
   } catch (err) {}
+  await AsyncStorage.removeItem("role");
   await AsyncStorage.removeItem("accessToken");
   await AsyncStorage.removeItem("user");
 });
@@ -88,7 +86,12 @@ const authSlice = createSlice({
       })
       .addCase(loginAsync.fulfilled, (state: any, action: any) => {
         state.accessToken = action.payload?.accessToken || null;
-        state.user = action.payload?.user || null;
+        const user = action.payload?.user;
+        // Transform roleId object to roleName string
+        if (user && user.roleId && typeof user.roleId === "object") {
+          user.roleName = user.roleId.name;
+        }
+        state.user = user || null;
       })
       .addCase(loginAsync.rejected, (state: any, action: any) => {
         state.error = action.payload as string;
@@ -96,6 +99,7 @@ const authSlice = createSlice({
       .addCase(logoutAsync.fulfilled, (state: any) => {
         state.accessToken = null;
         state.user = null;
+        state.role = null;
       });
   },
 });

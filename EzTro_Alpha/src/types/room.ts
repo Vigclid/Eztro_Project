@@ -1,4 +1,5 @@
 import { IHouse } from "./house";
+import { IUser } from "./users";
 
 export interface IVirtualTenant {
   tenantName: string;
@@ -16,4 +17,15 @@ export interface IRoom {
   status: string | undefined;
   rentDate: Date | undefined;
   virtualTenants?: IVirtualTenant[];
+}
+
+export interface IRoomMember {
+  roomId: String | IRoom;
+  userId: String | IUser;
+  invitedBy: String | IUser;
+  role: string;
+  status: string;
+  moveInDate: Date;
+  moveOutDate?: Date | null;
+  createdAt: Date;
 }
