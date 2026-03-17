@@ -10,6 +10,7 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { ArrowLeft, Home, Wrench, FileText } from 'lucide-react-native';
 import { postTicketApi } from '../../api/ticket/ticketapi';
 import { getHouseApi } from '../../api/house/house';
@@ -18,6 +19,7 @@ import { IHouse } from '../../types/house';
 import { IRoom } from '../../types/room';
 import { COLORS } from '../../constants/theme';
 import { NavigationProp } from '../../navigation/navigation.type';
+import { RootState } from '../../stores/store';
 import { styles } from './styles/CreateTicketScreen.styles';
 
 type Category = {
@@ -28,8 +30,24 @@ type Category = {
 
 export const CreateTicketScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useSelector((state: RootState) => state.auth);
+  
+  // Get user role
+  const getUserRole = () => {
+    if (user?.roleName) return user.roleName;
+    if (user?.roleId && typeof user.roleId === 'object' && 'name' in user.roleId) {
+      return (user.roleId as any).name;
+    }
+    return '';
+  };
+  
+  const userRole = getUserRole();
+  const isLandlord = userRole === 'Landlord' || userRole === 'landlord';
+  const isTenant = userRole === 'Tenant' || userRole === 'tenant';
+
   const [houses, setHouses] = useState<IHouse[]>([]);
   const [rooms, setRooms] = useState<IRoom[]>([]);
+  const [tenantRoom, setTenantRoom] = useState<any>(null);
   const [formData, setFormData] = useState({
     houseId: '',
     roomId: '',
@@ -49,8 +67,12 @@ export const CreateTicketScreen: React.FC = () => {
   ];
 
   useEffect(() => {
-    loadHouses();
-  }, []);
+    if (isLandlord) {
+      loadHouses();
+    } else if (isTenant) {
+      loadTenantRoom();
+    }
+  }, [isLandlord, isTenant]);
 
   useEffect(() => {
     if (formData.houseId) {
@@ -73,6 +95,24 @@ export const CreateTicketScreen: React.FC = () => {
     }
   };
 
+  const loadTenantRoom = async () => {
+    try {
+      const response: any = await getRoomApi.getMyActiveRoom();
+      if (response.status && response.data) {
+        setTenantRoom(response.data);
+        // Auto-fill form data for tenant
+        setFormData({
+          houseId: response.data.house?._id || '',
+          roomId: response.data.room?._id || '',
+          title: '',
+          description: '',
+          category: 'other',
+        });
+      }
+    } catch (error) {
+    }
+  };
+
   const loadRooms = async (houseId: string) => {
     try {
       const response: any = await getRoomApi.getAllRoomsByHouseId(houseId);
@@ -89,12 +129,15 @@ export const CreateTicketScreen: React.FC = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.houseId) {
-      newErrors.houseId = 'Vui lòng chọn cụm trọ';
-    }
+    // Landlord needs to select house and room
+    if (isLandlord) {
+      if (!formData.houseId) {
+        newErrors.houseId = 'Vui lòng chọn cụm trọ';
+      }
 
-    if (!formData.roomId) {
-      newErrors.roomId = 'Vui lòng chọn phòng';
+      if (!formData.roomId) {
+        newErrors.roomId = 'Vui lòng chọn phòng';
+      }
     }
 
     if (!formData.title.trim()) {
@@ -117,17 +160,25 @@ export const CreateTicketScreen: React.FC = () => {
     if (!validateForm()) return;
 
     try {
-      const requestData = {
-        title: formData.title,
-        description: formData.description,
-        categories: [formData.category],
-        houseId: formData.houseId,
-        roomId: formData.roomId,
-      };
-      
-      
-      const response: any = await postTicketApi.createTicketByLandlord(requestData);
-      
+      let response: any;
+
+      if (isLandlord) {
+        const requestData = {
+          title: formData.title,
+          description: formData.description,
+          categories: [formData.category],
+          houseId: formData.houseId,
+          roomId: formData.roomId,
+        };
+        response = await postTicketApi.createTicketByLandlord(requestData);
+      } else if (isTenant) {
+        const requestData = {
+          title: formData.title,
+          description: formData.description,
+          categories: [formData.category],
+        };
+        response = await postTicketApi.createTicketByTenant(requestData);
+      }
 
       if (response.status && response.data) {
         Alert.alert('Thành công', 'Tạo yêu cầu bảo trì thành công', [
@@ -163,39 +214,56 @@ export const CreateTicketScreen: React.FC = () => {
       </LinearGradient>
 
       <ScrollView style={styles.content}>
-        {/* House Selection */}
-        <View style={styles.section}>
-          <View style={styles.labelContainer}>
-            <Home size={20} color={COLORS.GREEN_PRIMARY} />
-            <Text style={styles.label}>Cụm trọ</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectScroll}>
-            {houses.map((house) => (
-              <TouchableOpacity
-                key={house._id}
-                onPress={() => setFormData({ ...formData, houseId: house._id || '', roomId: '' })}
-                style={[
-                  styles.selectOption,
-                  formData.houseId === house._id && styles.selectOptionActive,
-                ]}
-              >
-                <Text
+        {/* House Selection - Only for Landlord */}
+        {isLandlord && (
+          <View style={styles.section}>
+            <View style={styles.labelContainer}>
+              <Home size={20} color={COLORS.GREEN_PRIMARY} />
+              <Text style={styles.label}>Cụm trọ</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectScroll}>
+              {houses.map((house) => (
+                <TouchableOpacity
+                  key={house._id}
+                  onPress={() => setFormData({ ...formData, houseId: house._id || '', roomId: '' })}
                   style={[
-                    styles.selectOptionText,
-                    formData.houseId === house._id && styles.selectOptionTextActive,
+                    styles.selectOption,
+                    formData.houseId === house._id && styles.selectOptionActive,
                   ]}
-                  numberOfLines={1}
                 >
-                  {house.houseName}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {errors.houseId && <Text style={styles.errorText}>{errors.houseId}</Text>}
-        </View>
+                  <Text
+                    style={[
+                      styles.selectOptionText,
+                      formData.houseId === house._id && styles.selectOptionTextActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {house.houseName}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            {errors.houseId && <Text style={styles.errorText}>{errors.houseId}</Text>}
+          </View>
+        )}
 
-        {/* Room Selection */}
-        {formData.houseId && rooms.length > 0 && (
+        {/* House Info - For Tenant */}
+        {isTenant && tenantRoom && (
+          <View style={styles.section}>
+            <View style={styles.labelContainer}>
+              <Home size={20} color={COLORS.GREEN_PRIMARY} />
+              <Text style={styles.label}>Cụm trọ</Text>
+            </View>
+            <View style={[styles.selectOption, styles.selectOptionActive]}>
+              <Text style={[styles.selectOptionText, styles.selectOptionTextActive]}>
+                {tenantRoom.house?.houseName || 'Không xác định'}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Room Selection - Only for Landlord */}
+        {isLandlord && formData.houseId && rooms.length > 0 && (
           <View style={styles.section}>
             <View style={styles.labelContainer}>
               <Home size={20} color={COLORS.GREEN_PRIMARY} />
@@ -224,6 +292,21 @@ export const CreateTicketScreen: React.FC = () => {
               ))}
             </ScrollView>
             {errors.roomId && <Text style={styles.errorText}>{errors.roomId}</Text>}
+          </View>
+        )}
+
+        {/* Room Info - For Tenant */}
+        {isTenant && tenantRoom && (
+          <View style={styles.section}>
+            <View style={styles.labelContainer}>
+              <Home size={20} color={COLORS.GREEN_PRIMARY} />
+              <Text style={styles.label}>Phòng</Text>
+            </View>
+            <View style={[styles.selectOption, styles.selectOptionActive]}>
+              <Text style={[styles.selectOptionText, styles.selectOptionTextActive]}>
+                {tenantRoom.room?.roomName || 'Không xác định'}
+              </Text>
+            </View>
           </View>
         )}
 

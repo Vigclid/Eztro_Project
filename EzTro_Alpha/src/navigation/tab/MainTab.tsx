@@ -1,12 +1,11 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from "react";
 import NavBar from "../../components/layout/NavBar";
-import BlankScreen from "../../screens/BlankScreen";
 import { CreateBoardingHouseScreen } from "../../screens/boardingHouse/CreateBoardingHouseScreen";
-import { TrackingInvoiceStatus } from "../../screens/invoice/TrackingInvoiceStatus";
 import { ViewBoardingHousePage } from "../../screens/boardingHouse/ViewBoardingHousePage";
-import { UserProfile } from "../../screens/profile/UserProfile";
 import { CreateInvoices } from "../../screens/invoice/CreateInvoices";
+import { TrackingInvoiceStatus } from "../../screens/invoice/TrackingInvoiceStatus";
+import { UserProfile } from "../../screens/profile/UserProfile";
 
 const Tab = createBottomTabNavigator();
 
@@ -30,11 +29,7 @@ const MainTab = () => (
       name="createBoardingHousePage"
       component={CreateBoardingHouseScreen}
     />
-    <Tab.Screen
-      name="createInvoicesScreen"
-      component={CreateInvoices}
-    />
-    <Tab.Screen name="blank" component={BlankScreen} />
+    <Tab.Screen name="createInvoicesScreen" component={CreateInvoices} />
   </Tab.Navigator>
 );
 

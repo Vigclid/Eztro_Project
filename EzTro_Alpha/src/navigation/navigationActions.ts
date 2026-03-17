@@ -1,4 +1,4 @@
-import { IHouse } from "../types/house";
+import { IHouse, IUtilitesCharge } from "../types/house";
 import * as NavigationService from "./navigationService";
 import { navigate } from "./navigationService";
 
@@ -110,7 +110,10 @@ export const appNavigator = {
     });
   },
 
-  goToCreateNewRoomScreen(houseId: string | undefined, room?: import("../types/room").IRoom) {
+  goToCreateNewRoomScreen(
+    houseId: string | undefined,
+    room?: import("../types/room").IRoom,
+  ) {
     navigate("mainstack", {
       screen: "createNewRoomScreen",
       params: { houseId, room },
@@ -142,6 +145,9 @@ export const appNavigator = {
     navigate("mainstack", { screen: "notificationScreen" });
   },
 
+  goToSettingScreen() {
+    navigate("mainstack", { screen: "settingScreen" });
+  },
   goToSupportScreen() {
     navigate("mainstack", { screen: "supportScreen" });
   },
@@ -156,4 +162,15 @@ export const appNavigator = {
       params: { reportId },
     });
   },
+
+  goToDeleteBoardingHouseScreen() {
+    navigate("mainstack", { screen: "deleteBoardingHouseScreen" })
+  },
+
+  goToCreateFixedFeeServiceScreen(houseId: string | undefined, action?: string, utility?: IUtilitesCharge) {
+    navigate("mainstack", {
+      screen: "createFixedServiceFeeScreen",
+      params: { houseId, action, utility },
+    });
+  }
 };
