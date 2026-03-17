@@ -158,7 +158,9 @@ export class invoiceController extends GenericController<IInvoice> {
   };
 
   getMyProcessingInvoice = async (req: Request, res: Response) => {
-    const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as { id: string };
+    const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
+      id: string;
+    };
     try {
       const result = await this.InvoiceService.getProcessingInvoiceForTenant(id);
       return res.status(200).json(responseWrapper("success", "Lấy thành công", result ?? null));
@@ -171,7 +173,9 @@ export class invoiceController extends GenericController<IInvoice> {
   };
 
   tenantSubmitMeterReading = async (req: Request, res: Response) => {
-    const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as { id: string };
+    const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
+      id: string;
+    };
     try {
       const { waterNumber, waterImage, electricNumber, electricImage } = req.body;
       const result = await this.InvoiceService.submitMeterReadingByTenant(id, {
@@ -202,6 +206,7 @@ export class invoiceController extends GenericController<IInvoice> {
           secret_key: process.env.ZALO_SECRET_CODE,
         },
       });
+      console.log(response.data);
       const phoneNumber = toLocalPhone(response.data.data.number);
       const result = await this.InvoiceService.getInvoicesForZaloUser(phoneNumber);
       return res.status(200).json(responseWrapper("success", "Lấy danh sách thành công", result));
@@ -225,9 +230,17 @@ export class invoiceController extends GenericController<IInvoice> {
           secret_key: process.env.ZALO_SECRET_CODE,
         },
       });
+      console.log(response.data);
+
       const phoneNumber = toLocalPhone(response.data.data.number);
-      const result = await this.InvoiceService.zaloTenantConfirmInvoice(phoneNumber, id, transactionImage);
-      return res.status(200).json(responseWrapper("success", "Xác nhận thanh toán thành công", result));
+      const result = await this.InvoiceService.zaloTenantConfirmInvoice(
+        phoneNumber,
+        id,
+        transactionImage
+      );
+      return res
+        .status(200)
+        .json(responseWrapper("success", "Xác nhận thanh toán thành công", result));
     } catch (err: any) {
       return res.status(200).json(responseWrapper("error", err.message, null));
     }
@@ -243,6 +256,8 @@ export class invoiceController extends GenericController<IInvoice> {
           secret_key: process.env.ZALO_SECRET_CODE,
         },
       });
+      console.log(response.data);
+
       const phoneNumber = response.data.data.number;
       const result = await this.InvoiceService.updateInvoiceWithZalo({
         ...InvoiceBody,
