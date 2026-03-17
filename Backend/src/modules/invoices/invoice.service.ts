@@ -1,6 +1,8 @@
 import { GenericService } from "../../core/services/base.service";
 import { uploadImage } from "../../utils/imageUtils";
 import roomMemberModel from "../rooms/roomMember.model";
+import roomModel from "../rooms/room.model";
+import houseModel from "../houses/house.model";
 import userModel from "../users/user.model";
 import invoiceModel, { IInvoice, InvoiceZalo } from "./invoice.model";
 import paymentModel from "../payment/payment.model";
@@ -21,21 +23,47 @@ export class invoiceService extends GenericService<IInvoice> {
     return await invoiceModel.find({ roomId });
   };
 
+  private fillInvoiceDefaults = async (data: Partial<IInvoice>): Promise<Partial<IInvoice>> => {
+    if (!data.roomId) return data;
+
+    const room = await roomModel.findById(data.roomId);
+    if (!room) return data;
+
+    const house = await houseModel.findById(room.houseId);
+
+    const lastInvoice = await invoiceModel
+      .findOne({ roomId: data.roomId, status: { $ne: "processing" } })
+      .sort({ createDate: -1 });
+
+    const prevElectric = lastInvoice?.currentElectricityNumber ?? 0;
+    const prevWater = lastInvoice?.currentWaterNumber ?? 0;
+
+    const defaults: Partial<IInvoice> = {
+      rentalFee: house?.defaultPrice ?? 0,
+      electricityCharge: house?.defaultElectricityCharge ?? 0,
+      waterCharge: house?.defaultWaterCharge ?? 0,
+      utilities: (house?.defaultUtilitesCharge as IInvoice["utilities"]) ?? [],
+      previousElectricityNumber: prevElectric,
+      currentElectricityNumber: prevElectric,
+      previousWaterNumber: prevWater,
+      currentWaterNumber: prevWater,
+    };
+
+    const overrides = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    ) as Partial<IInvoice>;
+
+    return { ...defaults, ...overrides };
+  };
+
   createNewInvoice = async (data: Partial<IInvoice>) => {
-    const newInvoice = new invoiceModel({
-      ...data,
-    });
-    return await invoiceModel.create(newInvoice);
+    const filledData = await this.fillInvoiceDefaults(data);
+    return await invoiceModel.create(new invoiceModel(filledData));
   };
 
   createNewInvoices = async (invoicesData: Partial<IInvoice>[]) => {
-    const newInvoices = invoicesData.map(
-      (data) =>
-        new invoiceModel({
-          ...data,
-        })
-    );
-    return await invoiceModel.insertMany(newInvoices);
+    const filled = await Promise.all(invoicesData.map((d) => this.fillInvoiceDefaults(d)));
+    return await invoiceModel.insertMany(filled.map((d) => new invoiceModel(d)));
   };
 
   finalizeInvoices = async (invoiceIds: string[], triggeredByUserId?: string) => {
@@ -113,6 +141,19 @@ export class invoiceService extends GenericService<IInvoice> {
           invoiceId: "$_id",
           roomId: 1,
           roomName: "$roomDetail.roomName",
+          isVirtualTenant: {
+            $cond: {
+              if: { $gt: [{ $size: "$tenantUser" }, 0] },
+              then: false,
+              else: {
+                $cond: {
+                  if: { $gt: [{ $size: "$roomDetail.virtualTenants" }, 0] },
+                  then: true,
+                  else: false,
+                },
+              },
+            },
+          },
           tenantName: {
             $cond: {
               if: { $gt: [{ $size: "$tenantUser" }, 0] },
@@ -123,7 +164,26 @@ export class invoiceService extends GenericService<IInvoice> {
                   { $arrayElemAt: ["$tenantUser.firstName", 0] },
                 ],
               },
-              else: "Chưa có thông tin",
+              else: {
+                $cond: {
+                  if: { $gt: [{ $size: "$roomDetail.virtualTenants" }, 0] },
+                  then: { $arrayElemAt: ["$roomDetail.virtualTenants.tenantName", 0] },
+                  else: "Chưa có thông tin",
+                },
+              },
+            },
+          },
+          tenantPhone: {
+            $cond: {
+              if: { $gt: [{ $size: "$tenantUser" }, 0] },
+              then: { $arrayElemAt: ["$tenantUser.phoneNumber", 0] },
+              else: {
+                $cond: {
+                  if: { $gt: [{ $size: "$roomDetail.virtualTenants" }, 0] },
+                  then: { $arrayElemAt: ["$roomDetail.virtualTenants.phoneNumber", 0] },
+                  else: null,
+                },
+              },
             },
           },
           rentalFee: 1,
@@ -270,18 +330,24 @@ export class invoiceService extends GenericService<IInvoice> {
   landlordAcceptInvoice = async (invoiceId: string) => {
     const invoice = await invoiceModel.findOne({
       _id: new Types.ObjectId(invoiceId),
-      status: "tenant-confirmed",
+      status: { $in: ["tenant-confirmed", "payment-processing"] },
     });
     if (!invoice) throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
-
-    invoice.status = "completed";
-    await invoice.save();
 
     const member = await roomMemberModel.findOne({
       roomId: invoice.roomId,
       role: "TENANT",
       status: "Đang Thuê",
     });
+
+    // "payment-processing" is only acceptable for virtual-tenant rooms (no real member)
+    if (invoice.status === "payment-processing" && member) {
+      throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
+    }
+
+    invoice.status = "completed";
+    await invoice.save();
+
     if (member) {
       await paymentModel.create({
         userId: member.userId,
@@ -289,19 +355,21 @@ export class invoiceService extends GenericService<IInvoice> {
       });
     }
 
-    const utilitiesTotal = invoice.utilities?.reduce((sum, u) => sum + (u.value ?? 0), 0) ?? 0;
+    // Look up house defaults for the next invoice
+    const room = await roomModel.findById(invoice.roomId);
+    const house = room ? await houseModel.findById(room.houseId) : null;
+
     const nextInvoice = new invoiceModel({
       roomId: invoice.roomId,
       status: "processing",
-      rentalFee: invoice.rentalFee ?? 0,
+      rentalFee: house?.defaultPrice ?? invoice.rentalFee ?? 0,
       previousElectricityNumber: invoice.currentElectricityNumber ?? 0,
       currentElectricityNumber: invoice.currentElectricityNumber ?? 0,
       previousWaterNumber: invoice.currentWaterNumber ?? 0,
       currentWaterNumber: invoice.currentWaterNumber ?? 0,
-      electricityCharge: 0,
-      waterCharge: 0,
-      utilities: invoice.utilities ?? [],
-      totalAmount: (invoice.rentalFee ?? 0) + utilitiesTotal,
+      electricityCharge: house?.defaultElectricityCharge ?? 0,
+      waterCharge: house?.defaultWaterCharge ?? 0,
+      utilities: (house?.defaultUtilitesCharge as IInvoice["utilities"]) ?? invoice.utilities ?? [],
     });
 
     await invoiceModel.insertMany([nextInvoice]);
