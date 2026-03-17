@@ -5,6 +5,7 @@ import {
   Building2,
   Funnel,
   Megaphone,
+  MessageCircle,
   Plus,
   Search,
   Wrench,
@@ -156,6 +157,10 @@ export const ViewBoardingHousePage: React.FC = () => {
     navigation.navigate("mainstack", { screen: "notificationScreen" });
   };
 
+   const handleNavigateToMessages = () => {
+    navigation.navigate("mainstack", { screen: "messageListScreen" });
+  }
+
   const fabRotate = fabAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "45deg"],
@@ -176,6 +181,10 @@ export const ViewBoardingHousePage: React.FC = () => {
               <View>
                 <Text style={styles.headerTitle}>{"Quản Lý Cụm Trọ"}</Text>
               </View>
+              <View style={styles.headerIcon} >
+              <TouchableOpacity style= {styles.IconMessage}>
+                <MessageCircle color={COLORS.WHITE} size={24} />
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.notificationBtn}
                 onPress={handleNavigateToNotification}
@@ -189,6 +198,7 @@ export const ViewBoardingHousePage: React.FC = () => {
                   </View>
                 )}
               </TouchableOpacity>
+              </View>
             </View>
           </LinearGradient>
 
@@ -374,6 +384,14 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: IMAGE_SIZE.HEADER_LOGO,
     height: SPACING.XS,
+  },
+  headerIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    gap: 10,
+    padding: 6,
+
   },
   mainContent: {
     backgroundColor: COLORS.BACKGROUND_GRAY,
@@ -822,4 +840,12 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
+  IconMessage: {
+    width: IMAGE_SIZE.HEADER_LOGO,
+    height: IMAGE_SIZE.HEADER_LOGO,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 14,
+    },
 });
