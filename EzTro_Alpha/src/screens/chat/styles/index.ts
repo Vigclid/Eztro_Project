@@ -1,1 +1,0 @@
-// Chat screen styles
