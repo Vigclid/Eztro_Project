@@ -196,18 +196,33 @@ export class invoiceController extends GenericController<IInvoice> {
     }
   };
 
-  getMyInvoicesAsZaloTenant = async (req: Request, res: Response) => {
+  private resolveZaloPhone = async (accessToken: string, phoneToken: string): Promise<string> => {
+    const response = await axios.get("https://graph.zalo.me/v2.0/me/info", {
+      params: {
+        access_token: accessToken,
+        code: phoneToken,
+        secret_key: process.env.ZALO_SECRET_CODE,
+      },
+    });
+    if (response.data?.error) {
+      throw new Error(response.data.message ?? "Zalo token error");
+    }
+    return toLocalPhone(response.data.data.number);
+  };
+
+  getZaloPhone = async (req: Request, res: Response) => {
     try {
       const { accessToken, phoneToken } = req.body as { accessToken: string; phoneToken: string };
-      const response = await axios.get("https://graph.zalo.me/v2.0/me/info", {
-        params: {
-          access_token: accessToken,
-          code: phoneToken,
-          secret_key: process.env.ZALO_SECRET_CODE,
-        },
-      });
-      console.log(response.data);
-      const phoneNumber = toLocalPhone(response.data.data.number);
+      const phoneNumber = await this.resolveZaloPhone(accessToken, phoneToken);
+      return res.status(200).json(responseWrapper("success", "Lấy số điện thoại thành công", { phoneNumber }));
+    } catch (err: any) {
+      return res.status(200).json(responseWrapper("error", err.message, null));
+    }
+  };
+
+  getMyInvoicesAsZaloTenant = async (req: Request, res: Response) => {
+    try {
+      const { phoneNumber } = req.body as { phoneNumber: string };
       const result = await this.InvoiceService.getInvoicesForZaloUser(phoneNumber);
       return res.status(200).json(responseWrapper("success", "Lấy danh sách thành công", result));
     } catch (err: any) {
@@ -217,22 +232,11 @@ export class invoiceController extends GenericController<IInvoice> {
 
   zaloConfirmInvoice = async (req: Request, res: Response) => {
     try {
-      const { accessToken, phoneToken, transactionImage } = req.body as {
-        accessToken: string;
-        phoneToken: string;
+      const { phoneNumber, transactionImage } = req.body as {
+        phoneNumber: string;
         transactionImage?: string;
       };
       const { id } = req.params;
-      const response = await axios.get("https://graph.zalo.me/v2.0/me/info", {
-        params: {
-          access_token: accessToken,
-          code: phoneToken,
-          secret_key: process.env.ZALO_SECRET_CODE,
-        },
-      });
-      console.log(response.data);
-
-      const phoneNumber = toLocalPhone(response.data.data.number);
       const result = await this.InvoiceService.zaloTenantConfirmInvoice(
         phoneNumber,
         id,
@@ -249,19 +253,10 @@ export class invoiceController extends GenericController<IInvoice> {
   receiveInvocieFromZalo = async (req: Request, res: Response) => {
     try {
       const InvoiceBody = req.body as InvoiceZalo;
-      const response = await axios.get("https://graph.zalo.me/v2.0/me/info", {
-        params: {
-          access_token: InvoiceBody.accessToken,
-          code: InvoiceBody.phoneToken,
-          secret_key: process.env.ZALO_SECRET_CODE,
-        },
-      });
-      console.log(response.data);
-
-      const phoneNumber = response.data.data.number;
+      const phoneNumber = InvoiceBody.phoneNumber;
       const result = await this.InvoiceService.updateInvoiceWithZalo({
         ...InvoiceBody,
-        phoneNumber: toLocalPhone(phoneNumber),
+        phoneNumber,
       });
       return res
         .status(200)

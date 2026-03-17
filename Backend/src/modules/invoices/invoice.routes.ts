@@ -21,6 +21,7 @@ router
 router.route("/room/:roomId").get(authenticate, InvoiceController.getAllInvoicesByRoomId);
 
 // Zalo Mini App routes (no JWT auth — identified via Zalo access/phone tokens)
+router.route("/zalo/phone").post(InvoiceController.getZaloPhone);
 router.route("/zalo/invoices").post(InvoiceController.getMyInvoicesAsZaloTenant);
 router.route("/zalo/verify-image").post(InvoiceController.verifyTransactionImage);
 router.route("/zalo/:id/confirm").post(InvoiceController.zaloConfirmInvoice);

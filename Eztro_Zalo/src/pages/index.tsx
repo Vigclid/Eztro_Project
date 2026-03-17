@@ -64,10 +64,10 @@ const STATUS_COLOR: Record<string, string> = {
 function HomePage() {
   const [activeTab, setActiveTab] = useState<ZaloTab>("meter");
 
-  // Zalo auth tokens
+  // Zalo auth — accessToken is long-lived; phoneNumber resolved once on mount
   const [zaloTokens, setZaloTokens] = useState<{
     accessToken: string;
-    phoneToken: string;
+    phoneNumber: string;
   } | null>(null);
   const [phoneError, setPhoneError] = useState(false);
 
@@ -95,7 +95,7 @@ function HomePage() {
   const [confirming, setConfirming] = useState(false);
   const [confirmSuccess, setConfirmSuccess] = useState<string | null>(null);
 
-  // Load Zalo tokens on mount
+  // Load Zalo tokens on mount — exchange phoneToken once to get phoneNumber
   useEffect(() => {
     (async () => {
       try {
@@ -107,7 +107,17 @@ function HomePage() {
           setPhoneError(true);
           return;
         }
-        setZaloTokens({ accessToken: at, phoneToken: pr.token });
+        const res = await fetch(`${API}zalo/phone`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken: at, phoneToken: pr.token }),
+        });
+        const json = await res.json();
+        if (json.status !== "success" || !json.data?.phoneNumber) {
+          setPhoneError(true);
+          return;
+        }
+        setZaloTokens({ accessToken: at, phoneNumber: json.data.phoneNumber });
       } catch {
         setPhoneError(true);
       }
