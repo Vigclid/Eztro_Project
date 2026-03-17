@@ -45,8 +45,17 @@ export class AuthService {
     user.loginFailedTime = null;
     await user.save();
 
+    // Ensure roleId is populated before encoding JWT
+    const role = typeof user.roleId === "string" 
+      ? user.roleId 
+      : (user.roleId as IRole)?.name;
+
+    if (!role) {
+      return { status: 0, message: "User role not found" };
+    }
+
     const accessToken = jwt.sign(
-      { id: user.id, role: (user.roleId as IRole).name },
+      { id: user.id, role: role },
       jwtConfig.secret as Secret,
       { expiresIn: jwtConfig.expiresIn } as SignOptions
     );

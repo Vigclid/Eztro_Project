@@ -206,4 +206,37 @@ export class TicketService extends GenericService<ITicket> {
       .populate("replies.userId", "firstName lastName email profilePicture")
       .sort({ createdAt: -1 });
   }
+
+  // Mark replies as read
+  async markRepliesAsRead(ticketId: string, userId: string) {
+    const ticket = await TicketModel.findById(ticketId);
+    if (!ticket) {
+      throw new Error("Ticket không tồn tại");
+    }
+
+    // Mark all replies from other users as read
+    ticket.replies.forEach((reply) => {
+      if (reply.userId.toString() !== userId) {
+        reply.isRead = true;
+      }
+    });
+
+    await ticket.save();
+    return this.getByIdPopulated(ticketId);
+  }
+
+  // Get unread count for a ticket (for a specific user)
+  async getUnreadCount(ticketId: string, userId: string) {
+    const ticket = await TicketModel.findById(ticketId);
+    if (!ticket) {
+      return 0;
+    }
+
+    // Count replies from other users that are not read
+    const unreadCount = ticket.replies.filter((reply) => {
+      return reply.userId.toString() !== userId && !reply.isRead;
+    }).length;
+
+    return unreadCount;
+  }
 }

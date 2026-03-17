@@ -12,12 +12,15 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { ArrowLeft, Send } from 'lucide-react-native';
 import { getTicketApi } from '../../api/ticket/ticketapi';
 import { postTicketApi } from '../../api/ticket/ticketapi';
+import { putTicketApi } from '../../api/ticket/ticketapi';
 import { ITicket } from '../../types/ticket';
 import { COLORS } from '../../constants/theme';
 import { NavigationProp, MainStackParamList } from '../../navigation/navigation.type';
+import { RootState } from '../../stores/store';
 import { styles } from './styles/TicketDetailScreen.styles';
 
 type TicketDetailRouteProp = RouteProp<MainStackParamList, 'ticketDetailScreen'>;
@@ -26,14 +29,33 @@ export const TicketDetailScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<TicketDetailRouteProp>();
   const { ticketId } = route.params;
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const [ticket, setTicket] = useState<ITicket | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
 
+  const userRole = user?.roleName || '';
+  const isTenant = userRole === 'Tenant';
+  const isLandlord = userRole === 'Landlord';
+  const currentUserId = user?._id;
+
+  // Check if landlord has replied first (started the conversation)
+  // receiverId is the landlord (populated as IUser object)
+  const landlordId = typeof ticket?.receiverId === 'object' ? ticket.receiverId._id : ticket?.receiverId;
+  const hasLandlordReplied = ticket?.replies && ticket.replies.some((reply) => {
+    // Check if the reply is from the landlord
+    const replyUserId = reply.userId && typeof reply.userId === 'object' ? reply.userId._id : reply.userId;
+    return replyUserId === landlordId;
+  });
+
+  // Tenant can send message only if landlord has replied first
+  const canSendMessage = isLandlord || (isTenant && hasLandlordReplied);
+
   useEffect(() => {
     loadTicket();
+    markTicketAsRead();
   }, [ticketId]);
 
   const loadTicket = async () => {
@@ -47,6 +69,13 @@ export const TicketDetailScreen: React.FC = () => {
     } catch (error) {
     } finally {
       setLoading(false);
+    }
+  };
+
+  const markTicketAsRead = async () => {
+    try {
+      await putTicketApi.markAsRead(ticketId);
+    } catch (error) {
     }
   };
 
@@ -203,21 +232,52 @@ export const TicketDetailScreen: React.FC = () => {
             <Text style={styles.repliesTitle}>Trao đổi ({ticket.replies?.length || 0})</Text>
             
             {ticket.replies && ticket.replies.length > 0 ? (
-              ticket.replies.map((reply, index) => (
-                <View key={index} style={styles.replyCard}>
-                  <View style={styles.replyHeader}>
-                    <Text style={styles.replyAuthor}>
-                      {typeof reply.userId === 'object' 
-                        ? `${reply.userId.firstName} ${reply.userId.lastName}`
-                        : 'User'}
-                    </Text>
-                    <Text style={styles.replyTime}>
-                      {new Date(reply.createdAt).toLocaleString('vi-VN')}
-                    </Text>
+              ticket.replies.map((reply, index) => {
+                const isMyMessage = reply.userId && typeof reply.userId === 'object' && reply.userId._id === currentUserId;
+                const senderName = reply.userId && typeof reply.userId === 'object' 
+                  ? `${reply.userId.firstName} ${reply.userId.lastName}`
+                  : 'User';
+                
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      styles.messageContainer,
+                      isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.messageBubble,
+                        isMyMessage ? styles.myMessageBubble : styles.otherMessageBubble,
+                      ]}
+                    >
+                      <Text style={[
+                        styles.senderName,
+                        isMyMessage ? styles.mySenderName : styles.otherSenderName
+                      ]}>
+                        {senderName}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.messageText,
+                          isMyMessage ? styles.myMessageText : styles.otherMessageText,
+                        ]}
+                      >
+                        {reply.content}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.messageTime,
+                          isMyMessage ? styles.myMessageTime : styles.otherMessageTime,
+                        ]}
+                      >
+                        {new Date(reply.createdAt).toLocaleString('vi-VN')}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.replyContent}>{reply.content}</Text>
-                </View>
-              ))
+                );
+              })
             ) : (
               <Text style={styles.noReplies}>Chưa có trao đổi nào</Text>
             )}
@@ -225,28 +285,36 @@ export const TicketDetailScreen: React.FC = () => {
         </ScrollView>
 
         {/* Reply Input */}
-        <View style={styles.replyInputContainer}>
-          <TextInput
-            style={styles.replyInput}
-            placeholder="Nhập phản hồi..."
-            placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
-            value={replyText}
-            onChangeText={setReplyText}
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, (!replyText.trim() || sending) && styles.sendButtonDisabled]}
-            onPress={handleSendReply}
-            disabled={!replyText.trim() || sending}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color={COLORS.WHITE} />
-            ) : (
-              <Send size={20} color={COLORS.WHITE} />
-            )}
-          </TouchableOpacity>
-        </View>
+        {canSendMessage ? (
+          <View style={styles.replyInputContainer}>
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Nhập phản hồi..."
+              placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+              value={replyText}
+              onChangeText={setReplyText}
+              multiline
+              maxLength={500}
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, (!replyText.trim() || sending) && styles.sendButtonDisabled]}
+              onPress={handleSendReply}
+              disabled={!replyText.trim() || sending}
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color={COLORS.WHITE} />
+              ) : (
+                <Send size={20} color={COLORS.WHITE} />
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.waitingMessageContainer}>
+            <Text style={styles.waitingMessageText}>
+              Vui lòng chờ chủ trọ phản hồi trước khi bạn có thể nhắn tin
+            </Text>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaProvider>
   );

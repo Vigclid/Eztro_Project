@@ -9,6 +9,7 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import {
   ArrowLeft,
   Plus,
@@ -16,33 +17,51 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  Trash2,
 } from 'lucide-react-native';
 import { getTicketApi } from '../../api/ticket/ticketapi';
 import { putTicketApi } from '../../api/ticket/ticketapi';
+import { deleteTicketApi } from '../../api/ticket/ticketapi';
 import { ITicket } from '../../types/ticket';
 import { COLORS } from '../../constants/theme';
 import { NavigationProp } from '../../navigation/navigation.type';
+import { RootState } from '../../stores/store';
 import { styles } from './styles/TicketListScreen.styles';
 
 type FilterType = 'all' | 'pending' | 'processing' | 'completed';
 
 export const TicketListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [filter, setFilter] = useState<FilterType>('all');
   const [tickets, setTickets] = useState<ITicket[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Get user role from Redux auth state
+  const userRole = user?.roleName || '';
+  const isLandlord = userRole === 'Landlord';
+  const isTenant = userRole === 'Tenant';
 
   // Reload tickets when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadTickets();
-    }, [])
+    }, [isLandlord, isTenant])
   );
 
   const loadTickets = async () => {
     try {
       setLoading(true);
-      const response: any = await getTicketApi.getAllTicketsByLandlord();
+      let response: any;
+
+      if (isLandlord) {
+        response = await getTicketApi.getAllTicketsByLandlord();
+      } else if (isTenant) {
+        response = await getTicketApi.getAllTicketsByTenant();
+      } else {
+        setTickets([]);
+        return;
+      }
       
       // apiService wraps the backend response, so we need to access response.data.data
       // Backend returns: { status: "success", data: [...], message: "..." }
@@ -121,6 +140,27 @@ export const TicketListScreen: React.FC = () => {
     } catch (error) {
     }
   };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    try {
+      await deleteTicketApi.deleteTicket(ticketId);
+      loadTickets();
+    } catch (error) {
+    }
+  };
+
+  const getUnreadCount = (ticket: ITicket) => {
+    if (!ticket.replies || ticket.replies.length === 0) return 0;
+    
+    // Count unread replies from other users
+    return ticket.replies.filter((reply: any) => {
+      return reply.userId && typeof reply.userId === 'object' && 
+             reply.userId._id !== currentUserId && 
+             !reply.isRead;
+    }).length;
+  };
+
+  const currentUserId = user?._id;
   const pendingCount = tickets.filter((t) => t.status === 'pending').length;
   const processingCount = tickets.filter((t) => t.status === 'processing').length;
   const completedCount = tickets.filter((t) => t.status === 'completed').length;
@@ -227,10 +267,30 @@ export const TicketListScreen: React.FC = () => {
                     </Text>
                   </View>
                 </View>
-                <View style={getPriorityColor(ticket.categories)}>
-                  <Text style={styles.badgeText}>
-                    {getPriorityText(ticket.categories)}
-                  </Text>
+                <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                  <View style={{ position: 'relative' }}>
+                    <View style={getPriorityColor(ticket.categories)}>
+                      <Text style={styles.badgeText}>
+                        {getPriorityText(ticket.categories)}
+                      </Text>
+                    </View>
+                    {getUnreadCount(ticket) > 0 && (
+                      <View style={styles.notificationBadge}>
+                        <Text style={styles.notificationBadgeText}>
+                          {getUnreadCount(ticket)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={{ padding: 8 }}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTicket(ticket._id);
+                    }}
+                  >
+                    <Trash2 size={18} color="#EF4444" />
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -245,7 +305,7 @@ export const TicketListScreen: React.FC = () => {
                 </Text>
               </View>
 
-              {ticket.status === 'pending' && (
+              {isLandlord && ticket.status === 'pending' && (
                 <View style={styles.actionButtons}>
                   <TouchableOpacity
                     style={styles.startButton}
@@ -259,7 +319,7 @@ export const TicketListScreen: React.FC = () => {
                 </View>
               )}
 
-              {ticket.status === 'processing' && (
+              {isLandlord && ticket.status === 'processing' && (
                 <TouchableOpacity
                   style={styles.completeButton}
                   onPress={(e) => {

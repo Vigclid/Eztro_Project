@@ -32,18 +32,10 @@ export const CreateTicketScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useSelector((state: RootState) => state.auth);
   
-  // Get user role
-  const getUserRole = () => {
-    if (user?.roleName) return user.roleName;
-    if (user?.roleId && typeof user.roleId === 'object' && 'name' in user.roleId) {
-      return (user.roleId as any).name;
-    }
-    return '';
-  };
-  
-  const userRole = getUserRole();
-  const isLandlord = userRole === 'Landlord' || userRole === 'landlord';
-  const isTenant = userRole === 'Tenant' || userRole === 'tenant';
+  // Get user role from Redux auth state
+  const userRole = user?.roleName || '';
+  const isLandlord = userRole === 'Landlord';
+  const isTenant = userRole === 'Tenant';
 
   const [houses, setHouses] = useState<IHouse[]>([]);
   const [rooms, setRooms] = useState<IRoom[]>([]);
@@ -178,6 +170,9 @@ export const CreateTicketScreen: React.FC = () => {
           categories: [formData.category],
         };
         response = await postTicketApi.createTicketByTenant(requestData);
+      } else {
+        Alert.alert('Lỗi', 'Không thể xác định vai trò của bạn');
+        return;
       }
 
       if (response.status && response.data) {
@@ -190,8 +185,8 @@ export const CreateTicketScreen: React.FC = () => {
       } else {
         Alert.alert('Lỗi', response.error?.message || 'Không thể tạo yêu cầu. Vui lòng thử lại.');
       }
-    } catch (error) {
-      Alert.alert('Lỗi', 'Không thể tạo yêu cầu. Vui lòng thử lại.');
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || 'Không thể tạo yêu cầu. Vui lòng thử lại.');
     }
   };
 

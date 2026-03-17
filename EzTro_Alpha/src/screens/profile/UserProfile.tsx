@@ -57,7 +57,7 @@ export const UserProfile: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!user) {
+    if (!user) {    
       navigation.reset({
         index: 0,
         routes: [{ name: "auth" as never }],
@@ -235,7 +235,7 @@ export const UserProfile: React.FC = () => {
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
           <LinearGradient
