@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Bug, HelpCircle, Lightbulb, Clock, CheckCircle, AlertCircle, Search } from "lucide-react";
+import {
+  ArrowLeft,
+  Bug,
+  HelpCircle,
+  Lightbulb,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Search,
+} from "lucide-react";
 import { reportGetAPI } from "../../api/reportAPI/GET";
 import { Report } from "../../types/report";
 import "./styles/StaffSupportScreen.css";
@@ -20,7 +29,7 @@ const StaffSupportScreen: React.FC = () => {
     setLoading(true);
     try {
       // Backend /all endpoint doesn't support status filter, so we get all and filter on frontend
-      const res = await reportGetAPI.getAllReports(undefined, 1, 50);
+      const res = await reportGetAPI.getAllReports();
       if (res.status === "success" && res.data) {
         // Backend returns array directly in res.data, not res.data.data
         const reportsArray = Array.isArray(res.data) ? res.data : [];
@@ -88,7 +97,11 @@ const StaffSupportScreen: React.FC = () => {
     }
   };
 
-  const getUserFullName = (user: { firstName?: string; lastName?: string; email: string }) => {
+  const getUserFullName = (user: {
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  }) => {
     if (user.firstName && user.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }
@@ -117,7 +130,9 @@ const StaffSupportScreen: React.FC = () => {
     return (
       report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getUserFullName(report.userId).toLowerCase().includes(searchTerm.toLowerCase())
+      getUserFullName(report.userId)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
     );
   });
 
@@ -147,27 +162,32 @@ const StaffSupportScreen: React.FC = () => {
         <div className="filter-buttons">
           <button
             className={`filter-btn ${statusFilter === "all" ? "active" : ""}`}
-            onClick={() => setStatusFilter("all")}>
+            onClick={() => setStatusFilter("all")}
+          >
             Tất cả
           </button>
           <button
             className={`filter-btn ${statusFilter === "Pending" ? "active" : ""}`}
-            onClick={() => setStatusFilter("Pending")}>
+            onClick={() => setStatusFilter("Pending")}
+          >
             Chờ xử lý
           </button>
           <button
             className={`filter-btn ${statusFilter === "InProgress" ? "active" : ""}`}
-            onClick={() => setStatusFilter("InProgress")}>
+            onClick={() => setStatusFilter("InProgress")}
+          >
             Đang xử lý
           </button>
           <button
             className={`filter-btn ${statusFilter === "Resolved" ? "active" : ""}`}
-            onClick={() => setStatusFilter("Resolved")}>
+            onClick={() => setStatusFilter("Resolved")}
+          >
             Đã giải quyết
           </button>
           <button
             className={`filter-btn ${statusFilter === "Closed" ? "active" : ""}`}
-            onClick={() => setStatusFilter("Closed")}>
+            onClick={() => setStatusFilter("Closed")}
+          >
             Đã đóng
           </button>
         </div>
@@ -188,31 +208,49 @@ const StaffSupportScreen: React.FC = () => {
         ) : (
           <div className="reports-list">
             {filteredReports.map((report) => (
-              <div key={report._id} className="report-card" onClick={() => navigate(`/support/${report._id}`)}>
+              <div
+                key={report._id}
+                className="report-card"
+                onClick={() => navigate(`/support/${report._id}`)}
+              >
                 <div className="report-card-header">
                   <div className="report-type-badge">
-                    <span className={`type-icon type-${report.typeReport.toLowerCase()}`}>
+                    <span
+                      className={`type-icon type-${report.typeReport.toLowerCase()}`}
+                    >
                       {getTypeIcon(report.typeReport)}
                     </span>
-                    <span className="type-label">{getTypeLabel(report.typeReport)}</span>
+                    <span className="type-label">
+                      {getTypeLabel(report.typeReport)}
+                    </span>
                   </div>
-                  <div className={`status-badge status-${report.status.toLowerCase()}`}>
+                  <div
+                    className={`status-badge status-${report.status.toLowerCase()}`}
+                  >
                     {getStatusIcon(report.status)}
                     <span>{getStatusLabel(report.status)}</span>
                   </div>
                 </div>
 
                 <h3 className="report-title">{report.title}</h3>
-                <p className="report-description">{report.description.substring(0, 100)}...</p>
+                <p className="report-description">
+                  {report.description.substring(0, 100)}...
+                </p>
 
                 <div className="report-card-footer">
                   <div className="report-user">
-                    <span className="user-name">{getUserFullName(report.userId)}</span>
+                    <span className="user-name">
+                      {getUserFullName(report.userId)}
+                    </span>
                     <span className="user-email">{report.userId.email}</span>
                   </div>
                   <div className="report-meta">
-                    <span className="reply-count">{report.replies.length} tin nhắn</span>
-                    <span className="report-date">{formatDate(report.createdAt)}</span>
+                    <span className="reply-count">
+                      {report.replies.length} tin nhắn
+                    </span>
+                    <span className="report-date">
+                      {formatDate(report.createdAt)}
+                    </span>
                   </div>
                 </div>
               </div>
