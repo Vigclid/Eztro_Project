@@ -235,7 +235,7 @@ export const UserProfile: React.FC = () => {
                     </Text>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
           <LinearGradient
