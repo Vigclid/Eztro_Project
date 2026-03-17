@@ -1,4 +1,4 @@
-import { IHouse } from "../types/house";
+import { IHouse, IUtilitesCharge } from "../types/house";
 import * as NavigationService from "./navigationService";
 import { navigate } from "./navigationService";
 
@@ -165,5 +165,12 @@ export const appNavigator = {
 
   goToDeleteBoardingHouseScreen() {
     navigate("mainstack", { screen: "deleteBoardingHouseScreen" })
+  },
+
+  goToCreateFixedFeeServiceScreen(houseId: string | undefined, action?: string, utility?: IUtilitesCharge) {
+    navigate("mainstack", {
+      screen: "createFixedServiceFeeScreen",
+      params: { houseId, action, utility },
+    });
   }
 };
