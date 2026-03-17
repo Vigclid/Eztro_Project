@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Bell, ChevronLeft, Globe, Mail, Moon, Sun } from "lucide-react-native";
+import { Bell, ChevronLeft, Globe, Mail, Moon, Sun, Trash2, ShieldAlert } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -18,6 +18,7 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
+import { appNavigator } from "../../navigation/navigationActions";
 
 // ─── Theme Card ───────────────────────────────────────────────────────────────
 
@@ -286,6 +287,29 @@ export const SettingScreen: React.FC = () => {
                 <Text style={styles.langCheckText}>✓</Text>
               </LinearGradient>
             )}
+          </TouchableOpacity>
+        </View>
+
+        <SectionHeader
+          icon={<ShieldAlert size={24} color="#ef4444" />}
+          title="Quản lý dữ liệu"
+        />
+        <View style={[styles.card, styles.dangerCard]}>
+          <TouchableOpacity
+            style={[styles.row, styles.rowLast]}
+            onPress={() => {
+              appNavigator.goToDeleteBoardingHouseScreen()
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconBox, styles.dangerIconBox]}>
+              <Trash2 size={20} color="#ef4444" />
+            </View>
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowTitle, { color: "#ef4444" }]}>Xóa cụm trọ</Text>
+              <Text style={styles.rowDesc}>Xóa các cụm trọ không còn sử dụng</Text>
+            </View>
+            <ChevronLeft size={20} color="#ef4444" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
         </View>
 
@@ -564,33 +588,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Join room card
-  joinRoomCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.WHITE,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: COLORS.GRADIENT_CARD_START,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    gap: 16,
+  // Danger Styles
+  dangerCard: {
+    borderColor: "#fee2e2",
+    backgroundColor: "#fff5f5",
+    marginBottom: 10,
   },
-  joinRoomIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  joinRoomTitle: {
-    color: "#1f2937",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 4,
+  dangerIconBox: {
+    backgroundColor: "#fee2e2",
   },
 
   bottomPadding: {
-    height: 40,
+    height: 60,
   },
 });

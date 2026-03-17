@@ -19,6 +19,8 @@ import { MyReportsScreen } from "../../screens/support/MyReportsScreen";
 import { ReportDetailScreen } from "../../screens/support/ReportDetailScreen";
 import { CreateNotificationScreen } from "../../screens/notification/CreateNotificationScreen";
 import { SettingScreen } from "../../screens/profile/SettingScreen";
+import { DeleteBoardingHouseScreen } from "../../screens/boardingHouse/DeleteBoardingHouseScreen";
+import { CreateFixedServiceScreen } from "../../screens/boardingHouse/CreateFixedServiceFeeScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -61,6 +63,8 @@ const MainStack = () => (
     <Stack.Screen name="supportScreen" component={SupportScreen} />
     <Stack.Screen name="myReportsScreen" component={MyReportsScreen} />
     <Stack.Screen name="reportDetailScreen" component={ReportDetailScreen} />
+    <Stack.Screen name="deleteBoardingHouseScreen" component={DeleteBoardingHouseScreen} />
+    <Stack.Screen name="createFixedServiceFeeScreen" component={CreateFixedServiceScreen} />
   </Stack.Navigator>
 );
 
