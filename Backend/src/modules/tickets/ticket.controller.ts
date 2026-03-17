@@ -18,8 +18,7 @@ export class TicketController {
       if (!token) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
-      const decoded = jwt.decode(token) as { id: string; role: string };
-      const { id } = decoded;
+      const { id } = jwt.decode(token) as { id: string };
       
       const { title, description, categories } = req.body;
 
@@ -193,48 +192,14 @@ export class TicketController {
   // Xóa ticket
   delete = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const token = req.headers["authorization"]?.split(" ")[1];
-      if (!token) {
-        return res.status(401).json(responseWrapper("error", "Unauthorized"));
-      }
-      const decoded = jwt.decode(token) as { id: string; role: string };
-      const currentUserId = decoded.id;
-      
-      // Get ticket first to check permissions
-      const ticket = await this.ticketService.getById(req.params.id);
-      if (!ticket) {
+      const result = await this.ticketService.delete(req.params.id);
+      if (!result) {
         res.status(404).json(responseWrapper("error", "Ticket không tồn tại"));
         return;
       }
-
-      // Check if user can delete this ticket
-      const canDelete = await this.canDeleteTicket(ticket, currentUserId);
-      if (!canDelete) {
-        res.status(403).json(responseWrapper("error", "Bạn không có quyền xóa ticket này"));
-        return;
-      }
-
-      const result = await this.ticketService.delete(req.params.id);
       res.json(responseWrapper("success", "Xóa ticket thành công", result));
     } catch (error) {
       next(error);
     }
   };
-
-  // Check if user can delete ticket
-  private async canDeleteTicket(ticket: any, userId: string): Promise<boolean> {
-    // User can delete their own ticket
-    const senderId = typeof ticket.senderId === 'object' ? ticket.senderId._id : ticket.senderId;
-    if (senderId.toString() === userId) {
-      return true;
-    }
-
-    // Landlord can delete tickets in their houses
-    const receiverId = typeof ticket.receiverId === 'object' ? ticket.receiverId._id : ticket.receiverId;
-    if (receiverId.toString() === userId) {
-      return true;
-    }
-
-    return false;
-  }
 }

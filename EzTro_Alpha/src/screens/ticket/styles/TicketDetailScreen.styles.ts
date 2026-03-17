@@ -188,30 +188,4 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.GRAY_DARK,
     opacity: 0.5,
   },
-  // Chat message alignment styles
-  myMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: COLORS.GREEN_LIGHT,
-    borderBottomRightRadius: 4,
-    maxWidth: '80%',
-  },
-  otherMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.WHITE,
-    borderBottomLeftRadius: 4,
-    maxWidth: '80%',
-  },
-  // Chat disabled container
-  chatDisabledContainer: {
-    padding: 16,
-    backgroundColor: COLORS.BACKGROUND_GRAY,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.BORDER_GRAY,
-    alignItems: 'center',
-  },
-  chatDisabledText: {
-    fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
-    textAlign: 'center',
-  },
 });

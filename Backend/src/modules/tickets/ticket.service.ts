@@ -125,17 +125,13 @@ export class TicketService extends GenericService<ITicket> {
     return populatedTicket;
   }
 
-  // Lấy tickets của landlord (tất cả tickets trong các house của họ + tickets gửi cho họ)
+  // Lấy tickets của landlord (tất cả tickets trong các house của họ)
   async getTicketsByLandlord(landlordId: string) {
     const landlordObjectId = new Types.ObjectId(landlordId);
-    
-    // Lấy tất cả tickets mà landlord là người tạo hoặc là người nhận
-    return TicketModel.find({
-      $or: [
-        { senderId: landlordObjectId },
-        { receiverId: landlordObjectId }
-      ]
-    })
+    const houses = await HouseModel.find({ landlordId: landlordObjectId });
+    const houseIds = houses.map((h) => h._id);
+
+    return TicketModel.find({ houseId: { $in: houseIds } })
       .populate("senderId", "firstName lastName email profilePicture")
       .populate("receiverId", "firstName lastName email profilePicture")
       .populate("houseId", "houseName address")

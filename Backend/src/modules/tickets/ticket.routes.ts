@@ -7,8 +7,8 @@ const router = Router();
 const ticketController = new TicketController();
 
 // Routes cho tenant
-router.post("/tenant", authenticate, ticketController.createByTenant);
-router.get("/tenant/my-tickets", authenticate, ticketController.getByTenant);
+router.post("/tenant", authenticate, authorize(["Tenant"]), ticketController.createByTenant);
+router.get("/tenant/my-tickets", authenticate, authorize(["Tenant"]), ticketController.getByTenant);
 
 // Routes cho landlord
 router.post("/landlord", authenticate, authorize(["Landlord"]), ticketController.createByLandlord);
@@ -26,7 +26,7 @@ router.post("/:ticketId/reply", authenticate, ticketController.addReply);
 // Chỉ landlord có thể update status
 router.patch("/:ticketId/status", authenticate, authorize(["Landlord"]), ticketController.updateStatus);
 
-// Xóa ticket (người tạo hoặc landlord có thể xóa)
+// Xóa ticket (admin hoặc người tạo)
 router.delete("/:id", authenticate, ticketController.delete);
 
 export default router;
