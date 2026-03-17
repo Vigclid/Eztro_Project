@@ -502,7 +502,12 @@ export class invoiceService extends GenericService<IInvoice> {
 
   submitMeterReadingByTenant = async (
     userId: string,
-    data: { waterNumber?: number; waterImage?: string; electricNumber?: number; electricImage?: string }
+    data: {
+      waterNumber?: number;
+      waterImage?: string;
+      electricNumber?: number;
+      electricImage?: string;
+    }
   ) => {
     const member = await roomMemberModel.findOne({
       userId: new Types.ObjectId(userId),
@@ -522,7 +527,8 @@ export class invoiceService extends GenericService<IInvoice> {
       invoice.waterImage = res.secure_url;
     }
     if (data.waterNumber !== undefined) invoice.currentWaterNumber = Number(data.waterNumber);
-    if (data.electricNumber !== undefined) invoice.currentElectricityNumber = Number(data.electricNumber);
+    if (data.electricNumber !== undefined)
+      invoice.currentElectricityNumber = Number(data.electricNumber);
 
     await invoice.save();
     return invoice;
@@ -544,7 +550,14 @@ export class invoiceService extends GenericService<IInvoice> {
       },
       { $lookup: { from: "rooms", localField: "roomId", foreignField: "_id", as: "roomDetail" } },
       { $unwind: "$roomDetail" },
-      { $lookup: { from: "houses", localField: "roomDetail.houseId", foreignField: "_id", as: "houseDetail" } },
+      {
+        $lookup: {
+          from: "houses",
+          localField: "roomDetail.houseId",
+          foreignField: "_id",
+          as: "houseDetail",
+        },
+      },
       { $unwind: "$houseDetail" },
       {
         $project: {
@@ -569,7 +582,11 @@ export class invoiceService extends GenericService<IInvoice> {
     return await invoiceModel.aggregate(pipeline);
   };
 
-  zaloTenantConfirmInvoice = async (phoneNumber: string, invoiceId: string, transactionImageBase64?: string) => {
+  zaloTenantConfirmInvoice = async (
+    phoneNumber: string,
+    invoiceId: string,
+    transactionImageBase64?: string
+  ) => {
     const user = await userModel.findOne({ phoneNumber });
     if (!user) throw new Error("USER_NOT_FOUND");
 
@@ -613,12 +630,12 @@ export class invoiceService extends GenericService<IInvoice> {
     if (data.waterImage) {
       const res = await uploadImage(data.waterImage, 1, false);
       invoice.waterImage = res.secure_url;
-
-      invoice.currentWaterNumber = Number(data.waterNumber);
-      invoice.currentElectricityNumber = Number(data.electricNumber);
-
-      await invoice.save();
-      return invoice;
     }
+
+    invoice.currentWaterNumber = Number(data.waterNumber);
+    invoice.currentElectricityNumber = Number(data.electricNumber);
+
+    await invoice.save();
+    return invoice;
   };
 }
