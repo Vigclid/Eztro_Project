@@ -221,6 +221,8 @@ export class invoiceService extends GenericService<IInvoice> {
           utilitiesCost: {
             $cond: { if: { $isArray: "$utilities" }, then: { $sum: "$utilities.value" }, else: 0 },
           },
+          electricityImage: 1,
+          waterImage: 1,
           totalAmount: 1,
           isSelected: { $literal: false },
         },
@@ -487,6 +489,108 @@ export class invoiceService extends GenericService<IInvoice> {
     });
 
     return await invoiceModel.aggregate(pipeline);
+  };
+
+  getProcessingInvoiceForTenant = async (userId: string) => {
+    const member = await roomMemberModel.findOne({
+      userId: new Types.ObjectId(userId),
+      status: "Đang Thuê",
+    });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+    return await invoiceModel.findOne({ roomId: member.roomId, status: "processing" });
+  };
+
+  submitMeterReadingByTenant = async (
+    userId: string,
+    data: { waterNumber?: number; waterImage?: string; electricNumber?: number; electricImage?: string }
+  ) => {
+    const member = await roomMemberModel.findOne({
+      userId: new Types.ObjectId(userId),
+      status: "Đang Thuê",
+    });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+
+    const invoice = await invoiceModel.findOne({ roomId: member.roomId, status: "processing" });
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND");
+
+    if (data.electricImage) {
+      const res = await uploadImage(data.electricImage, 1, false);
+      invoice.electricityImage = res.secure_url;
+    }
+    if (data.waterImage) {
+      const res = await uploadImage(data.waterImage, 1, false);
+      invoice.waterImage = res.secure_url;
+    }
+    if (data.waterNumber !== undefined) invoice.currentWaterNumber = Number(data.waterNumber);
+    if (data.electricNumber !== undefined) invoice.currentElectricityNumber = Number(data.electricNumber);
+
+    await invoice.save();
+    return invoice;
+  };
+
+  getInvoicesForZaloUser = async (phoneNumber: string) => {
+    const user = await userModel.findOne({ phoneNumber });
+    if (!user) throw new Error("USER_NOT_FOUND");
+
+    const member = await roomMemberModel.findOne({ userId: user._id, status: "Đang Thuê" });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          roomId: member.roomId,
+          status: { $in: ["payment-processing", "tenant-confirmed", "completed"] },
+        },
+      },
+      { $lookup: { from: "rooms", localField: "roomId", foreignField: "_id", as: "roomDetail" } },
+      { $unwind: "$roomDetail" },
+      { $lookup: { from: "houses", localField: "roomDetail.houseId", foreignField: "_id", as: "houseDetail" } },
+      { $unwind: "$houseDetail" },
+      {
+        $project: {
+          _id: 1,
+          status: 1,
+          utilities: 1,
+          rentalFee: 1,
+          previousElectricityNumber: 1,
+          currentElectricityNumber: 1,
+          previousWaterNumber: 1,
+          currentWaterNumber: 1,
+          electricityCharge: 1,
+          waterCharge: 1,
+          transactionImage: 1,
+          totalAmount: 1,
+          createDate: 1,
+          roomId: { $mergeObjects: ["$roomDetail", { houseId: "$houseDetail" }] },
+        },
+      },
+      { $sort: { createDate: -1 } },
+    ];
+    return await invoiceModel.aggregate(pipeline);
+  };
+
+  zaloTenantConfirmInvoice = async (phoneNumber: string, invoiceId: string, transactionImageBase64?: string) => {
+    const user = await userModel.findOne({ phoneNumber });
+    if (!user) throw new Error("USER_NOT_FOUND");
+
+    const member = await roomMemberModel.findOne({ userId: user._id, status: "Đang Thuê" });
+    if (!member) throw new Error("ROOM_NOT_FOUND");
+
+    const invoice = await invoiceModel.findOne({
+      _id: new Types.ObjectId(invoiceId),
+      roomId: member.roomId,
+      status: "payment-processing",
+    });
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
+
+    if (transactionImageBase64) {
+      const res = await uploadImage(transactionImageBase64, 1, false);
+      invoice.transactionImage = res.secure_url;
+    }
+
+    invoice.status = "tenant-confirmed";
+    await invoice.save();
+    return invoice;
   };
 
   updateInvoiceWithZalo = async (data: InvoiceZalo) => {

@@ -1,6 +1,7 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useMemo, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Alert,
   FlatList,
@@ -80,6 +81,7 @@ const STATUS_CONFIG: Record<
 };
 
 export const TrackingInvoiceStatus: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const now = new Date();
 
   const [statusFilter, setStatusFilter] = useState("all");
@@ -312,7 +314,7 @@ export const TrackingInvoiceStatus: React.FC = () => {
 
       {/* Invoice list */}
       <ScrollView
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 88 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

@@ -6,7 +6,8 @@
       "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectBackendsrcmodulesinvoices -type f -name *)",
       "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectEzTro_Alphasrcscreensinvoice -type f -name *)",
       "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectEzTro_Alphasrcapiinvoice -type f -name *)",
-      "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectBackendsrc -type f \\\\\\(-name *cloudinary* -o -name *upload* \\\\\\))"
+      "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectBackendsrc -type f \\\\\\(-name *cloudinary* -o -name *upload* \\\\\\))",
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")"
     ]
   }
 }

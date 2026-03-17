@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ArrowLeft, Send } from 'lucide-react-native';
@@ -24,6 +24,7 @@ type TicketDetailRouteProp = RouteProp<MainStackParamList, 'ticketDetailScreen'>
 
 export const TicketDetailScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const route = useRoute<TicketDetailRouteProp>();
   const { ticketId } = route.params;
 
@@ -155,7 +156,7 @@ export const TicketDetailScreen: React.FC = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <ScrollView style={styles.content}>
+        <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 16 }}>
           {/* Ticket Info */}
           <View style={styles.infoCard}>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) }]}>
@@ -225,7 +226,7 @@ export const TicketDetailScreen: React.FC = () => {
         </ScrollView>
 
         {/* Reply Input */}
-        <View style={styles.replyInputContainer}>
+        <View style={[styles.replyInputContainer, { paddingBottom: insets.bottom + 16 }]}>
           <TextInput
             style={styles.replyInput}
             placeholder="Nhập phản hồi..."

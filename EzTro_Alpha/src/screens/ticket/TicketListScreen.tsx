@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
@@ -28,6 +28,7 @@ type FilterType = 'all' | 'pending' | 'processing' | 'completed';
 
 export const TicketListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<FilterType>('all');
   const [tickets, setTickets] = useState<ITicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,7 +196,7 @@ export const TicketListScreen: React.FC = () => {
       </LinearGradient>
 
       {/* Ticket List */}
-      <ScrollView style={styles.ticketList}>
+      <ScrollView style={styles.ticketList} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.GREEN_PRIMARY} />

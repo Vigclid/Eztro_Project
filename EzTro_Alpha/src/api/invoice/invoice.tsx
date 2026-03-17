@@ -41,6 +41,15 @@ export const getInvoiceApi = {
     }
   },
 
+  async getMyProcessingInvoice() {
+    try {
+      const res = await apiService.get(`${invoiceApi}tenant/processing`);
+      return res.data;
+    } catch (err: any) {
+      throw err;
+    }
+  },
+
   async getProcessingInvoicesByHouse(houseId: string) {
     try {
       const res = await apiService.get(`${invoiceApi}draft/house/${houseId}`);
@@ -97,6 +106,21 @@ export const patchInvoiceApi = {
       const res = await apiService.patch(`${invoiceApi}finalize/many`, {
         invoiceIds,
       });
+      return res.data;
+    } catch (err: any) {
+      throw err;
+    }
+  },
+
+  // Tenant: submit meter readings + images for current processing invoice
+  async tenantSubmitMeterReading(data: {
+    waterNumber?: number;
+    waterImage?: string;
+    electricNumber?: number;
+    electricImage?: string;
+  }) {
+    try {
+      const res = await apiService.patch(`${invoiceApi}tenant/meter-reading`, data);
       return res.data;
     } catch (err: any) {
       throw err;
