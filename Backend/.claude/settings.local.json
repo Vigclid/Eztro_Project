@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "mcp__claude_ai_Figma__get_design_context",
-      "Bash(xargs grep -l \"SocketProvider\")"
+      "Bash(xargs grep -l \"SocketProvider\")",
+      "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectBackendsrcmodulesinvoices -type f -name *)",
+      "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectEzTro_Alphasrcscreensinvoice -type f -name *)",
+      "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectEzTro_Alphasrcapiinvoice -type f -name *)",
+      "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectBackendsrc -type f \\\\\\(-name *cloudinary* -o -name *upload* \\\\\\))"
     ]
   }
 }
