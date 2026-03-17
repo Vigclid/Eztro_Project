@@ -1,6 +1,0 @@
-{
-  "specType": "feature",
-  "workflowType": "design-first",
-  "featureName": "realtime-chat-system",
-  "designArtifacts": ["high-level", "low-level"]
-}

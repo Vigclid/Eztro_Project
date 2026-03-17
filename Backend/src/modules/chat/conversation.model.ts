@@ -1,5 +1,6 @@
 import mongoose, { Document, Types } from "mongoose";
 
+// Plain interfaces - không tạo schema riêng
 export interface IParticipant {
   userId: Types.ObjectId;
   firstName: string;
@@ -24,26 +25,25 @@ export interface IConversation extends Document {
   updatedAt: Date;
 }
 
-const ParticipantSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  profilePicture: { type: String },
-  lastSeen: { type: Date },
-}, { _id: false });
-
-const LastMessageSchema = new mongoose.Schema({
-  messageId: { type: mongoose.Schema.Types.ObjectId, required: true },
-  content: { type: String, required: true },
-  senderId: { type: mongoose.Schema.Types.ObjectId, required: true },
-  createdAt: { type: Date, required: true },
-}, { _id: false });
-
+// Schema definition với Mixed type cho nested objects
 const ConversationSchema = new mongoose.Schema<IConversation>({
   type: { type: String, enum: ["direct"], default: "direct", required: true },
-  participants: { type: [ParticipantSchema], required: true },
+  participants: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    profilePicture: { type: String },
+    lastSeen: { type: Date },
+    _id: false
+  }],
   participantIds: { type: [mongoose.Schema.Types.ObjectId], required: true },
-  lastMessage: { type: LastMessageSchema },
+  lastMessage: {
+    messageId: { type: mongoose.Schema.Types.ObjectId },
+    content: { type: String },
+    senderId: { type: mongoose.Schema.Types.ObjectId },
+    createdAt: { type: Date },
+    _id: false
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 }, { versionKey: false });
