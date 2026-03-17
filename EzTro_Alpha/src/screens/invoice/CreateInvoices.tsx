@@ -295,6 +295,16 @@ export const CreateInvoices: React.FC = () => {
   const formatCurrency = (amount: number) =>
     amount.toLocaleString("vi-VN") + " đ";
 
+  // Format a raw numeric string with dot separators for display in inputs
+  const fmtMoney = (raw: string): string => {
+    const n = raw.replace(/\D/g, "");
+    return n ? n.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "";
+  };
+
+  // Strip dot separators before storing
+  const parseMoney = (formatted: string): string =>
+    formatted.replace(/\./g, "");
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -394,8 +404,8 @@ export const CreateInvoices: React.FC = () => {
                     <TextInput
                       style={styles.inlineInput}
                       keyboardType="numeric"
-                      value={edit.rentalFee}
-                      onChangeText={(v) => updateEdit(key, "rentalFee", v)}
+                      value={fmtMoney(edit.rentalFee)}
+                      onChangeText={(v) => updateEdit(key, "rentalFee", parseMoney(v))}
                     />
                     <Text style={styles.inlineUnit}>đ / tháng</Text>
                   </View>
@@ -510,9 +520,9 @@ export const CreateInvoices: React.FC = () => {
                           ]}
                           placeholder="0"
                           keyboardType="numeric"
-                          value={u.value}
+                          value={fmtMoney(u.value)}
                           onChangeText={(v) =>
-                            updateUtility(key, i, "value", v)
+                            updateUtility(key, i, "value", parseMoney(v))
                           }
                         />
                         <Text style={styles.utilUnit}>đ</Text>

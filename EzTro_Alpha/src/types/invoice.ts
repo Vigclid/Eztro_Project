@@ -21,7 +21,8 @@ export interface IInvoice {
     electricityCharge: number | undefined,
     waterCharge: number | undefined,
     totalAmount: number | undefined,
-    createDate: Date | undefined
+    createDate: Date | undefined,
+    isVirtualTenant: boolean | undefined
 }
 
 export interface IRoomInvoice {

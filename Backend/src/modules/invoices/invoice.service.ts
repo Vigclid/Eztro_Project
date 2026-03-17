@@ -63,7 +63,7 @@ export class invoiceService extends GenericService<IInvoice> {
 
   createNewInvoices = async (invoicesData: Partial<IInvoice>[]) => {
     const filled = await Promise.all(invoicesData.map((d) => this.fillInvoiceDefaults(d)));
-    return await invoiceModel.insertMany(filled.map((d) => new invoiceModel(d)));
+    return await Promise.all(filled.map((d) => new invoiceModel(d).save()));
   };
 
   finalizeInvoices = async (invoiceIds: string[], triggeredByUserId?: string) => {
@@ -340,11 +340,6 @@ export class invoiceService extends GenericService<IInvoice> {
       status: "Đang Thuê",
     });
 
-    // "payment-processing" is only acceptable for virtual-tenant rooms (no real member)
-    if (invoice.status === "payment-processing" && member) {
-      throw new Error("INVOICE_NOT_FOUND_OR_INVALID_STATUS");
-    }
-
     invoice.status = "completed";
     await invoice.save();
 
@@ -372,7 +367,7 @@ export class invoiceService extends GenericService<IInvoice> {
       utilities: (house?.defaultUtilitesCharge as IInvoice["utilities"]) ?? invoice.utilities ?? [],
     });
 
-    await invoiceModel.insertMany([nextInvoice]);
+    await nextInvoice.save();
     return invoice;
   };
 
@@ -425,6 +420,22 @@ export class invoiceService extends GenericService<IInvoice> {
         },
       },
       { $unwind: "$houseDetail" },
+      {
+        $lookup: {
+          from: "room_members",
+          let: { roomId: "$roomId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$roomId", "$$roomId"] },
+                role: "TENANT",
+                status: "Đang Thuê",
+              },
+            },
+          ],
+          as: "tenantMember",
+        },
+      },
     ];
 
     if (landLordId) {
@@ -456,6 +467,19 @@ export class invoiceService extends GenericService<IInvoice> {
         transactionImage: 1,
         totalAmount: 1,
         createDate: 1,
+        isVirtualTenant: {
+          $cond: {
+            if: { $gt: [{ $size: "$tenantMember" }, 0] },
+            then: false,
+            else: {
+              $cond: {
+                if: { $gt: [{ $size: "$roomDetail.virtualTenants" }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
         roomId: {
           $mergeObjects: ["$roomDetail", { houseId: "$houseDetail" }],
         },
