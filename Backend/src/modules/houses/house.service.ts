@@ -63,4 +63,33 @@ export class houseService extends GenericService<IHouse> {
     deleteHouse = async (id: string) => {
         return await houseModel.findByIdAndDelete(id)
     }
+
+    addUtilityCharge = async (houseId: string, utility: { key: string, value: number }) => {
+        return await houseModel.findByIdAndUpdate(
+            houseId,
+            { $push: { defaultUtilitesCharge: utility } },
+            { new: true }
+        );
+    };
+
+    editUtilityCharge = async (houseId: string, oldKey: string, newUtility: { key: string, value: number }) => {
+        return await houseModel.findOneAndUpdate(
+            { _id: houseId, "defaultUtilitesCharge.key": oldKey },
+            {
+                $set: {
+                    "defaultUtilitesCharge.$.key": newUtility.key,
+                    "defaultUtilitesCharge.$.value": newUtility.value
+                }
+            },
+            { new: true }
+        );
+    };
+
+    removeUtilityCharge = async (houseId: string, key: string) => {
+        return await houseModel.findByIdAndUpdate(
+            houseId,
+            { $pull: { defaultUtilitesCharge: { key: key } } },
+            { new: true }
+        );
+    };
 }

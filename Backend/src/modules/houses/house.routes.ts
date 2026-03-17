@@ -21,6 +21,7 @@ router.route('/:id')
     .get(authenticate, HouseController.getHouseById)
     .put(authenticate, HouseController.updateHouse)
     .delete(authenticate, HouseController.deleteHouse)
+    .patch(authenticate, HouseController.updateUtility)
 
 router.route('/')
     .post(authenticate, HouseController.createNewHouse)

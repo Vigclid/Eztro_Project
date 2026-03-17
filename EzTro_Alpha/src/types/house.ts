@@ -9,6 +9,11 @@ export interface IHousePackageInfo {
     package?: IPackage | null;
 }
 
+export interface IUtilitesCharge {
+    key: string,
+    value: number
+}
+
 export interface IHouse {
     _id: string | undefined
     landlordId: IUser | undefined,
@@ -16,10 +21,7 @@ export interface IHouse {
     description: string | undefined,
     defaultElectricityCharge: number | undefined,
     defaultWaterCharge: number | undefined,
-    defaultUtilitesCharge: {
-        key: string,
-        value: number
-    }[] | undefined,
+    defaultUtilitesCharge: IUtilitesCharge[] | undefined,
     address: string | undefined,
     status: string | undefined,
     createDate: Date | undefined

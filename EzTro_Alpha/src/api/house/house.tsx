@@ -76,3 +76,17 @@ export const deleteHouseApi = {
         }
     }
 }
+
+export const patchHouseApi = {
+    async updateUtility(houseId: string | undefined, payload: any) {
+        try {
+            const res = await apiService.patch(
+                `${houseApi}${houseId}`,
+                payload
+            )
+            return res.data
+        } catch (err: any) {
+            throw err
+        }
+    }
+}
