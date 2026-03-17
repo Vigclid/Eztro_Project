@@ -63,16 +63,17 @@ export const UserProfile: React.FC = () => {
         routes: [{ name: "auth" as never }],
       });
     }
-  }, [user]);
+  }, [user, navigation]);
   const dispatch = useDispatch<AppDispatch>();
   const handleLogoutPress = () => {
-    const result = dispatch(logoutAsync());
-    if (logoutAsync.fulfilled.match(result)) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "auth" as never }],
-      });
-    }
+    dispatch(logoutAsync()).then((result) => {
+      if (logoutAsync.fulfilled.match(result)) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "auth" as never }],
+        });
+      }
+    });
   };
   const navigateToChangePasswordPage = () => {
     appNavigator.goToChangePasswordPage();
@@ -235,7 +236,7 @@ export const UserProfile: React.FC = () => {
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
           <LinearGradient
