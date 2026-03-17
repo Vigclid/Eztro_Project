@@ -3,6 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Alert,
   Animated,
@@ -12,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -27,7 +29,7 @@ import { ApiResponse } from "../../types/app.common";
 import { IInvoice } from "../../types/invoice";
 import { IPayment } from "../../types/payment";
 
-type Tab = "pending" | "history";
+type Tab = "pending" | "history" | "meter";
 type AIStatus = "idle" | "checking" | "valid" | "invalid";
 
 const PENDING_STATUS_LABEL: Record<string, string> = {
@@ -130,6 +132,7 @@ const AICheckOverlay: React.FC<{
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export const TenantInvoiceScreen: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [invoices, setInvoices] = useState<IInvoice[]>([]);
   const [payments, setPayments] = useState<IPayment[]>([]);
@@ -143,6 +146,35 @@ export const TenantInvoiceScreen: React.FC = () => {
   const [aiMessage, setAiMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // ── Meter reading tab state ────────────────────────────────────────────────
+  const [processingInvoice, setProcessingInvoice] = useState<IInvoice | null>(
+    null,
+  );
+  const [meterWaterNum, setMeterWaterNum] = useState("");
+  const [meterElectricNum, setMeterElectricNum] = useState("");
+  const [meterWater, setMeterWater] = useState<{
+    uri: string;
+    base64: string;
+  } | null>(null);
+  const [meterElectric, setMeterElectric] = useState<{
+    uri: string;
+    base64: string;
+  } | null>(null);
+  const [meterSubmitting, setMeterSubmitting] = useState(false);
+  const [meterSuccess, setMeterSuccess] = useState(false);
+
+  const fetchProcessingInvoice = useCallback(async () => {
+    try {
+      const res =
+        (await getInvoiceApi.getMyProcessingInvoice()) as ApiResponse<IInvoice>;
+      setProcessingInvoice(
+        res.status === "success" ? (res.data ?? null) : null,
+      );
+    } catch {
+      setProcessingInvoice(null);
+    }
+  }, []);
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -164,19 +196,100 @@ export const TenantInvoiceScreen: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchInvoices(), fetchPayments()]);
+    await Promise.all([
+      fetchInvoices(),
+      fetchPayments(),
+      fetchProcessingInvoice(),
+    ]);
     setRefreshing(false);
-  }, [fetchInvoices, fetchPayments]);
+  }, [fetchInvoices, fetchPayments, fetchProcessingInvoice]);
 
   useFocusEffect(
     useCallback(() => {
       fetchInvoices();
       fetchPayments();
-    }, [fetchInvoices, fetchPayments]),
+      fetchProcessingInvoice();
+    }, [fetchInvoices, fetchPayments, fetchProcessingInvoice]),
   );
 
   const formatCurrency = (amount: number | undefined) =>
     (amount || 0).toLocaleString("vi-VN") + " đ";
+
+  // ── Meter reading image picker (camera or gallery) ─────────────────────────
+  const pickMeterImage = async (type: "water" | "electric") => {
+    Alert.alert("Chọn ảnh", "Chụp ảnh hoặc chọn từ thư viện", [
+      {
+        text: "Chụp ảnh",
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Thông báo", "Cần cấp quyền camera");
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: "images",
+            quality: 0.8,
+          });
+          if (!result.canceled)
+            await readMeterImage(type, result.assets[0].uri);
+        },
+      },
+      {
+        text: "Thư viện ảnh",
+        onPress: async () => {
+          const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Thông báo", "Cần cấp quyền thư viện ảnh");
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: "images",
+            quality: 0.8,
+          });
+          if (!result.canceled)
+            await readMeterImage(type, result.assets[0].uri);
+        },
+      },
+      { text: "Hủy", style: "cancel" },
+    ]);
+  };
+
+  const readMeterImage = async (type: "water" | "electric", uri: string) => {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: "base64",
+    });
+    const base64String = `data:image/jpeg;base64,${base64}`;
+    if (type === "water") setMeterWater({ uri, base64: base64String });
+    else setMeterElectric({ uri, base64: base64String });
+  };
+
+  const handleMeterSubmit = async () => {
+    if (!meterWaterNum && !meterElectricNum && !meterWater && !meterElectric) {
+      Alert.alert("Thông báo", "Vui lòng nhập ít nhất một chỉ số hoặc ảnh");
+      return;
+    }
+    setMeterSubmitting(true);
+    try {
+      await patchInvoiceApi.tenantSubmitMeterReading({
+        waterNumber: meterWaterNum ? Number(meterWaterNum) : undefined,
+        electricNumber: meterElectricNum ? Number(meterElectricNum) : undefined,
+        waterImage: meterWater?.base64,
+        electricImage: meterElectric?.base64,
+      });
+      setMeterSuccess(true);
+      setMeterWaterNum("");
+      setMeterElectricNum("");
+      setMeterWater(null);
+      setMeterElectric(null);
+      await fetchProcessingInvoice();
+      Alert.alert("Thành công", "Đã gửi chỉ số điện nước!");
+    } catch {
+      Alert.alert("Lỗi", "Không thể gửi chỉ số");
+    } finally {
+      setMeterSubmitting(false);
+    }
+  };
 
   // Pick image → read base64 → trigger AI check
   const pickImage = async (invoiceId: string, invoiceAmount: number) => {
@@ -250,6 +363,10 @@ export const TenantInvoiceScreen: React.FC = () => {
   };
 
   const doConfirm = async (invoiceId: string) => {
+    if (aiStatus !== "valid") {
+      Alert.alert("Yêu cầu gửi ảnh!", "Yêu cầu gửi ảnh và xác nhận AI!");
+      return;
+    }
     setSubmitting(true);
     try {
       const base64String =
@@ -307,7 +424,7 @@ export const TenantInvoiceScreen: React.FC = () => {
 
   const renderPendingTab = () => (
     <ScrollView
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 88 }]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
@@ -470,7 +587,7 @@ export const TenantInvoiceScreen: React.FC = () => {
 
   const renderHistoryTab = () => (
     <ScrollView
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 88 }]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
@@ -539,6 +656,110 @@ export const TenantInvoiceScreen: React.FC = () => {
     </ScrollView>
   );
 
+  const renderMeterTab = () => (
+    <ScrollView
+      contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 88 }]}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {processingInvoice ? (
+        <>
+          {/* Previous readings reference */}
+          <View style={styles.meterRefCard}>
+            <Text style={styles.meterRefTitle}>Chỉ số kỳ trước</Text>
+            <View style={styles.meterRefRow}>
+              <Text style={styles.meterRefLabel}>💧 Nước</Text>
+              <Text style={styles.meterRefValue}>
+                {processingInvoice.previousWaterNumber ?? 0} m³
+              </Text>
+            </View>
+            <View style={styles.meterRefRow}>
+              <Text style={styles.meterRefLabel}>⚡ Điện</Text>
+              <Text style={styles.meterRefValue}>
+                {processingInvoice.previousElectricityNumber ?? 0} kWh
+              </Text>
+            </View>
+          </View>
+
+          {/* Water meter */}
+          <View style={[styles.meterSection, { borderColor: "#bbf7d0" }]}>
+            <Text style={styles.meterSectionTitle}>
+              💧 Chỉ số nước mới (m³)
+            </Text>
+            <TextInput
+              style={styles.meterInput}
+              keyboardType="numeric"
+              placeholder="Nhập số nước"
+              value={meterWaterNum}
+              onChangeText={setMeterWaterNum}
+            />
+            <TouchableOpacity
+              style={styles.meterImgBtn}
+              onPress={() => pickMeterImage("water")}
+            >
+              <Text style={[styles.meterImgBtnText, { color: "#16a34a" }]}>
+                {meterWater
+                  ? "✓ Đã chụp ảnh đồng hồ nước"
+                  : "📷 Chụp / chọn ảnh đồng hồ nước"}
+              </Text>
+            </TouchableOpacity>
+            {meterWater && (
+              <Image
+                source={{ uri: meterWater.uri }}
+                style={styles.meterPreview}
+                resizeMode="cover"
+              />
+            )}
+          </View>
+
+          {/* Electricity meter */}
+          <View style={[styles.meterSection, { borderColor: "#fde68a" }]}>
+            <Text style={styles.meterSectionTitle}>
+              ⚡ Chỉ số điện mới (kWh)
+            </Text>
+            <TextInput
+              style={styles.meterInput}
+              keyboardType="numeric"
+              placeholder="Nhập số điện"
+              value={meterElectricNum}
+              onChangeText={setMeterElectricNum}
+            />
+            <TouchableOpacity
+              style={styles.meterImgBtn}
+              onPress={() => pickMeterImage("electric")}
+            >
+              <Text style={[styles.meterImgBtnText, { color: "#ca8a04" }]}>
+                {meterElectric
+                  ? "✓ Đã chụp ảnh đồng hồ điện"
+                  : "📷 Chụp / chọn ảnh đồng hồ điện"}
+              </Text>
+            </TouchableOpacity>
+            {meterElectric && (
+              <Image
+                source={{ uri: meterElectric.uri }}
+                style={styles.meterPreview}
+                resizeMode="cover"
+              />
+            )}
+          </View>
+
+          <AppButton
+            title={meterSubmitting ? "Đang gửi..." : "Gửi chỉ số"}
+            disabled={meterSubmitting}
+            onPress={handleMeterSubmit}
+          />
+        </>
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            Không có hóa đơn nào đang chờ chỉ số
+          </Text>
+        </View>
+      )}
+    </ScrollView>
+  );
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -562,10 +783,23 @@ export const TenantInvoiceScreen: React.FC = () => {
               activeTab === "pending" && styles.activeTabText,
             ]}
           >
-            Chờ thanh toán
+            Chờ TT
             {invoices.length > 0 && (
               <Text style={styles.tabBadge}> ({invoices.length})</Text>
             )}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "meter" && styles.activeTab]}
+          onPress={() => setActiveTab("meter")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "meter" && styles.activeTabText,
+            ]}
+          >
+            Chỉ số
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -586,7 +820,11 @@ export const TenantInvoiceScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {activeTab === "pending" ? renderPendingTab() : renderHistoryTab()}
+      {activeTab === "pending"
+        ? renderPendingTab()
+        : activeTab === "meter"
+          ? renderMeterTab()
+          : renderHistoryTab()}
     </View>
   );
 };
@@ -736,4 +974,67 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#F0F0F0",
   },
+  // ── Meter reading tab ──────────────────────────────────────────────────────
+  meterRefCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+  },
+  meterRefTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#555",
+    marginBottom: 8,
+  },
+  meterRefRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  meterRefLabel: { fontSize: 14, color: "#666" },
+  meterRefValue: { fontSize: 14, fontWeight: "600", color: "#333" },
+  meterSection: {
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 14,
+    marginBottom: 14,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+  },
+  meterSectionTitle: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  meterInput: {
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
+    color: "#111",
+    marginBottom: 10,
+    backgroundColor: "#FAFAFA",
+  },
+  meterImgBtn: {
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "#AAA",
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  meterImgBtnText: { fontSize: 14, fontWeight: "600" },
+  meterPreview: { width: "100%", height: 150, borderRadius: 8, marginTop: 4 },
 });

@@ -1,9 +1,11 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useMemo, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Alert,
   FlatList,
+  Image,
   Modal,
   RefreshControl,
   ScrollView,
@@ -81,6 +83,7 @@ const buildEditMap = (list: IRoomInvoice[]): Record<string, DraftEdit> => {
 };
 
 export const CreateInvoices: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const [selectedHouse, setSelectedHouse] = useState({
     id: "all",
     name: "Tất cả nhà",
@@ -295,6 +298,16 @@ export const CreateInvoices: React.FC = () => {
   const formatCurrency = (amount: number) =>
     amount.toLocaleString("vi-VN") + " đ";
 
+  // Format a raw numeric string with dot separators for display in inputs
+  const fmtMoney = (raw: string): string => {
+    const n = raw.replace(/\D/g, "");
+    return n ? n.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "";
+  };
+
+  // Strip dot separators before storing
+  const parseMoney = (formatted: string): string =>
+    formatted.replace(/\./g, "");
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -332,7 +345,7 @@ export const CreateInvoices: React.FC = () => {
       )}
 
       <ScrollView
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 88 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -394,8 +407,10 @@ export const CreateInvoices: React.FC = () => {
                     <TextInput
                       style={styles.inlineInput}
                       keyboardType="numeric"
-                      value={edit.rentalFee}
-                      onChangeText={(v) => updateEdit(key, "rentalFee", v)}
+                      value={fmtMoney(edit.rentalFee)}
+                      onChangeText={(v) =>
+                        updateEdit(key, "rentalFee", parseMoney(v))
+                      }
                     />
                     <Text style={styles.inlineUnit}>đ / tháng</Text>
                   </View>
@@ -439,6 +454,16 @@ export const CreateInvoices: React.FC = () => {
                       </Text>
                     </View>
                   </View>
+                  {inv.electricityImage ? (
+                    <View style={styles.proofImageContainer}>
+                      <Text style={styles.proofImageLabel}>📷 Ảnh đồng hồ điện (khách gửi)</Text>
+                      <Image
+                        source={{ uri: inv.electricityImage }}
+                        style={styles.proofImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  ) : null}
                 </View>
 
                 {/* Water */}
@@ -479,6 +504,16 @@ export const CreateInvoices: React.FC = () => {
                       </Text>
                     </View>
                   </View>
+                  {inv.waterImage ? (
+                    <View style={styles.proofImageContainer}>
+                      <Text style={styles.proofImageLabel}>📷 Ảnh đồng hồ nước (khách gửi)</Text>
+                      <Image
+                        source={{ uri: inv.waterImage }}
+                        style={styles.proofImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  ) : null}
                 </View>
 
                 {/* Utilities */}
@@ -510,9 +545,9 @@ export const CreateInvoices: React.FC = () => {
                           ]}
                           placeholder="0"
                           keyboardType="numeric"
-                          value={u.value}
+                          value={fmtMoney(u.value)}
                           onChangeText={(v) =>
-                            updateUtility(key, i, "value", v)
+                            updateUtility(key, i, "value", parseMoney(v))
                           }
                         />
                         <Text style={styles.utilUnit}>đ</Text>
@@ -820,4 +855,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#EEE",
   },
   modalItemText: { fontSize: 15, color: "#444", textAlign: "center" },
+
+  proofImageContainer: { marginTop: 8 },
+  proofImageLabel: { fontSize: 11, color: "#888", marginBottom: 4, fontStyle: "italic" },
+  proofImage: { width: "100%", height: 160, borderRadius: 8 },
 });

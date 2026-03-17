@@ -157,6 +157,82 @@ export class invoiceController extends GenericController<IInvoice> {
     }
   };
 
+  getMyProcessingInvoice = async (req: Request, res: Response) => {
+    const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as { id: string };
+    try {
+      const result = await this.InvoiceService.getProcessingInvoiceForTenant(id);
+      return res.status(200).json(responseWrapper("success", "Lấy thành công", result ?? null));
+    } catch (err: any) {
+      if (err.message === "ROOM_NOT_FOUND") {
+        return res.status(404).json(responseWrapper("error", "Không tìm thấy phòng", null));
+      }
+      res.status(500).json(responseWrapper("error", "Lỗi server", err));
+    }
+  };
+
+  tenantSubmitMeterReading = async (req: Request, res: Response) => {
+    const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as { id: string };
+    try {
+      const { waterNumber, waterImage, electricNumber, electricImage } = req.body;
+      const result = await this.InvoiceService.submitMeterReadingByTenant(id, {
+        waterNumber,
+        waterImage,
+        electricNumber,
+        electricImage,
+      });
+      return res.status(200).json(responseWrapper("success", "Cập nhật chỉ số thành công", result));
+    } catch (err: any) {
+      if (err.message === "ROOM_NOT_FOUND") {
+        return res.status(404).json(responseWrapper("error", "Không tìm thấy phòng", null));
+      }
+      if (err.message === "INVOICE_NOT_FOUND") {
+        return res.status(404).json(responseWrapper("error", "Không có hóa đơn đang xử lý", null));
+      }
+      res.status(500).json(responseWrapper("error", "Lỗi server", err));
+    }
+  };
+
+  getMyInvoicesAsZaloTenant = async (req: Request, res: Response) => {
+    try {
+      const { accessToken, phoneToken } = req.body as { accessToken: string; phoneToken: string };
+      const response = await axios.get("https://graph.zalo.me/v2.0/me/info", {
+        params: {
+          access_token: accessToken,
+          code: phoneToken,
+          secret_key: process.env.ZALO_SECRET_CODE,
+        },
+      });
+      const phoneNumber = toLocalPhone(response.data.data.number);
+      const result = await this.InvoiceService.getInvoicesForZaloUser(phoneNumber);
+      return res.status(200).json(responseWrapper("success", "Lấy danh sách thành công", result));
+    } catch (err: any) {
+      return res.status(200).json(responseWrapper("error", err.message, null));
+    }
+  };
+
+  zaloConfirmInvoice = async (req: Request, res: Response) => {
+    try {
+      const { accessToken, phoneToken, transactionImage } = req.body as {
+        accessToken: string;
+        phoneToken: string;
+        transactionImage?: string;
+      };
+      const { id } = req.params;
+      const response = await axios.get("https://graph.zalo.me/v2.0/me/info", {
+        params: {
+          access_token: accessToken,
+          code: phoneToken,
+          secret_key: process.env.ZALO_SECRET_CODE,
+        },
+      });
+      const phoneNumber = toLocalPhone(response.data.data.number);
+      const result = await this.InvoiceService.zaloTenantConfirmInvoice(phoneNumber, id, transactionImage);
+      return res.status(200).json(responseWrapper("success", "Xác nhận thanh toán thành công", result));
+    } catch (err: any) {
+      return res.status(200).json(responseWrapper("error", err.message, null));
+    }
+  };
+
   receiveInvocieFromZalo = async (req: Request, res: Response) => {
     try {
       const InvoiceBody = req.body as InvoiceZalo;
