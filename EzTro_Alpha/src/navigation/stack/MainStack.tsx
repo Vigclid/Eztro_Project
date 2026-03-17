@@ -18,6 +18,8 @@ import { SupportScreen } from "../../screens/support/SupportScreen";
 import { MyReportsScreen } from "../../screens/support/MyReportsScreen";
 import { ReportDetailScreen } from "../../screens/support/ReportDetailScreen";
 import { CreateNotificationScreen } from "../../screens/notification/CreateNotificationScreen";
+import { ConversationListScreen } from "../../screens/chat/ConversationListScreen";
+import { MessageScreen } from "../../screens/chat/MessageScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -41,6 +43,8 @@ const MainStack = () => (
     <Stack.Screen name="supportScreen" component={SupportScreen} />
     <Stack.Screen name="myReportsScreen" component={MyReportsScreen} />
     <Stack.Screen name="reportDetailScreen" component={ReportDetailScreen} />
+    <Stack.Screen name="conversationListScreen" component={ConversationListScreen} />
+    <Stack.Screen name="messageScreen" component={MessageScreen} />
   </Stack.Navigator>
 );
 

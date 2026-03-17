@@ -81,6 +81,8 @@ export type MainStackParamList = {
   supportScreen: undefined;
   myReportsScreen: undefined;
   reportDetailScreen: { reportId: string };
+  conversationListScreen: { tenantId?: string; tenantName?: string } | undefined;
+  messageScreen: { conversationId: string };
 };
 
 export type AuthStackParamList = {

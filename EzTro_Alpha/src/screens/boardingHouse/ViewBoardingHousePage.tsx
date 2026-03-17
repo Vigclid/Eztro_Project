@@ -157,8 +157,8 @@ export const ViewBoardingHousePage: React.FC = () => {
     navigation.navigate("mainstack", { screen: "notificationScreen" });
   };
 
-   const handleNavigateToMessages = () => {
-    navigation.navigate("mainstack", { screen: "messageListScreen" });
+  const handleNavigateToMessages = () => {
+    navigation.navigate("mainstack", { screen: "conversationListScreen" });
   }
 
   const fabRotate = fabAnim.interpolate({
@@ -182,7 +182,7 @@ export const ViewBoardingHousePage: React.FC = () => {
                 <Text style={styles.headerTitle}>{"Quản Lý Cụm Trọ"}</Text>
               </View>
               <View style={styles.headerIcon} >
-              <TouchableOpacity style= {styles.IconMessage}>
+              <TouchableOpacity style={styles.IconMessage} onPress={handleNavigateToMessages}>
                 <MessageCircle color={COLORS.WHITE} size={24} />
               </TouchableOpacity>
               <TouchableOpacity

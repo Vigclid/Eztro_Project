@@ -155,5 +155,11 @@ export const appNavigator = {
       screen: "reportDetailScreen",
       params: { reportId },
     });
-  },
+  },  
+  goToConversationScreen(tenantId: string, tenantName: string) {
+    navigate("mainstack", {
+      screen: "conversationListScreen",
+      params: {tenantId , tenantName },
+    });
+  }
 };
