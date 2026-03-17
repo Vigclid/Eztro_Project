@@ -1,6 +1,17 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Bell, ChevronRight, Edit, HelpCircle, LogOut, Mail, Phone, User, Wallet } from "lucide-react-native";
+import {
+  Bell,
+  ChevronRight,
+  Edit,
+  HelpCircle,
+  LogOut,
+  Mail,
+  Phone,
+  Settings,
+  User,
+  Wallet,
+} from "lucide-react-native";
 import React, { useContext, useEffect } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -24,7 +35,11 @@ export const UserProfile: React.FC = () => {
   // Get role name from user object
   const getRoleName = () => {
     if (user?.roleName) return user.roleName;
-    if (user?.roleId && typeof user.roleId === "object" && "name" in user.roleId) {
+    if (
+      user?.roleId &&
+      typeof user.roleId === "object" &&
+      "name" in user.roleId
+    ) {
       return user.roleId.name;
     }
     return "Người dùng";
@@ -71,13 +86,17 @@ export const UserProfile: React.FC = () => {
             <Avatar source={{ uri: user?.profilePicture }} size={100} />
             <View style={styles.profileInfo}>
               <View style={styles.nameContainer}>
-                <Text style={styles.name}>{user?.firstName + " " + user?.lastName}</Text>
+                <Text style={styles.name}>
+                  {user?.firstName + " " + user?.lastName}
+                </Text>
               </View>
               <TouchableOpacity style={styles.badge}>
                 <View style={styles.badgeIcon}>
                   <Icon name="home" size={26} color={theme.theme.color} />
                 </View>
-                <Text style={styles.badgeText}>{getRoleDisplayName(roleName)}</Text>
+                <Text style={styles.badgeText}>
+                  {getRoleDisplayName(roleName)}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -105,16 +124,23 @@ export const UserProfile: React.FC = () => {
               <TouchableOpacity
                 style={styles.sectionItem}
                 activeOpacity={0.7}
-                onPress={() => navigation.navigate("mainstack", { screen: "editProfile" })}>
+                onPress={() =>
+                  navigation.navigate("mainstack", { screen: "editProfile" })
+                }
+              >
                 <View style={styles.sectionIcon}>
                   <User size={26} color={COLORS.GRADIENT_START} />
                 </View>
                 <View style={styles.sectionItemContent}>
                   <View style={styles.sectionItemTitleContainer}>
-                    <Text style={styles.sectionItemTitle}>Thông tin cá nhân</Text>
+                    <Text style={styles.sectionItemTitle}>
+                      Thông tin cá nhân
+                    </Text>
                   </View>
                   <View>
-                    <Text style={styles.sectionItemDescription}>Chỉnh sửa tên, email, số điện thoại</Text>
+                    <Text style={styles.sectionItemDescription}>
+                      Chỉnh sửa tên, email, số điện thoại
+                    </Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -127,7 +153,9 @@ export const UserProfile: React.FC = () => {
                     <Text style={styles.sectionItemTitle}>Email</Text>
                   </View>
                   <View style={styles.sectionItemDescriptionContainer}>
-                    <Text style={styles.sectionItemDescription}>{user?.email || "Chưa cập nhật"}</Text>
+                    <Text style={styles.sectionItemDescription}>
+                      {user?.email || "Chưa cập nhật"}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -140,7 +168,9 @@ export const UserProfile: React.FC = () => {
                     <Text style={styles.sectionItemTitle}>Số điện thoại</Text>
                   </View>
                   <View>
-                    <Text style={styles.sectionItemDescription}>{user?.phoneNumber || "Chưa cập nhật"}</Text>
+                    <Text style={styles.sectionItemDescription}>
+                      {user?.phoneNumber || "Chưa cập nhật"}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -160,41 +190,77 @@ export const UserProfile: React.FC = () => {
                     <Text style={styles.sectionItemTitle}>Thông báo</Text>
                   </View>
                   <View>
-                    <Text style={styles.sectionItemDescription}>Quản lý thông báo ứng dụng</Text>
+                    <Text style={styles.sectionItemDescription}>
+                      Quản lý thông báo ứng dụng
+                    </Text>
                   </View>
                 </View>
               </View>
               <TouchableOpacity
                 style={styles.sectionItemRow}
                 activeOpacity={0.7}
-                onPress={() => appNavigator.goToSupportScreen()}>
+                onPress={() => appNavigator.goToSettingScreen()}
+              >
+                <View style={styles.sectionIcon}>
+                  <Settings size={26} color={COLORS.GRADIENT_START} />
+                </View>
+                <View style={styles.sectionItemContent}>
+                  <View style={styles.sectionItemTitleContainer}>
+                    <Text style={styles.sectionItemTitle}>Cài đặt</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.sectionItemDescription}>
+                      Tuỳ chỉnh ứng dụng
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sectionItemRow}
+                activeOpacity={0.7}
+                onPress={() => appNavigator.goToSupportScreen()}
+              >
                 <View style={styles.sectionIcon}>
                   <HelpCircle size={26} color={COLORS.GRADIENT_START} />
                 </View>
                 <View style={styles.sectionItemContent}>
                   <View style={styles.sectionItemTitleContainerLarge}>
-                    <Text style={styles.sectionItemTitle}>Trợ giúp & Hỗ trợ</Text>
+                    <Text style={styles.sectionItemTitle}>
+                      Trợ giúp & Hỗ trợ
+                    </Text>
                   </View>
                   <View>
-                    <Text style={styles.sectionItemDescription}>Trợ giúp, báo lỗi, góp ý</Text>
+                    <Text style={styles.sectionItemDescription}>
+                      Trợ giúp, báo lỗi, góp ý
+                    </Text>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
           <LinearGradient
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            colors={[COLORS.TRANSPARENT, COLORS.DIVIDER_GRAY, COLORS.TRANSPARENT]}
+            colors={[
+              COLORS.TRANSPARENT,
+              COLORS.DIVIDER_GRAY,
+              COLORS.TRANSPARENT,
+            ]}
             style={styles.divider}
           />
-          <TouchableOpacity style={[styles.changePasswordButton, SHADOW.CARD]} onPress={navigateToChangePasswordPage}>
+          <TouchableOpacity
+            style={[styles.changePasswordButton, SHADOW.CARD]}
+            onPress={navigateToChangePasswordPage}
+          >
             <View style={styles.logoutIcon}>
               <Edit size={16} color={COLORS.HIGHLIGHT_TEXT} />
             </View>
             <Text style={styles.changePasswordText}>Đổi mật khẩu</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.logoutButton, SHADOW.CARD]} onPress={handleLogoutPress}>
+          <TouchableOpacity
+            style={[styles.logoutButton, SHADOW.CARD]}
+            onPress={handleLogoutPress}
+          >
             <View style={styles.logoutIcon}>
               <LogOut size={16} color={COLORS.RED_TEXT} />
             </View>

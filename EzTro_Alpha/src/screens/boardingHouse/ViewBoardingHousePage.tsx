@@ -1,7 +1,6 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  Bell,
   Building2,
   Funnel,
   Megaphone,
@@ -21,7 +20,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useSelector } from "react-redux";
 import { getHouseApi } from "../../api/house/house";
 import { getRoomApi } from "../../api/room/room";
 import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
@@ -34,7 +32,6 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
-import { RootState } from "../../stores/store";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
 import { IRoom } from "../../types/room";
@@ -45,10 +42,6 @@ export const ViewBoardingHousePage: React.FC = () => {
 
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
   const [totalAvailableRooms, setTotalAvailableRooms] = useState<number>(0);
-  const unreadCount = useSelector(
-    (state: RootState) => state.notification.unreadCount,
-  );
-
   useFocusEffect(
     useCallback(() => {
       const controller = new AbortController();
@@ -56,13 +49,13 @@ export const ViewBoardingHousePage: React.FC = () => {
       const { getAllHousesByLandlordId } = getHouseApi;
       const getAllHouses = async () => {
         try {
-          const res = (await getAllHousesByLandlordId(controller.signal)) as ApiResponse<
-            IHouse[]
-          >;
+          const res = (await getAllHousesByLandlordId(
+            controller.signal,
+          )) as ApiResponse<IHouse[]>;
           if (res.status === "success") {
             setBoardingHouses(res.data as IHouse[]);
           }
-        } catch (err) { }
+        } catch (err) {}
       };
       getAllHouses();
       return () => {
@@ -152,10 +145,6 @@ export const ViewBoardingHousePage: React.FC = () => {
     navigation.navigate("mainstack", { screen: "ticketListScreen" });
   };
 
-  const handleNavigateToNotification = () => {
-    navigation.navigate("mainstack", { screen: "notificationScreen" });
-  };
-
   const fabRotate = fabAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "45deg"],
@@ -176,19 +165,6 @@ export const ViewBoardingHousePage: React.FC = () => {
               <View>
                 <Text style={styles.headerTitle}>{"Quản Lý Cụm Trọ"}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.notificationBtn}
-                onPress={handleNavigateToNotification}
-              >
-                <Bell color={COLORS.WHITE} size={22} />
-                {unreadCount > 0 && (
-                  <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
             </View>
           </LinearGradient>
 
@@ -360,8 +336,8 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 20,
     marginBottom: SPACING.HEADER_MARGIN_BOTTOM,
     marginHorizontal: SPACING.HEADER_HORIZONTAL_MARGIN,
   },
@@ -749,34 +725,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: COLORS.PLACEHOLDER_GRAY,
   },
-  notificationBtn: {
-    width: IMAGE_SIZE.HEADER_LOGO,
-    height: IMAGE_SIZE.HEADER_LOGO,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 14,
-  },
-  notificationBadge: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: COLORS.RED_TEXT,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
-    borderColor: COLORS.WHITE,
-  },
-  notificationBadgeText: {
-    color: COLORS.WHITE,
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-
   fabBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.25)",

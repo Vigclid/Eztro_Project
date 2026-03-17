@@ -1,5 +1,5 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { IHouse } from "../types/house";
+import { IHouse, IUtilitesCharge } from "../types/house";
 
 export type RootStackParamList = {
   auth: {
@@ -54,18 +54,18 @@ export type MainStackParamList = {
   changePasswordSuccessful: { fromMain: true } | undefined;
   boardingHouseDetailsScreen: { _id: string | undefined };
   createNewRoomScreen:
-    | {
-        houseId: string | undefined;
-        room?: import("../types/room").IRoom;
-        onRefresh?: () => void;
-      }
-    | undefined;
+  | {
+    houseId: string | undefined;
+    room?: import("../types/room").IRoom;
+    onRefresh?: () => void;
+  }
+  | undefined;
   addTenantScreen:
-    | {
-        roomId: string;
-        room?: import("../types/room").IRoom;
-      }
-    | undefined;
+  | {
+    roomId: string;
+    room?: import("../types/room").IRoom;
+  }
+  | undefined;
   createInvoicesScreen: undefined;
   ticketListScreen: undefined;
   createTicketScreen: undefined;
@@ -78,9 +78,12 @@ export type MainStackParamList = {
   };
   notificationScreen: undefined;
   createNotificationScreen: undefined;
+  settingScreen: undefined;
   supportScreen: undefined;
   myReportsScreen: undefined;
   reportDetailScreen: { reportId: string };
+  deleteBoardingHouseScreen: undefined;
+  createFixedServiceFeeScreen: { houseId: string  | undefined, action: string, utility: IUtilitesCharge }
 };
 
 export type AuthStackParamList = {

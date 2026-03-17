@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx expo install expo-image-picker)"
+      "Bash(npx expo install expo-image-picker)",
+      "WebFetch(domain:www.figma.com)",
+      "Bash(xargs ls:*)"
     ]
   }
 }
