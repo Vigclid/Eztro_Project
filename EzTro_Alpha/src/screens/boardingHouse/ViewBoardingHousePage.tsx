@@ -7,6 +7,8 @@ import {
   Plus,
   Search,
   Wrench,
+  AlertCircle,
+  MessageCircle,
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -20,8 +22,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 import { getHouseApi } from "../../api/house/house";
 import { getRoomApi } from "../../api/room/room";
+import { getTicketApi } from "../../api/ticket/ticketapi";
 import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
 import BoardingHouseStatsCard from "../../components/boardingHouse/BoardingHouseStatsCard";
 import {
@@ -32,16 +36,51 @@ import {
   SPACING,
 } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
+import { RootState } from "../../stores/store";
 import { ApiResponse } from "../../types/app.common";
 import { IHouse } from "../../types/house";
 import { IRoom } from "../../types/room";
 
 export const ViewBoardingHousePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [searchText, onChangeSearchText] = useState("");
 
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
   const [totalAvailableRooms, setTotalAvailableRooms] = useState<number>(0);
+  const [pendingTicketsCount, setPendingTicketsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  const currentUserId = user?._id;
+
+  const loadTicketStats = useCallback(async () => {
+    try {
+      const response: any = await getTicketApi.getAllTicketsByLandlord();
+      if (response.status && response.data) {
+        const tickets = Array.isArray(response.data) ? response.data : response.data.data || [];
+        
+        // Count pending tickets
+        const pending = tickets.filter((t: any) => t.status === 'pending').length;
+        setPendingTicketsCount(pending);
+
+        // Count unread messages
+        let unreadCount = 0;
+        tickets.forEach((ticket: any) => {
+          if (ticket.replies && Array.isArray(ticket.replies)) {
+            const unread = ticket.replies.filter((reply: any) => {
+              return reply.userId && typeof reply.userId === 'object' && 
+                     reply.userId._id !== currentUserId && 
+                     !reply.isRead;
+            }).length;
+            unreadCount += unread;
+          }
+        });
+        setUnreadMessagesCount(unreadCount);
+      }
+    } catch (error) {
+    }
+  }, [currentUserId]);
+
   useFocusEffect(
     useCallback(() => {
       const controller = new AbortController();
@@ -58,6 +97,7 @@ export const ViewBoardingHousePage: React.FC = () => {
         } catch (err) {}
       };
       getAllHouses();
+      loadTicketStats();
       return () => {
         controller.abort();
       };
@@ -207,6 +247,34 @@ export const ViewBoardingHousePage: React.FC = () => {
                 <Text style={styles.maintenanceArrowText}>›</Text>
               </View>
             </TouchableOpacity>
+
+            {/* Pending Tickets Alert */}
+            {pendingTicketsCount > 0 && (
+              <View style={styles.alertCard}>
+                <View style={styles.alertIconContainer}>
+                  <AlertCircle size={20} color="#F59E0B" />
+                </View>
+                <View style={styles.alertContent}>
+                  <Text style={styles.alertText}>
+                    Bạn có <Text style={styles.alertBold}>{pendingTicketsCount}</Text> phiếu yêu cầu hỗ trợ, hãy xử lý
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Unread Messages Alert */}
+            {unreadMessagesCount > 0 && (
+              <View style={styles.alertCard}>
+                <View style={styles.alertIconContainer}>
+                  <MessageCircle size={20} color="#3B82F6" />
+                </View>
+                <View style={styles.alertContent}>
+                  <Text style={styles.alertText}>
+                    Bạn có phản hồi từ khách thuê, hãy vào hỗ trợ
+                  </Text>
+                </View>
+              </View>
+            )}
 
             <View style={styles.boardingHousesContainer}>
               {boardingHouses && (
@@ -724,6 +792,42 @@ const styles = StyleSheet.create({
   maintenanceArrowText: {
     fontSize: 24,
     color: COLORS.PLACEHOLDER_GRAY,
+  },
+  alertCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#F59E0B",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  alertIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  alertContent: {
+    flex: 1,
+  },
+  alertText: {
+    fontSize: 14,
+    color: COLORS.TEXT_DARK,
+    lineHeight: 20,
+  },
+  alertBold: {
+    fontWeight: "bold",
+    color: "#F59E0B",
   },
   fabBackdrop: {
     ...StyleSheet.absoluteFillObject,

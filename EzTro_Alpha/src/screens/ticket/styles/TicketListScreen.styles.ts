@@ -155,6 +155,11 @@ export const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
+  headerRight: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
   ticketTitleContainer: {
     flex: 1,
   },
@@ -225,6 +230,29 @@ export const styles = StyleSheet.create({
   completeButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    color: COLORS.WHITE,
+  },
+  deleteButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#EF4444',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.WHITE,
+  },
+  notificationBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
     color: COLORS.WHITE,
   },
 });

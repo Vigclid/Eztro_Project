@@ -1,15 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import {
-  ChevronRight,
-  Edit,
-  HelpCircle,
-  LogOut,
-  Mail,
-  Phone,
-  Settings,
-  User,
-  ShieldCheck,
-} from "lucide-react-native";
+import { ChevronRight, Edit, HelpCircle, LogOut, Mail, Phone, Settings, User, ShieldCheck } from "lucide-react-native";
 import React, { useContext, useEffect } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -68,52 +58,44 @@ export const UserProfile: React.FC = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.headerGradient} />
-          
+
           {/* Profile Card */}
           <View style={styles.profileCard}>
             <Avatar source={{ uri: user?.profilePicture }} size={100} />
             <View style={styles.profileInfo}>
               <View style={styles.nameContainer}>
-                <Text style={styles.name}>
-                  {user?.firstName + " " + user?.lastName}
-                </Text>
+                <Text style={styles.name}>{user?.firstName + " " + user?.lastName}</Text>
               </View>
               <View style={styles.badge}>
                 <View style={styles.badgeIcon}>
                   <ShieldCheck size={16} color={COLORS.PRIMARY} />
                 </View>
-                <Text style={styles.badgeText}>
-                  {getRoleDisplayName(roleName)}
-                </Text>
+                <Text style={styles.badgeText}>{getRoleDisplayName(roleName)}</Text>
               </View>
             </View>
           </View>
 
           {/* New Dashboard Section (Thay thế cho Ví) */}
           <View style={[styles.walletContainer, { paddingVertical: 15 }]}>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ color: COLORS.WHITE, fontSize: 18, fontWeight: 'bold' }}>
-                {isLandlord ? "12" : "01"}
-              </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 4 }}>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={{ color: COLORS.WHITE, fontSize: 18, fontWeight: "bold" }}>{isLandlord ? "12" : "01"}</Text>
+              <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 4 }}>
                 {isLandlord ? "Phòng trống" : "Hợp đồng"}
               </Text>
             </View>
-            
-            <View style={{ width: 1, height: '60%', backgroundColor: 'rgba(255,255,255,0.3)' }} />
-            
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ color: COLORS.WHITE, fontSize: 18, fontWeight: 'bold' }}>05</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 4 }}>Thông báo mới</Text>
+
+            <View style={{ width: 1, height: "60%", backgroundColor: "rgba(255,255,255,0.3)" }} />
+
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={{ color: COLORS.WHITE, fontSize: 18, fontWeight: "bold" }}>05</Text>
+              <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 4 }}>Thông báo mới</Text>
             </View>
 
-            <View style={{ width: 1, height: '60%', backgroundColor: 'rgba(255,255,255,0.3)' }} />
+            <View style={{ width: 1, height: "60%", backgroundColor: "rgba(255,255,255,0.3)" }} />
 
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ color: COLORS.WHITE, fontSize: 18, fontWeight: 'bold' }}>
-                {isLandlord ? "02" : "0"}
-              </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 4 }}>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={{ color: COLORS.WHITE, fontSize: 18, fontWeight: "bold" }}>{isLandlord ? "02" : "0"}</Text>
+              <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 4 }}>
                 {isLandlord ? "Sự cố" : "Hóa đơn"}
               </Text>
             </View>
@@ -128,8 +110,7 @@ export const UserProfile: React.FC = () => {
               <TouchableOpacity
                 style={styles.sectionItem}
                 activeOpacity={0.7}
-                onPress={() => navigation.navigate("mainstack", { screen: "editProfile" })}
-              >
+                onPress={() => navigation.navigate("mainstack", { screen: "editProfile" })}>
                 <View style={styles.sectionIcon}>
                   <User size={24} color={COLORS.GRADIENT_START} />
                 </View>
@@ -139,7 +120,6 @@ export const UserProfile: React.FC = () => {
                 </View>
                 <ChevronRight size={18} color={COLORS.GRAY_LIGHT} />
               </TouchableOpacity>
-              
 
               <View style={styles.sectionItemRow}>
                 <View style={styles.sectionIcon}>
@@ -150,7 +130,6 @@ export const UserProfile: React.FC = () => {
                   <Text style={styles.sectionItemDescription}>{user?.email || "Chưa cập nhật"}</Text>
                 </View>
               </View>
-
 
               <View style={styles.sectionItemRow}>
                 <View style={styles.sectionIcon}>
@@ -170,10 +149,7 @@ export const UserProfile: React.FC = () => {
               <Text style={styles.sectionTitle}>Cài đặt & Hỗ trợ</Text>
             </View>
             <View style={[styles.sectionCardSettings, SHADOW.CARD]}>
-              <TouchableOpacity 
-                style={styles.sectionItem}
-                onPress={() => appNavigator.goToSettingScreen()}
-              >
+              <TouchableOpacity style={styles.sectionItem} onPress={() => appNavigator.goToSettingScreen()}>
                 <View style={styles.sectionIcon}>
                   <Settings size={24} color={COLORS.GRADIENT_START} />
                 </View>
@@ -184,10 +160,7 @@ export const UserProfile: React.FC = () => {
                 <ChevronRight size={18} color={COLORS.GRAY_LIGHT} />
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.sectionItem}
-                onPress={() => appNavigator.goToSupportScreen()}
-              >
+              <TouchableOpacity style={styles.sectionItem} onPress={() => appNavigator.goToSupportScreen()}>
                 <View style={styles.sectionIcon}>
                   <HelpCircle size={24} color={COLORS.GRADIENT_START} />
                 </View>
@@ -195,7 +168,6 @@ export const UserProfile: React.FC = () => {
                   <Text style={styles.sectionItemTitle}>Trợ giúp & Hỗ trợ</Text>
                   <Text style={styles.sectionItemDescription}>Báo lỗi hoặc góp ý phát triển</Text>
                 </View>
-                <ChevronRight size={18} color={COLORS.GRAY_LIGHT} />
               </TouchableOpacity>
             </View>
           </View>
@@ -204,18 +176,14 @@ export const UserProfile: React.FC = () => {
           <View style={{ marginTop: 20 }}>
             <TouchableOpacity
               style={[styles.changePasswordButton, SHADOW.CARD]}
-              onPress={() => appNavigator.goToChangePasswordPage()}
-            >
+              onPress={() => appNavigator.goToChangePasswordPage()}>
               <View style={styles.logoutIcon}>
                 <Edit size={16} color={COLORS.HIGHLIGHT_TEXT} />
               </View>
               <Text style={styles.changePasswordText}>Đổi mật khẩu</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.logoutButton, SHADOW.CARD]}
-              onPress={handleLogoutPress}
-            >
+            <TouchableOpacity style={[styles.logoutButton, SHADOW.CARD]} onPress={handleLogoutPress}>
               <View style={styles.logoutIcon}>
                 <LogOut size={16} color={COLORS.RED_TEXT} />
               </View>

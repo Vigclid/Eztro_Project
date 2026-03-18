@@ -7,6 +7,7 @@ export interface ITicketReply {
   userId: Types.ObjectId | IUser;
   content: string;
   createdAt: Date;
+  isRead?: boolean;
 }
 
 export interface ITicket extends Document {
@@ -19,6 +20,7 @@ export interface ITicket extends Document {
   roomId: Types.ObjectId | IRoom;
   status: "pending" | "processing" | "completed";
   replies: ITicketReply[];
+  lastReadReplyIndex?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +29,7 @@ const TicketReplySchema = new mongoose.Schema<ITicketReply>(
   {
     userId: { type: Types.ObjectId, ref: "users", required: true },
     content: { type: String, required: true },
+    isRead: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: false }
@@ -47,6 +50,7 @@ const TicketSchema = new mongoose.Schema<ITicket>(
       default: "pending",
     },
     replies: { type: [TicketReplySchema], default: [] },
+    lastReadReplyIndex: { type: Number, default: -1 },
   },
   {
     timestamps: true,
