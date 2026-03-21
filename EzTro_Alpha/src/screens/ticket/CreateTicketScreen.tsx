@@ -1,26 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
-import { ArrowLeft, Home, Wrench, FileText } from 'lucide-react-native';
-import { postTicketApi } from '../../api/ticket/ticketapi';
-import { getHouseApi } from '../../api/house/house';
-import { getRoomApi } from '../../api/room/room';
-import { IHouse } from '../../types/house';
-import { IRoom } from '../../types/room';
-import { COLORS } from '../../constants/theme';
-import { NavigationProp } from '../../navigation/navigation.type';
-import { RootState } from '../../stores/store';
-import { styles } from './styles/CreateTicketScreen.styles';
+import React, { useEffect, useState } from "react";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import { ArrowLeft, Home, Wrench, FileText } from "lucide-react-native";
+import { postTicketApi } from "../../api/ticket/ticketapi";
+import { getHouseApi } from "../../api/house/house";
+import { getRoomApi } from "../../api/room/room";
+import { IHouse } from "../../types/house";
+import { IRoom } from "../../types/room";
+import { COLORS } from "../../constants/theme";
+import { NavigationProp } from "../../navigation/navigation.type";
+import { RootState } from "../../stores/store";
+import { styles } from "./styles/CreateTicketScreen.styles";
 
 type Category = {
   value: string;
@@ -31,39 +24,31 @@ type Category = {
 export const CreateTicketScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useSelector((state: RootState) => state.auth);
-  
-  // Get user role
-  const getUserRole = () => {
-    if (user?.roleName) return user.roleName;
-    if (user?.roleId && typeof user.roleId === 'object' && 'name' in user.roleId) {
-      return (user.roleId as any).name;
-    }
-    return '';
-  };
-  
-  const userRole = getUserRole();
-  const isLandlord = userRole === 'Landlord' || userRole === 'landlord';
-  const isTenant = userRole === 'Tenant' || userRole === 'tenant';
+
+  // Get user role from Redux auth state
+  const userRole = user?.roleName || "";
+  const isLandlord = userRole === "Landlord";
+  const isTenant = userRole === "Tenant";
 
   const [houses, setHouses] = useState<IHouse[]>([]);
   const [rooms, setRooms] = useState<IRoom[]>([]);
   const [tenantRoom, setTenantRoom] = useState<any>(null);
   const [formData, setFormData] = useState({
-    houseId: '',
-    roomId: '',
-    title: '',
-    description: '',
-    category: 'other',
+    houseId: "",
+    roomId: "",
+    title: "",
+    description: "",
+    category: "other",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const categories: Category[] = [
-    { value: 'plumbing', label: 'Hệ thống nước', icon: '💧' },
-    { value: 'electrical', label: 'Hệ thống điện', icon: '⚡' },
-    { value: 'furniture', label: 'Đồ đạc', icon: '🪑' },
-    { value: 'appliance', label: 'Thiết bị điện', icon: '🔌' },
-    { value: 'structure', label: 'Kết cấu', icon: '🏗️' },
-    { value: 'other', label: 'Khác', icon: '🔧' },
+    { value: "plumbing", label: "Hệ thống nước", icon: "💧" },
+    { value: "electrical", label: "Hệ thống điện", icon: "⚡" },
+    { value: "furniture", label: "Đồ đạc", icon: "🪑" },
+    { value: "appliance", label: "Thiết bị điện", icon: "🔌" },
+    { value: "structure", label: "Kết cấu", icon: "🏗️" },
+    { value: "other", label: "Khác", icon: "🔧" },
   ];
 
   useEffect(() => {
@@ -86,13 +71,10 @@ export const CreateTicketScreen: React.FC = () => {
     try {
       const response: any = await getHouseApi.getAllHousesByLandlordId();
       if (response.status && response.data) {
-        const housesData = Array.isArray(response.data) 
-          ? response.data 
-          : response.data.data || [];
+        const housesData = Array.isArray(response.data) ? response.data : response.data.data || [];
         setHouses(housesData);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const loadTenantRoom = async () => {
@@ -102,28 +84,24 @@ export const CreateTicketScreen: React.FC = () => {
         setTenantRoom(response.data);
         // Auto-fill form data for tenant
         setFormData({
-          houseId: response.data.house?._id || '',
-          roomId: response.data.room?._id || '',
-          title: '',
-          description: '',
-          category: 'other',
+          houseId: response.data.house?._id || "",
+          roomId: response.data.room?._id || "",
+          title: "",
+          description: "",
+          category: "other",
         });
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const loadRooms = async (houseId: string) => {
     try {
       const response: any = await getRoomApi.getAllRoomsByHouseId(houseId);
       if (response.status && response.data) {
-        const roomsData = Array.isArray(response.data) 
-          ? response.data 
-          : response.data.data || [];
+        const roomsData = Array.isArray(response.data) ? response.data : response.data.data || [];
         setRooms(roomsData);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const validateForm = () => {
@@ -132,24 +110,24 @@ export const CreateTicketScreen: React.FC = () => {
     // Landlord needs to select house and room
     if (isLandlord) {
       if (!formData.houseId) {
-        newErrors.houseId = 'Vui lòng chọn cụm trọ';
+        newErrors.houseId = "Vui lòng chọn cụm trọ";
       }
 
       if (!formData.roomId) {
-        newErrors.roomId = 'Vui lòng chọn phòng';
+        newErrors.roomId = "Vui lòng chọn phòng";
       }
     }
 
     if (!formData.title.trim()) {
-      newErrors.title = 'Vui lòng nhập tiêu đề';
+      newErrors.title = "Vui lòng nhập tiêu đề";
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'Vui lòng mô tả vấn đề';
+      newErrors.description = "Vui lòng mô tả vấn đề";
     }
 
     if (!formData.category) {
-      newErrors.category = 'Vui lòng chọn loại sự cố';
+      newErrors.category = "Vui lòng chọn loại sự cố";
     }
 
     setErrors(newErrors);
@@ -178,34 +156,31 @@ export const CreateTicketScreen: React.FC = () => {
           categories: [formData.category],
         };
         response = await postTicketApi.createTicketByTenant(requestData);
+      } else {
+        Alert.alert("Lỗi", "Không thể xác định vai trò của bạn");
+        return;
       }
 
       if (response.status && response.data) {
-        Alert.alert('Thành công', 'Tạo yêu cầu bảo trì thành công', [
+        Alert.alert("Thành công", "Tạo yêu cầu bảo trì thành công", [
           {
-            text: 'OK',
+            text: "OK",
             onPress: () => navigation.goBack(),
           },
         ]);
       } else {
-        Alert.alert('Lỗi', response.error?.message || 'Không thể tạo yêu cầu. Vui lòng thử lại.');
+        Alert.alert("Lỗi", response.error?.message || "Không thể tạo yêu cầu. Vui lòng thử lại.");
       }
-    } catch (error) {
-      Alert.alert('Lỗi', 'Không thể tạo yêu cầu. Vui lòng thử lại.');
+    } catch (error: any) {
+      Alert.alert("Lỗi", error?.message || "Không thể tạo yêu cầu. Vui lòng thử lại.");
     }
   };
 
   return (
     <SafeAreaProvider style={styles.container}>
-      <LinearGradient
-        colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-        style={styles.header}
-      >
+      <LinearGradient colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]} style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <ArrowLeft size={24} color={COLORS.WHITE} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Tạo yêu cầu bảo trì</Text>
@@ -225,19 +200,11 @@ export const CreateTicketScreen: React.FC = () => {
               {houses.map((house) => (
                 <TouchableOpacity
                   key={house._id}
-                  onPress={() => setFormData({ ...formData, houseId: house._id || '', roomId: '' })}
-                  style={[
-                    styles.selectOption,
-                    formData.houseId === house._id && styles.selectOptionActive,
-                  ]}
-                >
+                  onPress={() => setFormData({ ...formData, houseId: house._id || "", roomId: "" })}
+                  style={[styles.selectOption, formData.houseId === house._id && styles.selectOptionActive]}>
                   <Text
-                    style={[
-                      styles.selectOptionText,
-                      formData.houseId === house._id && styles.selectOptionTextActive,
-                    ]}
-                    numberOfLines={1}
-                  >
+                    style={[styles.selectOptionText, formData.houseId === house._id && styles.selectOptionTextActive]}
+                    numberOfLines={1}>
                     {house.houseName}
                   </Text>
                 </TouchableOpacity>
@@ -256,7 +223,7 @@ export const CreateTicketScreen: React.FC = () => {
             </View>
             <View style={[styles.selectOption, styles.selectOptionActive]}>
               <Text style={[styles.selectOptionText, styles.selectOptionTextActive]}>
-                {tenantRoom.house?.houseName || 'Không xác định'}
+                {tenantRoom.house?.houseName || "Không xác định"}
               </Text>
             </View>
           </View>
@@ -273,19 +240,11 @@ export const CreateTicketScreen: React.FC = () => {
               {rooms.map((room) => (
                 <TouchableOpacity
                   key={room._id}
-                  onPress={() => setFormData({ ...formData, roomId: room._id || '' })}
-                  style={[
-                    styles.selectOption,
-                    formData.roomId === room._id && styles.selectOptionActive,
-                  ]}
-                >
+                  onPress={() => setFormData({ ...formData, roomId: room._id || "" })}
+                  style={[styles.selectOption, formData.roomId === room._id && styles.selectOptionActive]}>
                   <Text
-                    style={[
-                      styles.selectOptionText,
-                      formData.roomId === room._id && styles.selectOptionTextActive,
-                    ]}
-                    numberOfLines={1}
-                  >
+                    style={[styles.selectOptionText, formData.roomId === room._id && styles.selectOptionTextActive]}
+                    numberOfLines={1}>
                     {room.roomName}
                   </Text>
                 </TouchableOpacity>
@@ -304,7 +263,7 @@ export const CreateTicketScreen: React.FC = () => {
             </View>
             <View style={[styles.selectOption, styles.selectOptionActive]}>
               <Text style={[styles.selectOptionText, styles.selectOptionTextActive]}>
-                {tenantRoom.room?.roomName || 'Không xác định'}
+                {tenantRoom.room?.roomName || "Không xác định"}
               </Text>
             </View>
           </View>
@@ -321,11 +280,7 @@ export const CreateTicketScreen: React.FC = () => {
               <TouchableOpacity
                 key={cat.value}
                 onPress={() => setFormData({ ...formData, category: cat.value })}
-                style={[
-                  styles.categoryCard,
-                  formData.category === cat.value && styles.categoryCardActive,
-                ]}
-              >
+                style={[styles.categoryCard, formData.category === cat.value && styles.categoryCardActive]}>
                 <Text style={styles.categoryIcon}>{cat.icon}</Text>
                 <Text style={styles.categoryLabel}>{cat.label}</Text>
               </TouchableOpacity>
@@ -358,9 +313,7 @@ export const CreateTicketScreen: React.FC = () => {
           </View>
           <TextInput
             value={formData.description}
-            onChangeText={(text) =>
-              setFormData({ ...formData, description: text })
-            }
+            onChangeText={(text) => setFormData({ ...formData, description: text })}
             style={[styles.input, styles.textArea]}
             placeholder="Mô tả chi tiết về sự cố, vị trí, mức độ nghiêm trọng..."
             placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
@@ -368,17 +321,12 @@ export const CreateTicketScreen: React.FC = () => {
             numberOfLines={4}
             textAlignVertical="top"
           />
-          {errors.description && (
-            <Text style={styles.errorText}>{errors.description}</Text>
-          )}
+          {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.cancelButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelButton}>
             <Text style={styles.cancelButtonText}>Hủy</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>

@@ -23,10 +23,13 @@ router.get("/room/:roomId", authenticate, ticketController.getByRoom);
 // Reply và update status (cả landlord và tenant đều có thể reply)
 router.post("/:ticketId/reply", authenticate, ticketController.addReply);
 
+// Mark replies as read
+router.patch("/:ticketId/mark-read", authenticate, ticketController.markRepliesAsRead);
+
 // Chỉ landlord có thể update status
 router.patch("/:ticketId/status", authenticate, authorize(["Landlord"]), ticketController.updateStatus);
 
-// Xóa ticket (admin hoặc người tạo)
+// Xóa ticket (chủ trọ hoặc người tạo)
 router.delete("/:id", authenticate, ticketController.delete);
 
 export default router;

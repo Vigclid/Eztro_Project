@@ -23,12 +23,16 @@ import {
   Plus,
   Wrench,
   X,
+  MessageCircle,
 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
 import { getRoomApi, postRoomApi } from "../../api/room/room";
+import { getTicketApi } from "../../api/ticket/ticketapi";
 import { ApiResponse } from "../../types/app.common";
 import { TenantHomeScreenStyle } from "./styles/TenantHomeScreen.style";
 import { NavigationProp } from "../../navigation/navigation.type";
+import { RootState } from "../../stores/store";
 
 type TenantRoomInfo = {
   role: "TENANT" | "CO-TENANT";
@@ -55,6 +59,7 @@ const TenantHomeScreen = () => {
   const sheetBottom = Math.max(insets.bottom + TAB_BAR_HEIGHT + 8, 20);
   const styles = TenantHomeScreenStyle;
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const handleNavigateToMaintenance = () => {
     navigation.navigate("mainstack", { screen: "ticketListScreen" });
@@ -69,6 +74,9 @@ const TenantHomeScreen = () => {
 
   const [myRoom, setMyRoom] = useState<TenantRoomInfo | null>(null);
   const [invitations, setInvitations] = useState<TenantInvitation[]>([]);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  const currentUserId = user?._id;
 
   const formattedRoomCode = useMemo(() => {
     const digits = roomCode.replace(/\D/g, "").slice(0, 6);
@@ -92,10 +100,37 @@ const TenantHomeScreen = () => {
           ? inviteRes.data
           : []
       );
+
+      // Load ticket stats for tenant
+      await loadTicketStats();
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUserId]);
+
+  const loadTicketStats = async () => {
+    try {
+      const response: any = await getTicketApi.getAllTicketsByTenant();
+      if (response.status && response.data) {
+        const tickets = Array.isArray(response.data) ? response.data : response.data.data || [];
+        
+        // Count unread messages from landlord
+        let unreadCount = 0;
+        tickets.forEach((ticket: any) => {
+          if (ticket.replies && Array.isArray(ticket.replies)) {
+            const unread = ticket.replies.filter((reply: any) => {
+              return reply.userId && typeof reply.userId === 'object' && 
+                     reply.userId._id !== currentUserId && 
+                     !reply.isRead;
+            }).length;
+            unreadCount += unread;
+          }
+        });
+        setUnreadMessagesCount(unreadCount);
+      }
+    } catch (error) {
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -201,21 +236,44 @@ const TenantHomeScreen = () => {
 
                 {/* Maintenance Button - Only show when tenant has joined a room */}
                 {myRoom && (
-                  <TouchableOpacity 
-                    style={styles.maintenanceCard}
-                    onPress={handleNavigateToMaintenance}
-                  >
-                    <View style={styles.maintenanceIconContainer}>
-                      <Wrench size={24} color="#fff" />
-                    </View>
-                    <View style={styles.maintenanceContent}>
-                      <Text style={styles.maintenanceTitle}>Bảo trì</Text>
-                      <Text style={styles.maintenanceDesc}>Yêu cầu sửa chữa</Text>
-                    </View>
-                    <View style={styles.maintenanceArrow}>
-                      <Text style={styles.maintenanceArrowText}>›</Text>
-                    </View>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity 
+                      style={styles.maintenanceCard}
+                      onPress={handleNavigateToMaintenance}
+                    >
+                      <View style={styles.maintenanceIconContainer}>
+                        <Wrench size={24} color="#fff" />
+                        {unreadMessagesCount > 0 && (
+                          <View style={styles.maintenanceNotificationBadge}>
+                            <Text style={styles.maintenanceNotificationText}>
+                              {unreadMessagesCount}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.maintenanceContent}>
+                        <Text style={styles.maintenanceTitle}>Bảo trì</Text>
+                        <Text style={styles.maintenanceDesc}>Yêu cầu sửa chữa</Text>
+                      </View>
+                      <View style={styles.maintenanceArrow}>
+                        <Text style={styles.maintenanceArrowText}>›</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* Landlord Reply Alert */}
+                    {unreadMessagesCount > 0 && (
+                      <View style={styles.alertCard}>
+                        <View style={styles.alertIconContainer}>
+                          <MessageCircle size={20} color="#3B82F6" />
+                        </View>
+                        <View style={styles.alertContent}>
+                          <Text style={styles.alertText}>
+                            Chủ trọ đã phản hồi phiếu hỗ trợ của bạn, hãy vào kiểm tra
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </>
                 )}
               </View>
             ) : (
