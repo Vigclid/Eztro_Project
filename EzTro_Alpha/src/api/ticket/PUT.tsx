@@ -6,4 +6,8 @@ export const putTicketApi = {
   updateStatus: async (ticketId: string, status: 'pending' | 'processing' | 'completed') => {
     return await apiService.patch(`${ticketApi}/${ticketId}/status`, { status });
   },
+
+  markAsRead: async (ticketId: string) => {
+    return await apiService.patch(`${ticketApi}/${ticketId}/mark-read`, {});
+  },
 };

@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   Wrench,
+  
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -176,6 +177,7 @@ export const ViewBoardingHousePage: React.FC = () => {
               <View>
                 <Text style={styles.headerTitle}>{"Quản Lý Cụm Trọ"}</Text>
               </View>
+
               <TouchableOpacity
                 style={styles.notificationBtn}
                 onPress={handleNavigateToNotification}

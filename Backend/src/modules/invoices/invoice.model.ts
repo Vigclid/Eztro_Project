@@ -10,19 +10,24 @@ export interface InvoiceZalo {
   electricNumber: string;
   electricImage: string;
 }
+
+export type InvoiceStatus = "processing" | "payment-processing" | "tenant-confirmed" | "completed";
+
 export interface IInvoice extends Document {
   roomId: Types.ObjectId | IRoom;
   utilities: {
     key: string;
     value: number;
   }[];
-  status: string;
+  status: InvoiceStatus;
+  rentalFee: number;
   previousElectricityNumber: number;
   currentElectricityNumber: number;
   electricityImage: string;
   previousWaterNumber: number;
   currentWaterNumber: number;
   waterImage: string;
+  transactionImage: string;
   electricityCharge: number;
   waterCharge: number;
   totalAmount: number;
@@ -41,15 +46,17 @@ export const InvoiceSchema = new mongoose.Schema<IInvoice>({
   },
   status: {
     type: String,
-    enum: ["processing", "completed"],
+    enum: ["processing", "payment-processing", "tenant-confirmed", "completed"],
     required: true,
     default: "processing",
   },
+  rentalFee: { type: Number, default: 0 },
   previousElectricityNumber: { type: Number },
   currentElectricityNumber: { type: Number },
   previousWaterNumber: { type: Number },
   electricityImage: { type: String },
   waterImage: { type: String },
+  transactionImage: { type: String },
   currentWaterNumber: { type: Number },
   electricityCharge: { type: Number },
   waterCharge: { type: Number },
@@ -59,13 +66,12 @@ export const InvoiceSchema = new mongoose.Schema<IInvoice>({
 
 InvoiceSchema.pre("save", function () {
   const utilitiesTotal = this.utilities?.reduce((sum, u) => sum + (u.value ?? 0), 0) ?? 0;
-
   const electricityUsage =
     (this.currentElectricityNumber ?? 0) - (this.previousElectricityNumber ?? 0);
-
   const waterUsage = (this.currentWaterNumber ?? 0) - (this.previousWaterNumber ?? 0);
 
   this.totalAmount =
+    (this.rentalFee ?? 0) +
     electricityUsage * (this.electricityCharge ?? 0) +
     waterUsage * (this.waterCharge ?? 0) +
     utilitiesTotal;

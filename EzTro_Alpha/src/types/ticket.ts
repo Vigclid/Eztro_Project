@@ -6,6 +6,7 @@ export interface ITicketReply {
   userId: IUser;
   content: string;
   createdAt: Date;
+  isRead?: boolean;
 }
 
 export interface ITicket {
@@ -19,6 +20,7 @@ export interface ITicket {
   roomId: IRoom;
   status: 'pending' | 'processing' | 'completed';
   replies: ITicketReply[];
+  lastReadReplyIndex?: number;
   createdAt: Date;
   updatedAt: Date;
 }

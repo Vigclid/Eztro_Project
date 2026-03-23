@@ -188,4 +188,70 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.GRAY_DARK,
     opacity: 0.5,
   },
+  messageContainer: {
+    marginBottom: 12,
+    flexDirection: 'row',
+  },
+  myMessageContainer: {
+    justifyContent: 'flex-end',
+  },
+  otherMessageContainer: {
+    justifyContent: 'flex-start',
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+  },
+  myMessageBubble: {
+    backgroundColor: COLORS.GREEN_PRIMARY,
+  },
+  otherMessageBubble: {
+    backgroundColor: COLORS.BACKGROUND_GRAY,
+  },
+  senderName: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  mySenderName: {
+    color: COLORS.WHITE,
+  },
+  otherSenderName: {
+    color: COLORS.TEXT_SECONDARY,
+  },
+  messageText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  myMessageText: {
+    color: COLORS.WHITE,
+  },
+  otherMessageText: {
+    color: COLORS.TEXT_DARK,
+  },
+  messageTime: {
+    fontSize: 11,
+    marginTop: 4,
+  },
+  myMessageTime: {
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  otherMessageTime: {
+    color: COLORS.TEXT_SECONDARY,
+  },
+  waitingMessageContainer: {
+    padding: 16,
+    backgroundColor: '#FEF3C7',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.BORDER_GRAY,
+    alignItems: 'center',
+  },
+  waitingMessageText: {
+    fontSize: 14,
+    color: '#92400E',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
 });

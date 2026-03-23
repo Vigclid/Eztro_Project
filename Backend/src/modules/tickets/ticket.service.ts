@@ -2,6 +2,7 @@ import { GenericService } from "../../core/services/base.service";
 import TicketModel, { ITicket } from "./ticket.model";
 import RoomModel from "../rooms/room.model";
 import HouseModel from "../houses/house.model";
+import RoomMemberModel from "../rooms/roomMember.model";
 import { Types } from "mongoose";
 
 export class TicketService extends GenericService<ITicket> {
@@ -35,11 +36,20 @@ export class TicketService extends GenericService<ITicket> {
     userId: string,
     data: { title: string; description: string; categories: string[] }
   ) {
-    // Tìm room mà tenant đang thuê
-    const room = await RoomModel.findOne({
-      "virtualTenants.phoneNumber": { $exists: true },
-    }).populate("houseId");
+    // Convert userId to ObjectId
+    const userObjectId = new Types.ObjectId(userId);
 
+    // Tìm room member record của tenant (status = "Đang Thuê")
+    const roomMember = await RoomMemberModel.findOne({
+      userId: userObjectId,
+      status: "Đang Thuê",
+    }).populate("roomId");
+
+    if (!roomMember) {
+      throw new Error("Bạn chưa tham gia phòng nào");
+    }
+
+    const room = roomMember.roomId as any;
     if (!room) {
       throw new Error("Không tìm thấy phòng của bạn");
     }
@@ -53,7 +63,7 @@ export class TicketService extends GenericService<ITicket> {
       title: data.title,
       description: data.description,
       categories: data.categories,
-      senderId: userId,
+      senderId: userObjectId,
       receiverId: house.landlordId,
       houseId: house._id,
       roomId: room._id,
@@ -195,5 +205,38 @@ export class TicketService extends GenericService<ITicket> {
       .populate("roomId", "roomName")
       .populate("replies.userId", "firstName lastName email profilePicture")
       .sort({ createdAt: -1 });
+  }
+
+  // Mark replies as read
+  async markRepliesAsRead(ticketId: string, userId: string) {
+    const ticket = await TicketModel.findById(ticketId);
+    if (!ticket) {
+      throw new Error("Ticket không tồn tại");
+    }
+
+    // Mark all replies from other users as read
+    ticket.replies.forEach((reply) => {
+      if (reply.userId.toString() !== userId) {
+        reply.isRead = true;
+      }
+    });
+
+    await ticket.save();
+    return this.getByIdPopulated(ticketId);
+  }
+
+  // Get unread count for a ticket (for a specific user)
+  async getUnreadCount(ticketId: string, userId: string) {
+    const ticket = await TicketModel.findById(ticketId);
+    if (!ticket) {
+      return 0;
+    }
+
+    // Count replies from other users that are not read
+    const unreadCount = ticket.replies.filter((reply) => {
+      return reply.userId.toString() !== userId && !reply.isRead;
+    }).length;
+
+    return unreadCount;
   }
 }
