@@ -5,6 +5,7 @@ import { Provider } from "react-redux";
 import { InAppNotificationBanner } from "./src/components/notification/InAppNotificationBanner";
 import { AuthProvider } from "./src/context/AuthContext";
 import { SocketProvider } from "./src/context/SocketContext";
+import { ChatProvider } from "./src/context/ChatContext";
 import Navigation from "./src/navigation";
 import { store } from "./src/stores/store";
 
@@ -15,8 +16,10 @@ export default function App() {
         <SafeAreaProvider>
           <AuthProvider>
             <SocketProvider>
-              <Navigation />
-              <InAppNotificationBanner />
+              <ChatProvider>
+                <Navigation />
+                <InAppNotificationBanner />
+              </ChatProvider>
             </SocketProvider>
           </AuthProvider>
         </SafeAreaProvider>

@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -25,7 +26,9 @@ import {
   X,
   MessageCircle,
 } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { COLORS } from "../../constants/theme";
 import { useSelector } from "react-redux";
 import { getRoomApi, postRoomApi } from "../../api/room/room";
 import { getTicketApi } from "../../api/ticket/ticketapi";
@@ -63,6 +66,22 @@ const TenantHomeScreen = () => {
 
   const handleNavigateToMaintenance = () => {
     navigation.navigate("mainstack", { screen: "ticketListScreen" });
+  };
+
+  const handleMessageLandlord = (landlordId: string, landlordName: string) => {
+    if (!landlordId) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin chủ trọ");
+      return;
+    }
+
+    // Navigate to MessageScreen with landlordId
+    navigation.navigate("mainstack", {
+      screen: "messageScreen",
+      params: {
+        recipientId: landlordId,
+        recipientName: landlordName,
+      },
+    });
   };
 
   const [isJoinModalVisible, setIsJoinModalVisible] = useState(false);
@@ -232,6 +251,14 @@ const TenantHomeScreen = () => {
                       {myRoom.landlord?.fullName || "Không rõ"}
                     </Text>
                   </View>
+                  {myRoom.landlord?._id && (
+                    <TouchableOpacity
+                      style={styles.landlordMessageButton}
+                      onPress={() => handleMessageLandlord(myRoom.landlord._id, myRoom.landlord.fullName)}
+                    >
+                      <Ionicons name="chatbubble-outline" size={20} color={COLORS.GRADIENT_START} />
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {/* Maintenance Button - Only show when tenant has joined a room */}
