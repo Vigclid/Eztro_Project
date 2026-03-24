@@ -5,16 +5,19 @@ import { ChatController } from "./chat.controller";
 const router = Router();
 const chatController = new ChatController();
 
-// GET /chat/conversations - Get all conversations for authenticated user
-router.get("/conversations", authenticate, chatController.getConversations.bind(chatController));
+// GET /v1/chat/conversations - Get all conversations for authenticated user
+router.get("/chat/conversations", authenticate, chatController.getConversations.bind(chatController));
 
-// GET /chat/messages/:conversationId - Get messages for a conversation
-router.get("/messages/:conversationId", authenticate, chatController.getMessages.bind(chatController));
+// GET /v1/chat/conversations/:conversationId/messages - Get messages for a conversation
+router.get("/chat/conversations/:conversationId/messages", authenticate, chatController.getMessages.bind(chatController));
 
-// POST /chat/send - Send a message
-router.post("/send", authenticate, chatController.sendMessage.bind(chatController));
+// POST /v1/chat/messages - Send a message
+router.post("/chat/messages", authenticate, chatController.sendMessage.bind(chatController));
 
-// GET /chat/conversation/:userId - Get conversation with specific user
-router.get("/conversation/:userId", authenticate, chatController.getConversationWithUser.bind(chatController));
+// GET /v1/chat/conversations/user/:userId - Get conversation with specific user (check if exists)
+router.get("/chat/conversations/user/:userId", authenticate, chatController.getConversationWithUser.bind(chatController));
+
+// POST /v1/chat/conversations/user/:userId - Create conversation with specific user
+router.post("/chat/conversations/user/:userId", authenticate, chatController.createConversationWithUser.bind(chatController));
 
 export default router;

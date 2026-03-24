@@ -13,40 +13,57 @@ export class ChatService {
     userId2: string,
     createIfNotExists: boolean = false
   ): Promise<IConversation | null> {
-    // Sort participantIds to ensure consistent ordering
-    const participantIds = [
-      new Types.ObjectId(userId1),
-      new Types.ObjectId(userId2)
-    ].sort((a, b) => a.toString().localeCompare(b.toString()));
+    try {
+      // Sort participantIds to ensure consistent ordering
+      const participantIds = [new Types.ObjectId(userId1), new Types.ObjectId(userId2)].sort(
+        (a, b) => a.toString().localeCompare(b.toString())
+      );
 
-    // Query for existing conversation using $all and $size operators
-    let conversation = await ConversationModel.findOne({
-      participantIds: { $all: participantIds, $size: 2 }
-    });
-
-    // Fetch user details and create conversation only if createIfNotExists is true
-    if (!conversation && createIfNotExists) {
-      const users = await userModel.find({
-        _id: { $in: participantIds }
-      }).select("firstName lastName profilePicture");
-
-      const participants: IParticipant[] = users.map(user => ({
-        userId: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profilePicture: user.profilePicture,
-      }));
-
-      conversation = await ConversationModel.create({
-        type: "direct",
-        participants,
-        participantIds,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      // Query for existing conversation using $all and $size operators
+      let conversation = await ConversationModel.findOne({
+        participantIds: { $all: participantIds, $size: 2 },
       });
-    }
 
-    return conversation;
+      // Fetch user details and create conversation only if createIfNotExists is true
+      if (!conversation && createIfNotExists) {
+        const users = await userModel
+          .find({
+            _id: { $in: participantIds },
+          })
+          .select("firstName lastName profilePicture");
+
+        if (users.length !== 2) {
+          console.error("findOrCreateConversation - could not find both users");
+          console.error("findOrCreateConversation - expected 2 users, found:", users.length);
+          console.error(
+            "findOrCreateConversation - looking for userIds:",
+            participantIds.map((id) => id.toString())
+          );
+          throw new Error(`Could not find both users. Found ${users.length} out of 2 users.`);
+        }
+
+        const participants: IParticipant[] = users.map((user) => ({
+          userId: user._id,
+          firstName: user.firstName || "Unknown",
+          lastName: user.lastName || "",
+          profilePicture: user.profilePicture,
+        }));
+
+        conversation = await ConversationModel.create({
+          type: "direct",
+          participants,
+          participantIds,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+
+      return conversation;
+    } catch (error: any) {
+      console.error("findOrCreateConversation - error:", error);
+      console.error("findOrCreateConversation - error stack:", error.stack);
+      throw error;
+    }
   }
 
   /**
@@ -83,6 +100,36 @@ export class ChatService {
   }
 
   /**
+   * Get unread message count for a user in a conversation
+   */
+  async getUnreadCount(conversationId: string, userId: string): Promise<number> {
+    const conversation = await ConversationModel.findById(conversationId);
+    if (!conversation) return 0;
+
+    // Find user's participant info
+    const participant = conversation.participants?.find(
+      (p) => p.userId.toString() === userId
+    );
+
+    const lastSeen = participant?.lastSeen;
+    
+    if (!lastSeen) {
+      // Never seen, count all messages not from this user
+      return await MessageModel.countDocuments({
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: { $ne: new Types.ObjectId(userId) }
+      });
+    }
+
+    // Count messages after lastSeen and not from this user
+    return await MessageModel.countDocuments({
+      conversationId: new Types.ObjectId(conversationId),
+      senderId: { $ne: new Types.ObjectId(userId) },
+      createdAt: { $gt: lastSeen }
+    });
+  }
+
+  /**
    * Get conversations for a user with cursor-based pagination
    * Validates: Requirements 2.1, 2.4, 2.5, 13.1
    */
@@ -90,7 +137,7 @@ export class ChatService {
     userId: string,
     cursor?: string,
     limit: number = 25
-  ): Promise<{ conversations: IConversation[]; nextCursor: string | null }> {
+  ): Promise<{ conversations: any[]; nextCursor: string | null }> {
     const query: any = {
       participantIds: new Types.ObjectId(userId),
     };
@@ -98,17 +145,26 @@ export class ChatService {
     if (cursor) {
       query._id = { $lt: new Types.ObjectId(cursor) };
     }
-
     const conversations = await ConversationModel.find(query)
       .sort({ updatedAt: -1, _id: -1 })
       .limit(limit + 1)
       .exec();
-
     const hasMore = conversations.length > limit;
     const results = hasMore ? conversations.slice(0, limit) : conversations;
     const nextCursor = hasMore ? results[results.length - 1]._id.toString() : null;
 
-    return { conversations: results, nextCursor };
+    // Add unreadCount to each conversation
+    const conversationsWithUnread = await Promise.all(
+      results.map(async (conv) => {
+        const unreadCount = await this.getUnreadCount(conv._id.toString(), userId);
+        return {
+          ...conv.toObject(),
+          unreadCount
+        };
+      })
+    );
+
+    return { conversations: conversationsWithUnread, nextCursor };
   }
 
   /**
@@ -147,12 +203,12 @@ export class ChatService {
    */
   async updateLastSeen(conversationId: string, userId: string): Promise<void> {
     await ConversationModel.updateOne(
-      { 
-        _id: new Types.ObjectId(conversationId), 
-        "participants.userId": new Types.ObjectId(userId) 
+      {
+        _id: new Types.ObjectId(conversationId),
+        "participants.userId": new Types.ObjectId(userId),
       },
-      { 
-        $set: { "participants.$.lastSeen": new Date() } 
+      {
+        $set: { "participants.$.lastSeen": new Date() },
       }
     );
   }
@@ -176,5 +232,4 @@ export class ChatService {
   async getConversationById(conversationId: string): Promise<IConversation | null> {
     return ConversationModel.findById(conversationId);
   }
-
 }

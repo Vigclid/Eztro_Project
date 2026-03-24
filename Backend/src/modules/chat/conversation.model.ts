@@ -50,6 +50,7 @@ const ConversationSchema = new mongoose.Schema<IConversation>({
 
 // Indexes
 ConversationSchema.index({ participantIds: 1, updatedAt: -1 });
-ConversationSchema.index({ participantIds: 1 }, { unique: true });
+// Note: Removed unique index on participantIds to allow duplicate check in code
+// ConversationSchema.index({ participantIds: 1 }, { unique: true });
 
 export default mongoose.model<IConversation>("conversations", ConversationSchema);

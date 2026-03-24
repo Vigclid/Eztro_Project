@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ChatService } from "./chat.service";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
+import { uploadImage } from "../../utils/imageUtils";
 
 const chatService = new ChatService();
 
@@ -14,7 +15,7 @@ export class ChatController {
     try {
       // Extract userId from authenticated request
       const userId = req.user?.id;
-      
+
       if (!userId) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
@@ -36,15 +37,15 @@ export class ChatController {
       );
 
       // Return success response with conversations and nextCursor
-      return res.status(200).json(
-        responseWrapper("success", "Conversations retrieved successfully", result)
-      );
+      return res
+        .status(200)
+        .json(responseWrapper("success", "Conversations retrieved successfully", result));
     } catch (error: any) {
       // Handle errors with appropriate HTTP status codes
       console.error("Error in getConversations:", error);
-      return res.status(500).json(
-        responseWrapper("error", error.message || "Internal server error")
-      );
+      return res
+        .status(500)
+        .json(responseWrapper("error", error.message || "Internal server error"));
     }
   }
 
@@ -57,7 +58,7 @@ export class ChatController {
     try {
       // Extract userId from authenticated request
       const userId = req.user?.id;
-      
+
       if (!userId) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
@@ -66,18 +67,15 @@ export class ChatController {
       const { conversationId } = req.params;
 
       // Verify user is participant using isParticipant
-      const isParticipant = await chatService.isParticipant(
-        conversationId,
-        userId.toString()
-      );
-      
+      const isParticipant = await chatService.isParticipant(conversationId, userId.toString());
+
       if (!isParticipant) {
         return res.status(403).json(responseWrapper("error", "Forbidden: Not a participant"));
       }
 
       // Parse cursor and limit query parameters
       const { cursor, limit } = req.query;
-      const parsedLimit = limit ? parseInt(limit as string, 10) : 50;
+      const parsedLimit = limit ? parseInt(limit as string, 10) : 25;
 
       // Validate limit
       if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
@@ -92,15 +90,15 @@ export class ChatController {
       );
 
       // Return success response with messages and nextCursor
-      return res.status(200).json(
-        responseWrapper("success", "Messages retrieved successfully", result)
-      );
+      return res
+        .status(200)
+        .json(responseWrapper("success", "Messages retrieved successfully", result));
     } catch (error: any) {
       // Handle errors with appropriate HTTP status codes
       console.error("Error in getMessages:", error);
-      return res.status(500).json(
-        responseWrapper("error", error.message || "Internal server error")
-      );
+      return res
+        .status(500)
+        .json(responseWrapper("error", error.message || "Internal server error"));
     }
   }
 
@@ -110,80 +108,102 @@ export class ChatController {
    * Validates: Requirements 6.1, 6.4, 12.1, 12.2, 12.3
    */
   async sendMessage(req: Request, res: Response) {
-    try {
-      // Extract userId from authenticated request
-      const userId = req.user?.id;
-      
-      if (!userId) {
-        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      try {
+        // Extract userId from authenticated request
+        const userId = req.user?.id;
+
+        if (!userId) {
+          return res.status(401).json(responseWrapper("error", "Unauthorized"));
+        }
+
+        // Extract to, content, type, imageBase64 from request body
+        const { to, content, type = "text", imageBase64 } = req.body;
+
+        // Validate required fields
+        if (!to || (!content && !imageBase64)) {
+          return res.status(400).json(responseWrapper("error", "Missing required fields"));
+        }
+
+        // Validate message type
+        const validTypes = ["text", "image", "file"];
+        if (!validTypes.includes(type)) {
+          return res.status(400).json(responseWrapper("error", "Invalid message type"));
+        }
+
+        // Reject self-messages
+        if (to === userId.toString()) {
+          return res.status(400).json(responseWrapper("error", "Cannot send message to yourself"));
+        }
+
+        let finalContent = "";
+        let finalType = type;
+
+        // Handle image messages
+        if (type === "image" && imageBase64) {
+          try {
+            // Upload image to Cloudinary (type 5 = image_Message folder)
+            const uploadResult = await uploadImage(imageBase64, 5, false);
+
+            if (!uploadResult || !uploadResult.secure_url) {
+              return res.status(500).json(responseWrapper("error", "Failed to upload image"));
+            }
+
+            // Store Cloudinary URL as content
+            finalContent = uploadResult.secure_url;
+          } catch (uploadError: any) {
+            console.error('Image upload error:', uploadError);
+            return res.status(500).json(responseWrapper("error", "Failed to upload image: " + uploadError.message));
+          }
+        } else {
+          // For text messages, validate and sanitize content
+          if (typeof content !== "string" || content.trim().length === 0) {
+            return res.status(400).json(responseWrapper("error", "Message content cannot be empty"));
+          }
+
+          // Validate content length (max 5000 characters)
+          if (content.length > 5000) {
+            return res
+              .status(400)
+              .json(responseWrapper("error", "Message content exceeds 5000 characters"));
+          }
+
+          finalContent = content.trim();
+        }
+
+        // Find or create conversation
+        const conversation = await chatService.findOrCreateConversation(userId.toString(), to, true);
+
+        if (!conversation) {
+          return res.status(500).json(responseWrapper("error", "Failed to create conversation"));
+        }
+
+        // Create message
+        const message = await chatService.createMessage(
+          conversation._id.toString(),
+          userId.toString(),
+          finalContent,
+          finalType as "text" | "image" | "file"
+        );
+
+        // Return success response with message details
+        return res.status(201).json(
+          responseWrapper("success", "Message sent successfully", {
+            messageId: message._id,
+            conversationId: conversation._id,
+            content: message.content,
+            type: message.type,
+            createdAt: message.createdAt,
+          })
+        );
+      } catch (error: any) {
+        // Handle errors with appropriate HTTP status codes
+        console.error("Error in sendMessage:", error);
+        return res
+          .status(500)
+          .json(responseWrapper("error", error.message || "Internal server error"));
       }
-
-      // Extract to, content, type from request body
-      const { to, content, type = "text" } = req.body;
-
-      // Validate required fields
-      if (!to || !content) {
-        return res.status(400).json(responseWrapper("error", "Missing required fields"));
-      }
-
-      // Validate message type
-      const validTypes = ["text", "image", "file"];
-      if (!validTypes.includes(type)) {
-        return res.status(400).json(responseWrapper("error", "Invalid message type"));
-      }
-
-      // Validate content is string and not empty after trim
-      if (typeof content !== "string" || content.trim().length === 0) {
-        return res.status(400).json(responseWrapper("error", "Message content cannot be empty"));
-      }
-
-      // Validate content length (max 5000 characters)
-      if (content.length > 5000) {
-        return res.status(400).json(responseWrapper("error", "Message content exceeds 5000 characters"));
-      }
-
-      // Reject self-messages
-      if (to === userId.toString()) {
-        return res.status(400).json(responseWrapper("error", "Cannot send message to yourself"));
-      }
-
-      // Find or create conversation
-      const conversation = await chatService.findOrCreateConversation(
-        userId.toString(),
-        to,
-        true
-      );
-
-      if (!conversation) {
-        return res.status(500).json(responseWrapper("error", "Failed to create conversation"));
-      }
-
-      // Create message
-      const message = await chatService.createMessage(
-        conversation._id.toString(),
-        userId.toString(),
-        content.trim(),
-        type as "text" | "image" | "file"
-      );
-
-      // Return success response with message details
-      return res.status(201).json(
-        responseWrapper("success", "Message sent successfully", {
-          messageId: message._id,
-          conversationId: conversation._id,
-          content: message.content,
-          type: message.type,
-          createdAt: message.createdAt,
-        })
-      );
-    } catch (error: any) {
-      // Handle errors with appropriate HTTP status codes
-      console.error("Error in sendMessage:", error);
-      return res.status(500).json(
-        responseWrapper("error", error.message || "Internal server error")
-      );
     }
-  }
+
 
   /**
    * GET /chat/conversation/:userId
@@ -193,7 +213,7 @@ export class ChatController {
     try {
       // Extract userId from authenticated request
       const currentUserId = req.user?.id;
-      
+
       if (!currentUserId) {
         return res.status(401).json(responseWrapper("error", "Unauthorized"));
       }
@@ -215,21 +235,57 @@ export class ChatController {
 
       // Return null if conversation doesn't exist
       if (!conversation) {
-        return res.status(200).json(
-          responseWrapper("success", "No conversation found", { conversation: null })
-        );
+        return res
+          .status(200)
+          .json(responseWrapper("success", "No conversation found", { conversation: null }));
       }
 
       // Return conversation details
-      return res.status(200).json(
-        responseWrapper("success", "Conversation retrieved successfully", { conversation })
-      );
+      return res
+        .status(200)
+        .json(responseWrapper("success", "Conversation retrieved successfully", { conversation }));
     } catch (error: any) {
       // Handle errors with appropriate HTTP status codes
       console.error("Error in getConversationWithUser:", error);
-      return res.status(500).json(
-        responseWrapper("error", error.message || "Internal server error")
+      return res
+        .status(500)
+        .json(responseWrapper("error", error.message || "Internal server error"));
+    }
+  }
+
+  async createConversationWithUser(req: Request, res: Response) {
+    try {
+      // Extract userId from authenticated request
+      const currentUserId = req.user?.id;
+      if (!currentUserId) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+
+      // Extract target userId from request params
+      const { userId } = req.params;
+
+      // Validate userId is provided
+      if (!userId) {
+        return res.status(400).json(responseWrapper("error", "Missing userId parameter"));
+      }
+
+      // Find or create conversation
+      const conversation = await chatService.findOrCreateConversation(
+        currentUserId.toString(),
+        userId,
+        true
       );
+
+      // Return conversation details
+      return res
+        .status(200)
+        .json(responseWrapper("success", "Conversation created successfully", { conversation }));
+    } catch (error: any) {
+      // Handle errors with appropriate HTTP status codes
+      console.error("Error in createConversationWithUser:", error);
+      return res
+        .status(500)
+        .json(responseWrapper("error", error.message || "Internal server error"));
     }
   }
 }

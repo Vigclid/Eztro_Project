@@ -15,8 +15,9 @@ import {
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { MainStackParamList } from "../../navigation/navigation.type";
+import { MainStackParamList, RootStackParamList } from "../../navigation/navigation.type";
 import { getRoomApi, postRoomApi } from "../../api/room/room";
 import { getUserApi } from "../../api/user/user";
 import { ApiResponse } from "../../types/app.common";
@@ -36,6 +37,8 @@ type CreateRoomRouteProps = RouteProp<
   MainStackParamList,
   "createNewRoomScreen"
 >;
+
+type CreateRoomNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const FormInput = ({
   label,
@@ -75,7 +78,7 @@ const FormInput = ({
 // ----------------------------------------------------------------------
 
 const CreateNewRoomScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<CreateRoomNavigationProp>();
   const route = useRoute<CreateRoomRouteProps>();
 
   const { houseId, room, onRefresh } = route.params || {};
@@ -325,6 +328,23 @@ const CreateNewRoomScreen = () => {
         },
       ]
     );
+  };
+
+  const handleMessageTenant = (tenantId: string, tenantName: string) => {
+    if (!tenantId) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin người dùng");
+      return;
+    }
+
+    // Navigate to MessageScreen with tenantId
+    // Conversation will be created only when first message is sent
+    navigation.navigate("mainstack", {
+      screen: "messageScreen",
+      params: {
+        recipientId: tenantId,
+        recipientName: tenantName,
+      },
+    });
   };
 
   const getTenantDisplayName = (user: IUser) => {
@@ -742,12 +762,20 @@ const CreateNewRoomScreen = () => {
                           Ngày vào ở: {member?.moveInDate ? new Date(member.moveInDate).toISOString().slice(0, 10) : "--/--/----"}
                         </Text>
                       </View>
-                      <TouchableOpacity
-                        style={styles.tenantRemoveButton}
-                        onPress={() => handleRemoveRoomMember(member)}
-                      >
-                        <Trash2 size={20} color={COLORS.RED_TEXT} />
-                      </TouchableOpacity>
+                      <View style={styles.tenantActions}>
+                        <TouchableOpacity
+                          style={styles.tenantMessageButton}
+                          onPress={() => handleMessageTenant(member?.userId?._id, fullName)}
+                        >
+                          <Ionicons name="chatbubble-outline" size={20} color={COLORS.GRADIENT_START} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.tenantRemoveButton}
+                          onPress={() => handleRemoveRoomMember(member)}
+                        >
+                          <Trash2 size={20} color={COLORS.RED_TEXT} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   );
                 })
@@ -1112,11 +1140,25 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.ADDRESS,
     color: COLORS.TEXT_SECONDARY,
   },
+  tenantActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.SMALL,
+  },
+  tenantMessageButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.WHITE,
+    borderWidth: 1,
+    borderColor: COLORS.GRADIENT_START,
+  },
   tenantRemoveButton: {
-    marginLeft: SPACING.SMALL,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.RED_LIGHT_BG,

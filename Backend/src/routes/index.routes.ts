@@ -17,7 +17,6 @@ import v1PaymentRoutes from "./v1/payment.routes";
 const router = Router();
 
 router.use(authRouter);
-router.use("/chat", chatRoutes);
 router.use(
   "/v1",
   v1UserRoutes,
@@ -31,6 +30,7 @@ router.use(
   v1NotificationRoutes,
   v1SettingRoutes,
   v1ReportRoutes,
-  v1PaymentRoutes
+  v1PaymentRoutes,
+  chatRoutes  // Add chat routes to /v1
 );
 export default router;
