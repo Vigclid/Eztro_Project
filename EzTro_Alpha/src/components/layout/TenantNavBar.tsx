@@ -1,6 +1,6 @@
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { LinearGradient } from "expo-linear-gradient";
-import { Bell, CreditCard, House, User } from "lucide-react-native";
+import { Bell, CreditCard, House, User, MessageCircle } from "lucide-react-native";
 import React, { useContext } from "react";
 import {
   Platform,
@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { ThemeContext } from "../../context/ThemeContext";
+import { useChat } from "../../hooks/useChat";
 import { appNavigator } from "../../navigation/navigationActions";
 import { RootState } from "../../stores/store";
 
@@ -19,6 +20,14 @@ const TenantNavBar = ({ state, navigation }: BottomTabBarProps) => {
   const { theme } = useContext(ThemeContext);
   const insets = useSafeAreaInsets();
   const unreadCount = useSelector((s: RootState) => s.notification.unreadCount);
+  const { conversations } = useChat();
+  
+  // Calculate total unread messages count
+  const chatUnreadCount = conversations.reduce(
+    (sum, conv) => sum + (conv.unreadCount || 0),
+    0
+  );
+  
   const currentRouteName = state.routes[state.index].name;
   const isActive = (routeName: string) => currentRouteName === routeName;
 
@@ -68,6 +77,33 @@ const TenantNavBar = ({ state, navigation }: BottomTabBarProps) => {
           Hóa đơn
         </Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => navigation.navigate("conversationList")}
+      >
+        <View style={styles.iconWrap}>
+          <MessageCircle
+            size={36}
+            color={isActive("conversationList") ? theme.color : theme.color3}
+          />
+          {chatUnreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+              </Text>
+            </View>
+          )}
+        </View>
+        <Text
+          style={{
+            color: isActive("conversationList") ? theme.color : theme.color3,
+          }}
+        >
+          Tin nhắn
+        </Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.item}
         onPress={() => appNavigator.goToNotificationScreen()}
