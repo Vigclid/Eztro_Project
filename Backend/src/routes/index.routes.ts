@@ -32,7 +32,7 @@ router.use(
   v1SettingRoutes,
   v1ReportRoutes,
   v1PaymentRoutes,
-  chatRoutes, // Add chat routes to /v1
+  chatRoutes,
   v1LogRoutes
 );
 export default router;
