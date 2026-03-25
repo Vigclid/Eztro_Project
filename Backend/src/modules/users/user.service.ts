@@ -130,4 +130,58 @@ export class userService extends GenericService<IUser> {
   getAvatar = async (id: string) => {
     return userModel.findById(id).select("profilePicture").exec();
   };
+
+  getStaffAndAdmins = async () => {
+    const staffRole = await roleModel.findOne({ name: "Staff" });
+    const adminRole = await roleModel.findOne({ name: "Admin" });
+
+    if (!staffRole || !adminRole) return [];
+
+    return userModel
+      .find({
+        roleId: { $in: [staffRole._id, adminRole._id] },
+      })
+      .populate("roleId")
+      .exec();
+  };
+
+  searchUsers = async (query: string) => {
+    const searchRegex = { $regex: query, $options: "i" };
+
+    return userModel
+      .find({
+        $or: [
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { email: searchRegex },
+          { phoneNumber: searchRegex },
+        ],
+      })
+      .populate("roleId")
+      .exec();
+  };
+
+  assignRole = async (userId: string, roleName: string) => {
+    const role = await roleModel.findOne({ name: roleName });
+    if (!role) {
+      throw new Error(`Role '${roleName}' not found`);
+    }
+
+    return userModel
+      .findByIdAndUpdate(userId, { roleId: role._id }, { new: true })
+      .populate("roleId")
+      .exec();
+  };
+
+  removeRole = async (userId: string) => {
+    const tenantRole = await roleModel.findOne({ name: "Tenant" });
+    if (!tenantRole) {
+      throw new Error("Tenant role not found");
+    }
+
+    return userModel
+      .findByIdAndUpdate(userId, { roleId: tenantRole._id }, { new: true })
+      .populate("roleId")
+      .exec();
+  };
 }

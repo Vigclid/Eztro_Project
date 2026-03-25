@@ -17,6 +17,15 @@ export class userController extends GenericController<IUser> {
     );
   };
 
+  getAll = async (_req: Request, res: Response) => {
+    try {
+      const result = await this.UserService.getAllPopulated();
+      res.json(responseWrapper("success", "Fetched successfully", result));
+    } catch (error) {
+      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+    }
+  };
+
   getAllTenants = async (req: Request, res: Response) => {
     try {
       const phone = String(req.query.phone || "").trim();
@@ -189,6 +198,69 @@ export class userController extends GenericController<IUser> {
       res.status(200).json(responseWrapper("success", "Avatar fetched successfully", avatar));
     } catch (error) {
       res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+    }
+  };
+
+  getStaffAndAdmins = async (_req: Request, res: Response) => {
+    try {
+      const staffUsers = await this.UserService.getStaffAndAdmins();
+      res
+        .status(200)
+        .json(responseWrapper("success", "Fetched staff and admins successfully", staffUsers));
+    } catch (error) {
+      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+    }
+  };
+
+  searchUsers = async (req: Request, res: Response) => {
+    try {
+      const query = String(req.query.q || "").trim();
+      if (!query) {
+        return res.status(400).json(responseWrapper("error", "Search query is required"));
+      }
+
+      const results = await this.UserService.searchUsers(query);
+      res.status(200).json(responseWrapper("success", "Search completed successfully", results));
+    } catch (error) {
+      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+    }
+  };
+
+  assignRole = async (req: Request, res: Response) => {
+    try {
+      const userId = String(req.params.id || "").trim();
+      const { roleName } = req.body;
+
+      if (!userId) {
+        return res.status(400).json(responseWrapper("error", "User ID is required"));
+      }
+      if (!roleName) {
+        return res.status(400).json(responseWrapper("error", "Role name is required"));
+      }
+
+      const updatedUser = await this.UserService.assignRole(userId, roleName);
+      res
+        .status(200)
+        .json(responseWrapper("success", "Role assigned successfully", updatedUser));
+    } catch (error: any) {
+      res.status(500).json(responseWrapper("error", error.message || "Internal Server Error"));
+    }
+  };
+
+  removeRole = async (req: Request, res: Response) => {
+    try {
+      const userId = String(req.params.id || "").trim();
+
+      if (!userId) {
+        return res.status(400).json(responseWrapper("error", "User ID is required"));
+      }
+
+      const updatedUser = await this.UserService.removeRole(userId);
+      res
+        .status(200)
+        .json(responseWrapper("success", "Role removed successfully", updatedUser));
+    } catch (error: any) {
+      res.status(500).json(responseWrapper("error", error.message || "Internal Server Error"));
     }
   };
 }
