@@ -13,6 +13,9 @@ import ComingSoon from "../pages/comingSoon/ComingSoon";
 import StaffDashboard from "../pages/dashboard/StaffDashboard";
 import StaffSupportScreen from "../pages/support/StaffSupportScreen";
 import ReportDetailScreen from "../pages/support/ReportDetailScreen";
+import UsersPage from "../pages/users/UsersPage";
+import WebLogPage from "../pages/admin/WebLogPage";
+import StaffManagementPage from "../pages/admin/StaffManagementPage";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -54,6 +57,30 @@ const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute allowedRoles={["Staff", "Admin"]}>
             <ReportDetailScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute allowedRoles={["Staff", "Admin"]}>
+            <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/logs"
+        element={
+          <ProtectedRoute allowedRoles={["Admin"]}>
+            <WebLogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/staff"
+        element={
+          <ProtectedRoute allowedRoles={["Admin"]}>
+            <StaffManagementPage />
           </ProtectedRoute>
         }
       />

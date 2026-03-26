@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Search,
 } from "lucide-react";
+import Sidebar from "../../components/dashboard/Sidebar";
 import { reportGetAPI } from "../../api/reportAPI/GET";
 import { Report } from "../../types/report";
 import "./styles/StaffSupportScreen.css";
@@ -20,6 +21,24 @@ const StaffSupportScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+
+  const getRoleName = () => {
+    if (user?.roleName) return user.roleName;
+    if (
+      user?.roleId &&
+      typeof user.roleId === "object" &&
+      "name" in user.roleId
+    ) {
+      return user.roleId.name;
+    }
+    return "Unknown";
+  };
+
+  const roleName = getRoleName();
+  const isAdmin = roleName === "Admin" || roleName === "admin";
 
   useEffect(() => {
     loadReports();
@@ -137,7 +156,9 @@ const StaffSupportScreen: React.FC = () => {
   });
 
   return (
-    <div className="staff-support-container">
+    <div className="support-wrapper">
+      <Sidebar user={user} isAdmin={isAdmin} />
+      <div className="staff-support-container">
       {/* Header */}
       <div className="support-header">
         <button className="back-button" onClick={() => navigate("/dashboard")}>
@@ -257,6 +278,7 @@ const StaffSupportScreen: React.FC = () => {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

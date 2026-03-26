@@ -13,6 +13,7 @@ import v1NotificationRoutes from "./v1/notification.routes";
 import v1ReportRoutes from "./v1/report.routes";
 import chatRoutes from "../modules/chat/chat.routes";
 import v1PaymentRoutes from "./v1/payment.routes";
+import v1LogRoutes from "./v1/logs.routes";
 
 const router = Router();
 
@@ -31,6 +32,7 @@ router.use(
   v1SettingRoutes,
   v1ReportRoutes,
   v1PaymentRoutes,
-  chatRoutes  // Add chat routes to /v1
+  chatRoutes,
+  v1LogRoutes
 );
 export default router;

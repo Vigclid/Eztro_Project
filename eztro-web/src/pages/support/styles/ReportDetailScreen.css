@@ -1,4 +1,15 @@
 .report-detail-container {
+  flex: 1;
+  min-height: 100vh;
+  background: #f9fafb;
+  margin-left: 280px;
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 280px);
+}
+
+.report-detail-wrapper {
+  display: flex;
   min-height: 100vh;
   background: #f9fafb;
 }
@@ -11,6 +22,7 @@
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  width: 100%;
 }
 
 .report-header h1 {
@@ -38,8 +50,9 @@
 }
 
 .report-detail-content {
-  max-width: 900px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -441,8 +454,19 @@
 }
 
 @media (max-width: 768px) {
+  .report-detail-container {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .report-header {
+    padding: 16px;
+  }
+
   .report-detail-content {
     padding: 16px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .messages-list {
