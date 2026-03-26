@@ -84,6 +84,8 @@ export type MainStackParamList = {
   reportDetailScreen: { reportId: string };
   deleteBoardingHouseScreen: undefined;
   createFixedServiceFeeScreen: { houseId: string  | undefined, action: string, utility: IUtilitesCharge }
+  conversationListScreen: { tenantId?: string; tenantName?: string } | undefined;
+  messageScreen: { conversationId?: string; recipientId?: string; recipientName?: string };
 };
 
 export type AuthStackParamList = {

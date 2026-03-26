@@ -4,19 +4,33 @@ import {
   Users,
   DollarSign,
   LifeBuoy,
-  Activity,
   TrendingUp,
   CheckCircle,
   Clock,
   ChevronRight,
-  User,
-  Bell,
-  Search,
-  Settings,
-  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight,
   Shield,
+  BarChart3,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import Sidebar from "../../components/dashboard/Sidebar";
 import { reportGetAPI } from "../../api/reportAPI/GET";
+import { userGetAPI } from "../../api/userAPI/GET";
 import "./styles/StaffDashboard.css";
 
 interface DashboardStats {
@@ -46,14 +60,35 @@ interface DashboardStats {
 
 const StaffDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-
   const [stats, setStats] = useState<DashboardStats>({
     users: { total: 0, active: 0 },
     revenue: { total: 0, paid: 0, pending: 0 },
     tickets: { total: 0, open: 0, inProgress: 0, highPriority: 0, resolved: 0 },
     activity: { today: 0, total: 0, uniqueUsers: 0, successRate: 0 },
   });
+
+  // Chart data
+  const [revenueChartData] = useState([
+    { month: "Jan", revenue: 4000, target: 5000 },
+    { month: "Feb", revenue: 3000, target: 5000 },
+    { month: "Mar", revenue: 2000, target: 5000 },
+    { month: "Apr", revenue: 2780, target: 5000 },
+    { month: "May", revenue: 1890, target: 5000 },
+    { month: "Jun", revenue: 2390, target: 5000 },
+  ]);
+
+  const [ticketChartData, setTicketChartData] = useState([
+    { name: "Chờ xử lý", value: 0, color: "#f59e0b" },
+    { name: "Đang xử lý", value: 0, color: "#3b82f6" },
+    { name: "Đã giải quyết", value: 0, color: "#10b981" },
+  ]);
+
+  const [userGrowthData, setUserGrowthData] = useState([
+    { week: "Tuần 1", users: 0, active: 0 },
+    { week: "Tuần 2", users: 0, active: 0 },
+    { week: "Tuần 3", users: 0, active: 0 },
+    { week: "Tuần 4", users: 0, active: 0 },
+  ]);
 
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
@@ -78,62 +113,77 @@ const StaffDashboard: React.FC = () => {
   }, []);
 
   const loadDashboardData = async () => {
-    setLoading(true);
     try {
+      // Load users data
+      const usersRes = await userGetAPI.getAllUsers() as any;
+      const users = Array.isArray(usersRes.data) ? usersRes.data : [];
+
       // Load reports data
-      const reportsRes = await reportGetAPI.getAllReports();
+      const reportsRes = await reportGetAPI.getAllReports() as any;
+      const reports = Array.isArray(reportsRes.data) ? reportsRes.data : [];
 
-      if (reportsRes.status === "success" && reportsRes.data) {
-        const reports = Array.isArray(reportsRes.data) ? reportsRes.data : [];
+      // Calculate report statistics
+      const pending = reports.filter((r: any) => r.status === "Pending").length;
+      const inProgress = reports.filter((r: any) => r.status === "InProgress").length;
+      const resolved = reports.filter((r: any) => r.status === "Resolved").length;
 
-        // Calculate report statistics
-        const pending = reports.filter((r) => r.status === "Pending").length;
-        const inProgress = reports.filter(
-          (r) => r.status === "InProgress",
-        ).length;
-        const resolved = reports.filter((r) => r.status === "Resolved").length;
+      // Update ticket chart data
+      setTicketChartData([
+        { name: "Chờ xử lý", value: pending, color: "#f59e0b" },
+        { name: "Đang xử lý", value: inProgress, color: "#3b82f6" },
+        { name: "Đã giải quyết", value: resolved, color: "#10b981" },
+      ]);
 
-        setStats({
-          users: { total: 156, active: 142 }, // TODO: Load from users API
-          revenue: { total: 45000000, paid: 38, pending: 12 }, // TODO: Load from invoices API
-          tickets: {
-            total: reports.length,
-            open: pending,
-            inProgress: inProgress,
-            highPriority: pending, // Using pending as high priority for now
-            resolved: resolved,
-          },
-          activity: {
-            today: 234,
-            total: 1847,
-            uniqueUsers: 89,
-            successRate: 94,
-          }, // TODO: Load from activity API
+      // Calculate user growth data based on createdAt
+      const now = new Date();
+      
+      // Create 4 weeks data
+      const weeklyData = [];
+      for (let i = 3; i >= 0; i--) {
+        const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
+        const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+        
+        const weekUsers = users.filter((u: any) => {
+          const createdDate = new Date(u.createdAt);
+          return createdDate >= weekStart && createdDate < weekEnd;
         });
-      } else {
-        // Fallback to mock data if API fails
-        setStats({
-          users: { total: 156, active: 142 },
-          revenue: { total: 45000000, paid: 38, pending: 12 },
-          tickets: {
-            total: 0,
-            open: 0,
-            inProgress: 0,
-            highPriority: 0,
-            resolved: 0,
-          },
-          activity: {
-            today: 234,
-            total: 1847,
-            uniqueUsers: 89,
-            successRate: 94,
-          },
+        
+        const activeWeekUsers = weekUsers.filter((u: any) => u.statusActive).length;
+        
+        const weekLabel = `${weekStart.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })} - ${weekEnd.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}`;
+        
+        weeklyData.push({
+          week: weekLabel,
+          users: weekUsers.length,
+          active: activeWeekUsers,
         });
       }
-    } catch (error) {
-      // Use mock data on error
+      setUserGrowthData(weeklyData);
+
       setStats({
-        users: { total: 156, active: 142 },
+        users: { total: users.length, active: users.filter((u: any) => u.statusActive).length },
+        revenue: { total: 45000000, paid: 38, pending: 12 },
+        tickets: {
+          total: reports.length,
+          open: pending,
+          inProgress: inProgress,
+          highPriority: pending,
+          resolved: resolved,
+        },
+        activity: {
+          today: reports.filter((r: any) => {
+            const reportDate = new Date(r.createdAt);
+            const today = new Date();
+            return reportDate.toDateString() === today.toDateString();
+          }).length,
+          total: reports.length,
+          uniqueUsers: new Set(reports.map((r: any) => r.userId._id)).size,
+          successRate: reports.length > 0 ? Math.round((resolved / reports.length) * 100) : 0,
+        },
+      });
+    } catch (error) {
+      setStats({
+        users: { total: 0, active: 0 },
         revenue: { total: 45000000, paid: 38, pending: 12 },
         tickets: {
           total: 0,
@@ -142,322 +192,315 @@ const StaffDashboard: React.FC = () => {
           highPriority: 0,
           resolved: 0,
         },
-        activity: { today: 234, total: 1847, uniqueUsers: 89, successRate: 94 },
+        activity: { 
+          today: 0, 
+          total: 0, 
+          uniqueUsers: 0, 
+          successRate: 0 
+        },
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div
-          className="loading-spinner"
-          style={{ width: "40px", height: "40px", borderWidth: "4px" }}
-        />
-        <p>Đang tải dữ liệu...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <div className="header-content">
-          <div className="header-left">
-            <div className="avatar">
-              <User size={32} color="#fff" />
-            </div>
-            <div className="header-text">
-              <p className="greeting">Xin chào,</p>
-              <h2 className="username">
-                {user?.firstName && user?.lastName
-                  ? `${user.firstName} ${user.lastName}`
-                  : user?.email?.split("@")[0] || "Staff"}
-              </h2>
-              <p className="role">
-                {isAdmin ? "🔐 Quản trị viên" : "👤 Nhân viên"}
-              </p>
-            </div>
-          </div>
-          <div className="header-actions">
-            <button className="icon-button">
-              <Search size={24} />
-            </button>
-            <button className="icon-button">
-              <Bell size={24} />
-            </button>
-            <button className="icon-button">
-              <Settings size={24} />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="dashboard-wrapper">
+      <Sidebar user={user} isAdmin={isAdmin} />
+      
+      <div className="dashboard-container">
+        {/* Dashboard Content */}
+        <div className="dashboard-content">
+          {/* Stats Grid */}
+          <div className="stats-section">
+            <h2 className="section-title">Tổng quan</h2>
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-header">
+                  <div className="stat-icon stat-icon-green">
+                    <Users size={24} />
+                  </div>
+                  <div className="stat-trend stat-trend-up">
+                    <ArrowUpRight size={16} />
+                    <span>12%</span>
+                  </div>
+                </div>
+                <div className="stat-body">
+                  <p className="stat-label">Người dùng</p>
+                  <h3 className="stat-value">{stats.users.total}</h3>
+                  <p className="stat-subtitle">{stats.users.active} hoạt động</p>
+                </div>
+              </div>
 
-      <div className="dashboard-content">
-        {isAdmin && (
-          <div className="admin-banner">
-            <div className="admin-banner-icon">
-              <Shield size={28} />
-            </div>
-            <div className="admin-banner-content">
-              <h3>Quyền quản trị viên</h3>
-              <p>
-                Bạn có quyền truy cập đầy đủ vào các tính năng quản lý hệ thống
-              </p>
-            </div>
-          </div>
-        )}
+              <div className="stat-card">
+                <div className="stat-header">
+                  <div className="stat-icon stat-icon-orange">
+                    <DollarSign size={24} />
+                  </div>
+                  <div className="stat-trend stat-trend-up">
+                    <ArrowUpRight size={16} />
+                    <span>8%</span>
+                  </div>
+                </div>
+                <div className="stat-body">
+                  <p className="stat-label">Doanh thu</p>
+                  <h3 className="stat-value">
+                    {(stats.revenue.total / 1000000).toFixed(1)}M
+                  </h3>
+                  <p className="stat-subtitle">
+                    {stats.revenue.paid}/{stats.revenue.paid + stats.revenue.pending} đã thu
+                  </p>
+                </div>
+              </div>
 
-        <div className="section">
-          <h2 className="section-title">Tổng quan hệ thống</h2>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon stat-icon-green">
-                <Users size={28} />
+              <div className="stat-card">
+                <div className="stat-header">
+                  <div className="stat-icon stat-icon-blue">
+                    <LifeBuoy size={24} />
+                  </div>
+                  <div className="stat-trend stat-trend-down">
+                    <ArrowDownRight size={16} />
+                    <span>5%</span>
+                  </div>
+                </div>
+                <div className="stat-body">
+                  <p className="stat-label">Hỗ trợ</p>
+                  <h3 className="stat-value">{stats.tickets.total}</h3>
+                  <p className="stat-subtitle">{stats.tickets.inProgress} đang xử lý</p>
+                </div>
               </div>
-              <div className="stat-content">
-                <p className="stat-label">Người dùng</p>
-                <h3 className="stat-value">{stats.users.total}</h3>
-                <p className="stat-change stat-change-positive">
-                  +{stats.users.active} hoạt động
-                </p>
-              </div>
-            </div>
 
-            <div className="stat-card">
-              <div className="stat-icon stat-icon-orange">
-                <DollarSign size={28} />
-              </div>
-              <div className="stat-content">
-                <p className="stat-label">Doanh thu</p>
-                <h3 className="stat-value">
-                  {(stats.revenue.total / 1000000).toFixed(1)}M
-                </h3>
-                <p className="stat-change stat-change-positive">
-                  {stats.revenue.paid}/
-                  {stats.revenue.paid + stats.revenue.pending} đã thu
-                </p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon stat-icon-blue">
-                <LifeBuoy size={28} />
-              </div>
-              <div className="stat-content">
-                <p className="stat-label">Hỗ trợ</p>
-                <h3 className="stat-value">{stats.tickets.total}</h3>
-                <p className="stat-change stat-change-negative">
-                  {stats.tickets.inProgress} đang xử lý
-                </p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon stat-icon-green">
-                <Activity size={28} />
-              </div>
-              <div className="stat-content">
-                <p className="stat-label">Hoạt động</p>
-                <h3 className="stat-value">{stats.activity.today}</h3>
-                <p className="stat-change stat-change-positive">Hôm nay</p>
+              <div className="stat-card">
+                <div className="stat-header">
+                  <div className="stat-icon stat-icon-purple">
+                    <TrendingUp size={24} />
+                  </div>
+                  <div className="stat-trend stat-trend-up">
+                    <ArrowUpRight size={16} />
+                    <span>15%</span>
+                  </div>
+                </div>
+                <div className="stat-body">
+                  <p className="stat-label">Hoạt động</p>
+                  <h3 className="stat-value">{stats.activity.today}</h3>
+                  <p className="stat-subtitle">Hôm nay</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {isAdmin && (
-          <div className="section">
-            <h2 className="section-title">Quản trị viên - Truy cập nhanh</h2>
+          {/* Charts Section */}
+          <div className="charts-section">
+            {/* Revenue Chart */}
+            <div className="chart-card">
+              <div className="chart-header">
+                <h3 className="chart-title">Doanh thu theo tháng</h3>
+                <button className="chart-link">Xem chi tiết</button>
+              </div>
+              <div className="chart-content">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={revenueChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="month" stroke="#6b7280" />
+                    <YAxis stroke="#6b7280" />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      dot={{ fill: "#10b981", r: 4 }}
+                      name="Doanh thu"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="target" 
+                      stroke="#9ca3af" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={{ fill: "#9ca3af", r: 4 }}
+                      name="Mục tiêu"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Ticket Status Pie Chart */}
+            <div className="chart-card">
+              <div className="chart-header">
+                <h3 className="chart-title">Trạng thái phiếu hỗ trợ</h3>
+                <button className="chart-link">Xem chi tiết</button>
+              </div>
+              <div className="chart-content">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={ticketChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {ticketChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* User Growth Chart */}
+            <div className="chart-card">
+              <div className="chart-header">
+                <h3 className="chart-title">Tăng trưởng người dùng</h3>
+                <button className="chart-link">Xem chi tiết</button>
+              </div>
+              <div className="chart-content">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={userGrowthData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="week" stroke="#6b7280" />
+                    <YAxis stroke="#6b7280" />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+                    />
+                    <Legend />
+                    <Bar dataKey="users" fill="#3b82f6" name="Tổng người dùng" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="active" fill="#10b981" name="Người dùng hoạt động" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Tickets Summary */}
+            <div className="chart-card">
+              <div className="chart-header">
+                <h3 className="chart-title">Phiếu hỗ trợ</h3>
+                <button className="chart-link">Xem chi tiết</button>
+              </div>
+              <div className="chart-content">
+                <div className="tickets-summary">
+                  <div className="ticket-stat">
+                    <div className="ticket-stat-icon ticket-stat-icon-yellow">
+                      <Clock size={20} />
+                    </div>
+                    <div>
+                      <h4>{stats.tickets.open}</h4>
+                      <p>Chờ xử lý</p>
+                    </div>
+                  </div>
+
+                  <div className="ticket-stat">
+                    <div className="ticket-stat-icon ticket-stat-icon-blue">
+                      <TrendingUp size={20} />
+                    </div>
+                    <div>
+                      <h4>{stats.tickets.inProgress}</h4>
+                      <p>Đang xử lý</p>
+                    </div>
+                  </div>
+
+                  <div className="ticket-stat">
+                    <div className="ticket-stat-icon ticket-stat-icon-green">
+                      <CheckCircle size={20} />
+                    </div>
+                    <div>
+                      <h4>{stats.tickets.resolved}</h4>
+                      <p>Đã giải quyết</p>
+                    </div>
+                  </div>
+
+                  <div className="ticket-stat">
+                    <div className="ticket-stat-icon ticket-stat-icon-indigo">
+                      <LifeBuoy size={20} />
+                    </div>
+                    <div>
+                      <h4>{stats.tickets.total}</h4>
+                      <p>Tổng cộng</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="actions-section">
+            <h2 className="section-title">Truy cập nhanh</h2>
             <div className="actions-grid">
-              <button className="action-card">
-                <div className="action-icon action-icon-purple">
-                  <Shield size={24} />
+              <button className="action-card" onClick={() => navigate("/users")}>
+                <div className="action-icon action-icon-green">
+                  <Users size={20} />
                 </div>
                 <div className="action-content">
-                  <h4>Quản lý nhân viên</h4>
-                  <p>Tài khoản & phân quyền</p>
+                  <h4>Người dùng</h4>
+                  <p>Quản lý tài khoản</p>
                 </div>
-                <ChevronRight size={24} color="#9ca3af" />
+                <ChevronRight size={20} color="#9ca3af" />
               </button>
 
-              <button className="action-card">
-                <div className="action-icon action-icon-cyan">
-                  <Settings size={24} />
-                </div>
-                <div className="action-content">
-                  <h4>Cài đặt hệ thống</h4>
-                  <p>Cấu hình & tùy chỉnh</p>
-                </div>
-                <ChevronRight size={24} color="#9ca3af" />
-              </button>
-
-              <button className="action-card">
+              <button className="action-card" onClick={() => navigate("/payments")}>
                 <div className="action-icon action-icon-orange">
-                  <BarChart3 size={24} />
+                  <DollarSign size={20} />
                 </div>
                 <div className="action-content">
-                  <h4>Báo cáo hệ thống</h4>
-                  <p>Phân tích & thống kê</p>
+                  <h4>Thanh toán</h4>
+                  <p>Xem giao dịch</p>
                 </div>
-                <ChevronRight size={24} color="#9ca3af" />
+                <ChevronRight size={20} color="#9ca3af" />
+              </button>
+
+              <button className="action-card" onClick={() => navigate("/support")}>
+                <div className="action-icon action-icon-blue">
+                  <LifeBuoy size={20} />
+                </div>
+                <div className="action-content">
+                  <h4>Hỗ trợ</h4>
+                  <p>Phiếu yêu cầu</p>
+                </div>
+                {stats.tickets.open > 0 && (
+                  <div className="action-badge">{stats.tickets.open}</div>
+                )}
+                <ChevronRight size={20} color="#9ca3af" />
               </button>
             </div>
           </div>
-        )}
 
-        <div className="section">
-          <h2 className="section-title">
-            {isAdmin ? "Quản lý chung" : "Truy cập nhanh"}
-          </h2>
-          <div className="actions-grid">
-            <button className="action-card">
-              <div className="action-icon action-icon-green">
-                <Users size={24} />
-              </div>
-              <div className="action-content">
-                <h4>Người dùng</h4>
-                <p>Quản lý tài khoản</p>
-              </div>
-              <ChevronRight size={24} color="#9ca3af" />
-            </button>
+          {isAdmin && (
+            <div className="actions-section">
+              <h2 className="section-title">Quản trị viên</h2>
+              <div className="actions-grid">
+                <button className="action-card" onClick={() => navigate("/admin/staff")}>
+                  <div className="action-icon action-icon-purple">
+                    <Shield size={20} />
+                  </div>
+                  <div className="action-content">
+                    <h4>Quản lý nhân viên</h4>
+                    <p>Tài khoản & phân quyền</p>
+                  </div>
+                  <ChevronRight size={20} color="#9ca3af" />
+                </button>
 
-            <button className="action-card">
-              <div className="action-icon action-icon-orange">
-                <DollarSign size={24} />
-              </div>
-              <div className="action-content">
-                <h4>Thanh toán</h4>
-                <p>Xem giao dịch</p>
-              </div>
-              <ChevronRight size={24} color="#9ca3af" />
-            </button>
-
-            <button
-              className="action-card"
-              onClick={() => navigate("/support")}
-            >
-              <div className="action-icon action-icon-blue">
-                <LifeBuoy size={24} />
-              </div>
-              <div className="action-content">
-                <h4>Hỗ trợ</h4>
-                <p>Phiếu yêu cầu</p>
-              </div>
-              {stats.tickets.open > 0 && (
-                <div className="action-badge">
-                  <span>{stats.tickets.open}</span>
-                </div>
-              )}
-              <ChevronRight size={24} color="#9ca3af" />
-            </button>
-
-            <button className="action-card">
-              <div className="action-icon action-icon-cyan">
-                <Activity size={24} />
-              </div>
-              <div className="action-content">
-                <h4>Hoạt động</h4>
-                <p>Lịch sử hệ thống</p>
-              </div>
-              <ChevronRight size={24} color="#9ca3af" />
-            </button>
-          </div>
-        </div>
-
-        <div className="section">
-          <div className="section-header">
-            <h2 className="section-title">Phiếu hỗ trợ</h2>
-            <button
-              className="section-link"
-              onClick={() => navigate("/support")}
-            >
-              Xem tất cả
-            </button>
-          </div>
-
-          <div className="tickets-summary">
-            <div className="ticket-stat">
-              <div className="ticket-stat-icon ticket-stat-icon-yellow">
-                <Clock size={24} />
-              </div>
-              <div>
-                <h3>{stats.tickets.open}</h3>
-                <p>Chờ xử lý</p>
+                <button className="action-card" onClick={() => navigate("/admin/logs")}>
+                  <div className="action-icon action-icon-indigo">
+                    <BarChart3 size={20} />
+                  </div>
+                  <div className="action-content">
+                    <h4>Web Log</h4>
+                    <p>Lịch sử hoạt động</p>
+                  </div>
+                  <ChevronRight size={20} color="#9ca3af" />
+                </button>
               </div>
             </div>
-
-            <div className="ticket-stat">
-              <div className="ticket-stat-icon ticket-stat-icon-blue">
-                <TrendingUp size={24} />
-              </div>
-              <div>
-                <h3>{stats.tickets.inProgress}</h3>
-                <p>Đang xử lý</p>
-              </div>
-            </div>
-
-            <div className="ticket-stat">
-              <div className="ticket-stat-icon ticket-stat-icon-green">
-                <CheckCircle size={24} />
-              </div>
-              <div>
-                <h3>{stats.tickets.resolved}</h3>
-                <p>Đã giải quyết</p>
-              </div>
-            </div>
-
-            <div className="ticket-stat">
-              <div className="ticket-stat-icon ticket-stat-icon-indigo">
-                <LifeBuoy size={24} />
-              </div>
-              <div>
-                <h3>{stats.tickets.total}</h3>
-                <p>Tổng cộng</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="section">
-          <div className="section-header">
-            <h2 className="section-title">Hoạt động gần đây</h2>
-            <button className="section-link">Xem chi tiết</button>
-          </div>
-
-          <div className="activity-stats">
-            <div className="activity-stat-card">
-              <div className="activity-stat-icon">
-                <Activity size={24} color="#10b981" />
-              </div>
-              <div>
-                <p>Tổng hoạt động</p>
-                <h3>{stats.activity.total}</h3>
-              </div>
-            </div>
-
-            <div className="activity-stat-card">
-              <div className="activity-stat-icon">
-                <Users size={24} color="#3b82f6" />
-              </div>
-              <div>
-                <p>Người dùng hoạt động</p>
-                <h3>{stats.activity.uniqueUsers}</h3>
-              </div>
-            </div>
-
-            <div className="activity-stat-card">
-              <div className="activity-stat-icon">
-                <CheckCircle size={24} color="#10b981" />
-              </div>
-              <div>
-                <p>Tỷ lệ thành công</p>
-                <h3>{stats.activity.successRate}%</h3>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

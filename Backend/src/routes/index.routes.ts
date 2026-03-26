@@ -11,7 +11,9 @@ import v1PackageRoutes from "./v1/package.routes";
 import v1SettingRoutes from "./v1/setting.routes";
 import v1NotificationRoutes from "./v1/notification.routes";
 import v1ReportRoutes from "./v1/report.routes";
+import chatRoutes from "../modules/chat/chat.routes";
 import v1PaymentRoutes from "./v1/payment.routes";
+import v1LogRoutes from "./v1/logs.routes";
 
 const router = Router();
 
@@ -29,6 +31,8 @@ router.use(
   v1NotificationRoutes,
   v1SettingRoutes,
   v1ReportRoutes,
-  v1PaymentRoutes
+  v1PaymentRoutes,
+  chatRoutes,
+  v1LogRoutes
 );
 export default router;

@@ -13,6 +13,7 @@ const FOLDER_MAP: { [key: string]: string } = {
   "2": "background",
   "3": "Artwork",
   "4": "AI_images",
+  "5": "image_Message",
 };
 
 /**
@@ -24,7 +25,7 @@ async function uploadImage(base64: string, type: number, isBuy: boolean) {
   if (!folderName) throw new Error("Invalid type");
 
   const uniqueFileName = uuidv4();
-  if (type === 1 || type === 2 || type === 4) {
+  if (type === 1 || type === 2 || type === 4 || type === 5) {
     return await cloudinary.uploader.upload(base64, {
       folder: folderName,
       public_id: uniqueFileName,

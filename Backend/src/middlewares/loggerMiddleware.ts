@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import logger from "../utils/logger";
+import logModel from "../modules/logs/log.model";
 
 const loggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now(); // thời gian bắt đầu request
@@ -25,16 +26,29 @@ const loggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
     const host = req.headers.host || "unknown";
     const userAgent = req.headers["user-agent"] || "unknown";
 
-    logger.info("HTTP Request", {
-      method: req.method,
-      url: req.originalUrl,
-      status: res.statusCode,
-      response_time: duration,
-      ip: clientIp,
-      origin,
-      host,
-      userAgent,
-      body: hasBody ? safeBody : undefined,
+    const logData = {
+      timestamp: new Date(),
+      level: res.statusCode >= 400 ? "error" : "info",
+      message: "HTTP Request",
+      meta: {
+        method: req.method,
+        url: req.originalUrl,
+        status: res.statusCode,
+        response_time: duration,
+        ip: clientIp,
+        origin,
+        host,
+        userAgent,
+        body: hasBody ? safeBody : null,
+      },
+    };
+
+    // Log to Winston
+    logger.info("HTTP Request", logData.meta);
+
+    // Save to MongoDB
+    logModel.create(logData).catch((err) => {
+      console.error("Error saving log to database:", err);
     });
   });
 

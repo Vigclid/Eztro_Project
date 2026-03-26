@@ -1,14 +1,15 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
+  Bell,
   Building2,
   Funnel,
   Megaphone,
+  MessageCircle,
   Plus,
   Search,
   Wrench,
-  AlertCircle,
-  MessageCircle,
+  
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -25,7 +26,6 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { getHouseApi } from "../../api/house/house";
 import { getRoomApi } from "../../api/room/room";
-import { getTicketApi } from "../../api/ticket/ticketapi";
 import BoardingHouseCard from "../../components/boardingHouse/BoardingHouseCard";
 import BoardingHouseStatsCard from "../../components/boardingHouse/BoardingHouseStatsCard";
 import {
@@ -43,43 +43,13 @@ import { IRoom } from "../../types/room";
 
 export const ViewBoardingHousePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user } = useSelector((state: RootState) => state.auth);
   const [searchText, onChangeSearchText] = useState("");
 
   const [boardingHouses, setBoardingHouses] = useState<IHouse[] | null>(null);
   const [totalAvailableRooms, setTotalAvailableRooms] = useState<number>(0);
-  const [pendingTicketsCount, setPendingTicketsCount] = useState(0);
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-
-  const currentUserId = user?._id;
-
-  const loadTicketStats = useCallback(async () => {
-    try {
-      const response: any = await getTicketApi.getAllTicketsByLandlord();
-      if (response.status && response.data) {
-        const tickets = Array.isArray(response.data) ? response.data : response.data.data || [];
-        
-        // Count pending tickets
-        const pending = tickets.filter((t: any) => t.status === 'pending').length;
-        setPendingTicketsCount(pending);
-
-        // Count unread messages
-        let unreadCount = 0;
-        tickets.forEach((ticket: any) => {
-          if (ticket.replies && Array.isArray(ticket.replies)) {
-            const unread = ticket.replies.filter((reply: any) => {
-              return reply.userId && typeof reply.userId === 'object' && 
-                     reply.userId._id !== currentUserId && 
-                     !reply.isRead;
-            }).length;
-            unreadCount += unread;
-          }
-        });
-        setUnreadMessagesCount(unreadCount);
-      }
-    } catch (error) {
-    }
-  }, [currentUserId]);
+  const unreadCount = useSelector(
+    (state: RootState) => state.notification.unreadCount,
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -88,16 +58,15 @@ export const ViewBoardingHousePage: React.FC = () => {
       const { getAllHousesByLandlordId } = getHouseApi;
       const getAllHouses = async () => {
         try {
-          const res = (await getAllHousesByLandlordId(
-            controller.signal,
-          )) as ApiResponse<IHouse[]>;
+          const res = (await getAllHousesByLandlordId(controller.signal)) as ApiResponse<
+            IHouse[]
+          >;
           if (res.status === "success") {
             setBoardingHouses(res.data as IHouse[]);
           }
-        } catch (err) {}
+        } catch (err) { }
       };
       getAllHouses();
-      loadTicketStats();
       return () => {
         controller.abort();
       };
@@ -185,6 +154,14 @@ export const ViewBoardingHousePage: React.FC = () => {
     navigation.navigate("mainstack", { screen: "ticketListScreen" });
   };
 
+  const handleNavigateToNotification = () => {
+    navigation.navigate("mainstack", { screen: "notificationScreen" });
+  };
+
+  const handleNavigateToMessages = () => {
+    navigation.navigate("mainstack", { screen: "conversationListScreen" });
+  }
+
   const fabRotate = fabAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "45deg"],
@@ -204,6 +181,25 @@ export const ViewBoardingHousePage: React.FC = () => {
             <View style={styles.headerContent}>
               <View>
                 <Text style={styles.headerTitle}>{"Quản Lý Cụm Trọ"}</Text>
+              </View>
+
+              <View style={styles.headerIcon} >
+              <TouchableOpacity style={styles.IconMessage} onPress={handleNavigateToMessages}>
+                <MessageCircle color={COLORS.WHITE} size={24} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.notificationBtn}
+                onPress={handleNavigateToNotification}
+              >
+                <Bell color={COLORS.WHITE} size={22} />
+                {unreadCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
               </View>
             </View>
           </LinearGradient>
@@ -247,34 +243,6 @@ export const ViewBoardingHousePage: React.FC = () => {
                 <Text style={styles.maintenanceArrowText}>›</Text>
               </View>
             </TouchableOpacity>
-
-            {/* Pending Tickets Alert */}
-            {pendingTicketsCount > 0 && (
-              <View style={styles.alertCard}>
-                <View style={styles.alertIconContainer}>
-                  <AlertCircle size={20} color="#F59E0B" />
-                </View>
-                <View style={styles.alertContent}>
-                  <Text style={styles.alertText}>
-                    Bạn có <Text style={styles.alertBold}>{pendingTicketsCount}</Text> phiếu yêu cầu hỗ trợ, hãy xử lý
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Unread Messages Alert */}
-            {unreadMessagesCount > 0 && (
-              <View style={styles.alertCard}>
-                <View style={styles.alertIconContainer}>
-                  <MessageCircle size={20} color="#3B82F6" />
-                </View>
-                <View style={styles.alertContent}>
-                  <Text style={styles.alertText}>
-                    Bạn có phản hồi từ khách thuê, hãy vào hỗ trợ
-                  </Text>
-                </View>
-              </View>
-            )}
 
             <View style={styles.boardingHousesContainer}>
               {boardingHouses && (
@@ -404,8 +372,8 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: "row",
-    justifyContent: "center",
-    paddingTop: 20,
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: SPACING.HEADER_MARGIN_BOTTOM,
     marginHorizontal: SPACING.HEADER_HORIZONTAL_MARGIN,
   },
@@ -418,6 +386,14 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: IMAGE_SIZE.HEADER_LOGO,
     height: SPACING.XS,
+  },
+  headerIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    gap: 10,
+    padding: 6,
+
   },
   mainContent: {
     backgroundColor: COLORS.BACKGROUND_GRAY,
@@ -793,42 +769,34 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: COLORS.PLACEHOLDER_GRAY,
   },
-  alertCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.WHITE,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "#F59E0B",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  alertIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#FEF3C7",
+  notificationBtn: {
+    width: IMAGE_SIZE.HEADER_LOGO,
+    height: IMAGE_SIZE.HEADER_LOGO,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 14,
   },
-  alertContent: {
-    flex: 1,
+  notificationBadge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: COLORS.RED_TEXT,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.WHITE,
   },
-  alertText: {
-    fontSize: 14,
-    color: COLORS.TEXT_DARK,
-    lineHeight: 20,
-  },
-  alertBold: {
+  notificationBadgeText: {
+    color: COLORS.WHITE,
+    fontSize: 10,
     fontWeight: "bold",
-    color: "#F59E0B",
   },
+
   fabBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.25)",
@@ -874,4 +842,12 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
+  IconMessage: {
+    width: IMAGE_SIZE.HEADER_LOGO,
+    height: IMAGE_SIZE.HEADER_LOGO,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 14,
+    },
 });
