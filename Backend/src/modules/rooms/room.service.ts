@@ -4,6 +4,7 @@ import housePackageModel from "../../modules/housePackage/housePackage.model";
 import { IPackage } from "../package/package.model";
 import roomInvitationModel from "./roomInvitation.model";
 import roomMemberModel from "./roomMember.model";
+import roomPolicyModel from "./roomPolicy.model";
 import { Types } from "mongoose";
 import userModel from "../users/user.model";
 import houseModel from "../houses/house.model";
@@ -18,6 +19,24 @@ export class roomService extends GenericService<IRoom> {
   private getExpireDate = () => new Date(Date.now() + 48 * 60 * 60 * 1000);
 
   private generateInviteCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  private normalizeRoomPolicyPayload = (policy: any = {}) => {
+    const notificationTypeRaw = String(policy?.notificationType || "in-app");
+    const allowedTypes = ["in-app", "mail", "zalo"];
+    const notificationType = allowedTypes.includes(notificationTypeRaw)
+      ? notificationTypeRaw
+      : "in-app";
+
+    return {
+      description: String(policy?.description || ""),
+      defaultTimeReminder: policy?.defaultTimeReminder
+        ? new Date(policy.defaultTimeReminder)
+        : null,
+      defaultTimeReminderContent: String(policy?.defaultTimeReminderContent || ""),
+      notificationType: notificationType as "in-app" | "mail" | "zalo",
+      timeReminderStatus: String(policy?.timeReminderStatus || "active"),
+    };
+  };
 
     createNewRoom = async (data: Partial<IRoom>) => {
         // Đảm bảo không tạo 2 phòng trùng tên trong cùng 1 cụm trọ
@@ -71,10 +90,29 @@ export class roomService extends GenericService<IRoom> {
             throw error;
         }
 
-        const newRoom = new roomModel({
-            ...data,
-        });
-        return await roomModel.create(newRoom);
+    const inputData: any = { ...(data as any) };
+    const policyPayload = inputData.policy;
+    delete inputData.policy;
+
+    const newRoom = new roomModel({
+      ...inputData,
+    });
+    const createdRoom = await roomModel.create(newRoom);
+
+    if (policyPayload) {
+      const normalizedPolicy = this.normalizeRoomPolicyPayload(policyPayload);
+      await roomPolicyModel.findOneAndUpdate(
+        { roomId: createdRoom._id },
+        {
+          roomId: createdRoom._id,
+          houseId: inputData.houseId,
+          ...normalizedPolicy,
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+    }
+
+    return createdRoom;
     };
 
   getAllRoomsByHouseId = async (houseId: string) => {
@@ -284,6 +322,11 @@ export class roomService extends GenericService<IRoom> {
     const room: any = roomMember.roomId;
     const house: any = room?.houseId;
     const landlord: any = roomMember.invitedBy;
+    const roomPolicy: any = room?._id
+      ? await roomPolicyModel.findOne({
+          roomId: this.toObjectId(String(room._id)),
+        })
+      : null;
 
     return {
       roomMemberId: roomMember._id,
@@ -307,6 +350,15 @@ export class roomService extends GenericService<IRoom> {
         fullName: `${landlord?.lastName || ""} ${landlord?.firstName || ""}`.trim(),
         phoneNumber: landlord?.phoneNumber,
       },
+      policy: roomPolicy
+        ? {
+            description: roomPolicy.description || "",
+            defaultTimeReminder: roomPolicy.defaultTimeReminder || null,
+            defaultTimeReminderContent: roomPolicy.defaultTimeReminderContent || "",
+            notificationType: roomPolicy.notificationType || "in-app",
+            timeReminderStatus: roomPolicy.timeReminderStatus || "active",
+          }
+        : null,
     };
   };
 
@@ -403,6 +455,64 @@ export class roomService extends GenericService<IRoom> {
       })
       .sort({ moveInDate: 1, createdAt: 1 })
       .populate("userId", "firstName lastName phoneNumber email");
+  };
+
+  getRoomPolicyByLandlord = async (roomId: string, landlordId: string) => {
+    const room = await roomModel.findById(roomId);
+    if (!room) {
+      const error: any = new Error("ROOM_NOT_FOUND");
+      error.code = "ROOM_NOT_FOUND";
+      throw error;
+    }
+
+    const house = await houseModel.findById(room.houseId);
+    if (!house) {
+      const error: any = new Error("HOUSE_NOT_FOUND");
+      error.code = "HOUSE_NOT_FOUND";
+      throw error;
+    }
+
+    if (String(house.landlordId) !== landlordId) {
+      const error: any = new Error("LANDLORD_FORBIDDEN");
+      error.code = "LANDLORD_FORBIDDEN";
+      throw error;
+    }
+
+    return roomPolicyModel.findOne({ roomId: this.toObjectId(roomId) });
+  };
+
+  updateRoomPolicyByLandlord = async (roomId: string, landlordId: string, payload: any) => {
+    const room = await roomModel.findById(roomId);
+    if (!room) {
+      const error: any = new Error("ROOM_NOT_FOUND");
+      error.code = "ROOM_NOT_FOUND";
+      throw error;
+    }
+
+    const house = await houseModel.findById(room.houseId);
+    if (!house) {
+      const error: any = new Error("HOUSE_NOT_FOUND");
+      error.code = "HOUSE_NOT_FOUND";
+      throw error;
+    }
+
+    if (String(house.landlordId) !== landlordId) {
+      const error: any = new Error("LANDLORD_FORBIDDEN");
+      error.code = "LANDLORD_FORBIDDEN";
+      throw error;
+    }
+
+    const normalizedPolicy = this.normalizeRoomPolicyPayload(payload || {});
+
+    return roomPolicyModel.findOneAndUpdate(
+      { roomId: this.toObjectId(roomId) },
+      {
+        roomId: this.toObjectId(roomId),
+        houseId: room.houseId,
+        ...normalizedPolicy,
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
   };
 
     updateRoom = async (roomId: string, data: Partial<IRoom>) => {

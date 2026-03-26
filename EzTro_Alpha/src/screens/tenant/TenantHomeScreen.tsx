@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -40,6 +41,13 @@ type TenantRoomInfo = {
   room: { roomName: string; rentalFee: number };
   house: { houseName: string; address: string };
   landlord: { fullName: string };
+  policy?: {
+    description: string;
+    defaultTimeReminder: Date | string | null;
+    defaultTimeReminderContent: string;
+    notificationType: "in-app" | "mail" | "zalo";
+    timeReminderStatus: "active" | "inactive";
+  } | null;
 };
 
 type TenantInvitation = {
@@ -57,6 +65,7 @@ const TAB_BAR_HEIGHT = 80;
 const TenantHomeScreen = () => {
   const insets = useSafeAreaInsets();
   const sheetBottom = Math.max(insets.bottom + TAB_BAR_HEIGHT + 8, 20);
+  const contentBottomPadding = TAB_BAR_HEIGHT + insets.bottom + 24;
   const styles = TenantHomeScreenStyle;
   const navigation = useNavigation<NavigationProp>();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -178,7 +187,10 @@ const TenantHomeScreen = () => {
             <ActivityIndicator size="large" color="#0ea58d" />
           </View>
         ) : (
-          <>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: contentBottomPadding }}
+          >
             <Text style={styles.title}>Xin chào 👋</Text>
             <Text style={styles.subtitle}>Quản lý phòng trọ của bạn</Text>
 
@@ -233,6 +245,49 @@ const TenantHomeScreen = () => {
                     </Text>
                   </View>
                 </View>
+
+                {myRoom.policy && (
+                  <View
+                    style={{
+                      marginBottom: 12,
+                      borderRadius: 14,
+                      backgroundColor: "#edf4ff",
+                      borderWidth: 1,
+                      borderColor: "#d8e6ff",
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: "#1e3a8a",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Chính sách phòng
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#1f2937", marginBottom: 2 }}>
+                      Trạng thái nhắc nhở: {myRoom.policy.timeReminderStatus === "active" ? "Bật" : "Tắt"}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#1f2937", marginBottom: 2 }}>
+                      Kênh thông báo: {myRoom.policy.notificationType}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#1f2937", marginBottom: 2 }}>
+                      Thời gian nhắc:{" "}
+                      {myRoom.policy.defaultTimeReminder
+                        ? new Date(myRoom.policy.defaultTimeReminder).toLocaleDateString("vi-VN")
+                        : "Chưa thiết lập"}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#1f2937", marginBottom: 2 }}>
+                      Nội dung: {myRoom.policy.defaultTimeReminderContent || "Không có"}
+                    </Text>
+                    <Text style={{ marginTop: 4, fontSize: 12, color: "#475569" }}>
+                      {myRoom.policy.description || "Không có mô tả chính sách"}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Maintenance Button - Only show when tenant has joined a room */}
                 {myRoom && (
@@ -294,7 +349,7 @@ const TenantHomeScreen = () => {
                 </TouchableOpacity>
               </View>
             )}
-          </>
+          </ScrollView>
         )}
       </SafeAreaView>
 

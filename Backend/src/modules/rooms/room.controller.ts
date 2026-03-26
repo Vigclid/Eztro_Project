@@ -347,4 +347,46 @@ export class roomController extends GenericController<IRoom> {
       return res.status(500).json(responseWrapper("error", "Internal Server Error", error));
     }
   };
+
+    getRoomPolicy = async (req: Request, res: Response) => {
+        try {
+            const roomId = req.params.id;
+            const token = req.headers["authorization"]?.split(" ")[1];
+            const { id } = jwt.decode(token as string) as { id: string };
+
+            const policy = await this.RoomService.getRoomPolicyByLandlord(roomId, id);
+            return res
+                .status(200)
+                .json(responseWrapper("success", "Lấy chính sách phòng thành công", policy));
+        } catch (error: any) {
+            if (error?.code === "LANDLORD_FORBIDDEN") {
+                return res.status(403).json(responseWrapper("error", "Bạn không có quyền xem chính sách phòng này"));
+            }
+            if (error?.code === "ROOM_NOT_FOUND" || error?.code === "HOUSE_NOT_FOUND") {
+                return res.status(404).json(responseWrapper("error", "Không tìm thấy phòng/cụm trọ liên quan"));
+            }
+            return res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+        }
+    };
+
+    updateRoomPolicy = async (req: Request, res: Response) => {
+        try {
+            const roomId = req.params.id;
+            const token = req.headers["authorization"]?.split(" ")[1];
+            const { id } = jwt.decode(token as string) as { id: string };
+
+            const policy = await this.RoomService.updateRoomPolicyByLandlord(roomId, id, req.body);
+            return res
+                .status(200)
+                .json(responseWrapper("success", "Cập nhật chính sách phòng thành công", policy));
+        } catch (error: any) {
+            if (error?.code === "LANDLORD_FORBIDDEN") {
+                return res.status(403).json(responseWrapper("error", "Bạn không có quyền sửa chính sách phòng này"));
+            }
+            if (error?.code === "ROOM_NOT_FOUND" || error?.code === "HOUSE_NOT_FOUND") {
+                return res.status(404).json(responseWrapper("error", "Không tìm thấy phòng/cụm trọ liên quan"));
+            }
+            return res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+        }
+    };
 }

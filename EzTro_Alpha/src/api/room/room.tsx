@@ -38,6 +38,15 @@ export const getRoomApi = {
       throw err;
     }
   },
+
+  async getRoomPolicy(roomId: string) {
+    try {
+      const res = await apiService.get(`${roomApi}${roomId}/policy`);
+      return res.data;
+    } catch (err: any) {
+      throw err;
+    }
+  },
 };
 
 export const postRoomApi = {
@@ -129,6 +138,15 @@ export const postRoomApi = {
           message: res?.error?.message || "Không thể xóa thành viên lúc này.",
         }
       );
+    } catch (err: any) {
+      throw err;
+    }
+  },
+
+  async updateRoomPolicy(roomId: string, policyData: any) {
+    try {
+      const res = await apiService.patch(`${roomApi}${roomId}/policy`, policyData);
+      return res.data;
     } catch (err: any) {
       throw err;
     }
