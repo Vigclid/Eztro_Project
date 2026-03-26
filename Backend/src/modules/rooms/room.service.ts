@@ -22,7 +22,7 @@ export class roomService extends GenericService<IRoom> {
 
   private normalizeRoomPolicyPayload = (policy: any = {}) => {
     const notificationTypeRaw = String(policy?.notificationType || "in-app");
-    const allowedTypes = ["in-app", "mail", "zalo"];
+    const allowedTypes = ["in-app", "mail", "all"];
     const notificationType = allowedTypes.includes(notificationTypeRaw)
       ? notificationTypeRaw
       : "in-app";
@@ -33,7 +33,7 @@ export class roomService extends GenericService<IRoom> {
         ? new Date(policy.defaultTimeReminder)
         : null,
       defaultTimeReminderContent: String(policy?.defaultTimeReminderContent || ""),
-      notificationType: notificationType as "in-app" | "mail" | "zalo",
+      notificationType: notificationType as "in-app" | "mail" | "all",
       timeReminderStatus: String(policy?.timeReminderStatus || "active"),
     };
   };

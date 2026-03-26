@@ -48,7 +48,7 @@ type TenantRoomInfo = {
     description: string;
     defaultTimeReminder: Date | string | null;
     defaultTimeReminderContent: string;
-    notificationType: "in-app" | "mail" | "zalo";
+    notificationType: "in-app" | "mail" | "all";
     timeReminderStatus: "active" | "inactive";
   } | null;
 };

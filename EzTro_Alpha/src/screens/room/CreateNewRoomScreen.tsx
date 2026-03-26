@@ -121,7 +121,7 @@ const CreateNewRoomScreen = () => {
     description: "",
     defaultTimeReminder: "",
     defaultTimeReminderContent: "",
-    notificationType: "in-app" as "in-app" | "mail" | "zalo",
+    notificationType: "in-app" as "in-app" | "mail" | "all",
     timeReminderStatus: "active",
   });
   const [showPolicyDatePicker, setShowPolicyDatePicker] = useState(false);
@@ -203,7 +203,7 @@ const CreateNewRoomScreen = () => {
             notificationType: (res.data.notificationType || "in-app") as
               | "in-app"
               | "mail"
-              | "zalo",
+              | "all",
             timeReminderStatus: res.data.timeReminderStatus || "active",
           });
         }
@@ -788,7 +788,7 @@ const CreateNewRoomScreen = () => {
                 />
 
                 <View style={[styles.statusRow, { marginTop: SPACING.SMALL }]}>
-                  {(["in-app", "mail", "zalo"] as const).map((type) => (
+                  {(["in-app", "mail", "all"] as const).map((type) => (
                     <TouchableOpacity
                       key={type}
                       style={[

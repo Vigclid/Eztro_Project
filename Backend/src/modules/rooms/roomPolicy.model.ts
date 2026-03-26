@@ -2,7 +2,7 @@ import mongoose, { Document, Types } from "mongoose";
 import { IHouse } from "../houses/house.model";
 import { IRoom } from "./room.model";
 
-export type NotificationType = "in-app" | "mail" | "zalo";
+export type NotificationType = "in-app" | "mail" | "all";
 
 export interface IRoomPolicy extends Document {
   roomId: Types.ObjectId | IRoom;
@@ -25,7 +25,7 @@ const RoomPolicySchema = new mongoose.Schema<IRoomPolicy>(
     defaultTimeReminderContent: { type: String, default: "" },
     notificationType: {
       type: String,
-      enum: ["in-app", "mail", "zalo"],
+      enum: ["in-app", "mail", "all"],
       default: "in-app",
     },
     timeReminderStatus: { type: String, default: "active" },
