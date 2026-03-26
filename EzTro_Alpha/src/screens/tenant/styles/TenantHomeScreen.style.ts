@@ -81,6 +81,31 @@ export const TenantHomeScreenStyle = StyleSheet.create({
     color: "#1f2937",
     fontWeight: "700",
   },
+  policyCard: {
+    marginBottom: 12,
+    borderRadius: 14,
+    backgroundColor: "#edf4ff",
+    borderWidth: 1,
+    borderColor: "#d8e6ff",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  policyTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1e3a8a",
+    marginBottom: 6,
+  },
+  policyLine: {
+    fontSize: 12,
+    color: "#1f2937",
+    marginBottom: 2,
+  },
+  policyDescription: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#475569",
+  },
   landlordMessageButton: {
     width: 36,
     height: 36,

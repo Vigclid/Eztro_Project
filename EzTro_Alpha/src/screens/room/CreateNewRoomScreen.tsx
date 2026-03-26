@@ -117,6 +117,15 @@ const CreateNewRoomScreen = () => {
   });
   const [showVirtualTenantDatePicker, setShowVirtualTenantDatePicker] =
     useState(false);
+  const [policyData, setPolicyData] = useState({
+    description: "",
+    defaultTimeReminder: "",
+    defaultTimeReminderContent: "",
+    notificationType: "in-app" as "in-app" | "mail" | "all",
+    timeReminderStatus: "active",
+  });
+  const [showPolicyDatePicker, setShowPolicyDatePicker] = useState(false);
+  const [isPolicyExpanded, setIsPolicyExpanded] = useState(false);
 
   useEffect(() => {
     if (editingRoom) {
@@ -132,11 +141,24 @@ const CreateNewRoomScreen = () => {
           : new Date().toISOString().slice(0, 10),
       });
       setTenants(editingRoom.virtualTenants || []);
+      setPolicyData((prev) => ({
+        ...prev,
+        defaultTimeReminder: new Date().toISOString().slice(0, 10),
+      }));
+      setIsPolicyExpanded(false);
     } else {
       setFormData((prev) => ({
         ...prev,
         rentalDate: new Date().toISOString().slice(0, 10),
       }));
+      setPolicyData({
+        description: "",
+        defaultTimeReminder: new Date().toISOString().slice(0, 10),
+        defaultTimeReminderContent: "",
+        notificationType: "in-app",
+        timeReminderStatus: "active",
+      });
+      setIsPolicyExpanded(true);
     }
   }, [editingRoom]);
 
@@ -165,12 +187,43 @@ const CreateNewRoomScreen = () => {
     }
   }, [isEditMode, editingRoom?._id]);
 
+  useEffect(() => {
+    const fetchRoomPolicy = async () => {
+      if (!isEditMode || !editingRoom?._id) return;
+      try {
+        const raw = await getRoomApi.getRoomPolicy(editingRoom._id);
+        const res = raw as ApiResponse<any>;
+        if (res.status === "success" && res.data) {
+          setPolicyData({
+            description: res.data.description || "",
+            defaultTimeReminder: res.data.defaultTimeReminder
+              ? new Date(res.data.defaultTimeReminder).toISOString().slice(0, 10)
+              : new Date().toISOString().slice(0, 10),
+            defaultTimeReminderContent: res.data.defaultTimeReminderContent || "",
+            notificationType: (res.data.notificationType || "in-app") as
+              | "in-app"
+              | "mail"
+              | "all",
+            timeReminderStatus: res.data.timeReminderStatus || "active",
+          });
+        }
+      } catch {
+        // ignore and keep default form
+      }
+    };
+    fetchRoomPolicy();
+  }, [isEditMode, editingRoom?._id]);
+
   const handleGoBack = () => {
     navigation.goBack();
   };
 
   const handleChange = (key: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handlePolicyChange = (key: keyof typeof policyData, value: string) => {
+    setPolicyData((prev) => ({ ...prev, [key]: value }));
   };
 
   const mapStatusForBackend = (status: "Trống" | "Đang thuê") => {
@@ -209,6 +262,15 @@ const CreateNewRoomScreen = () => {
         ? new Date(formData.rentalDate)
         : new Date(),
       virtualTenants: tenants,
+      policy: {
+        description: policyData.description.trim(),
+        defaultTimeReminder: policyData.defaultTimeReminder
+          ? new Date(policyData.defaultTimeReminder)
+          : null,
+        defaultTimeReminderContent: policyData.defaultTimeReminderContent.trim(),
+        notificationType: policyData.notificationType,
+        timeReminderStatus: policyData.timeReminderStatus,
+      },
     };
 
     setSubmitting(true);
@@ -218,6 +280,9 @@ const CreateNewRoomScreen = () => {
       if (isEditMode && editingRoom?._id) {
         const raw = await postRoomApi.updateRoom(editingRoom._id, payload);
         res = raw as ApiResponse<IRoom>;
+        if (res.status === "success" || res.status === true) {
+          await postRoomApi.updateRoomPolicy(editingRoom._id, payload.policy);
+        }
       } else {
         const raw = await postRoomApi.createRoom(payload);
         res = raw as ApiResponse<IRoom>;
@@ -647,6 +712,138 @@ const CreateNewRoomScreen = () => {
             </View>
           </View>
 
+          <View style={styles.statusSection}>
+            <TouchableOpacity
+              style={styles.policyAccordionHeader}
+              onPress={() => setIsPolicyExpanded((prev) => !prev)}
+            >
+              <View style={styles.labelContainer}>
+                <MaterialCommunityIcons
+                  name="shield-check-outline"
+                  size={18}
+                  color={COLORS.PRIMARY}
+                  style={styles.inputIcon}
+                />
+                <Text style={styles.label}>Chính sách phòng</Text>
+              </View>
+              <MaterialCommunityIcons
+                name={isPolicyExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={COLORS.TEXT_SECONDARY}
+              />
+            </TouchableOpacity>
+
+            {!isPolicyExpanded ? (
+              <Text style={styles.policyCollapsedHint}>
+                Bấm để xem/sửa policy của phòng
+              </Text>
+            ) : (
+              <View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mô tả chính sách"
+                  placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+                  value={policyData.description}
+                  onChangeText={(text) => handlePolicyChange("description", text)}
+                />
+
+                <TouchableOpacity
+                  style={[styles.dateInput, { marginTop: SPACING.SMALL }]}
+                  onPress={() => setShowPolicyDatePicker(true)}
+                >
+                  <Text style={styles.dateText}>
+                    {policyData.defaultTimeReminder || "Chọn ngày nhắc mặc định"}
+                  </Text>
+                </TouchableOpacity>
+
+                {showPolicyDatePicker && (
+                  <DateTimePicker
+                    value={
+                      policyData.defaultTimeReminder
+                        ? new Date(policyData.defaultTimeReminder)
+                        : new Date()
+                    }
+                    mode="date"
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                    onChange={(_event: any, selectedDate?: Date) => {
+                      setShowPolicyDatePicker(false);
+                      if (selectedDate) {
+                        handlePolicyChange(
+                          "defaultTimeReminder",
+                          selectedDate.toISOString().slice(0, 10)
+                        );
+                      }
+                    }}
+                  />
+                )}
+
+                <TextInput
+                  style={[styles.input, { marginTop: SPACING.SMALL }]}
+                  placeholder="Nội dung nhắc nhở mặc định"
+                  placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+                  value={policyData.defaultTimeReminderContent}
+                  onChangeText={(text) =>
+                    handlePolicyChange("defaultTimeReminderContent", text)
+                  }
+                />
+
+                <View style={[styles.statusRow, { marginTop: SPACING.SMALL }]}>
+                  {(["in-app", "mail", "all"] as const).map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.statusButton,
+                        policyData.notificationType === type
+                          ? styles.statusActiveEmpty
+                          : styles.statusInactive,
+                      ]}
+                      onPress={() => handlePolicyChange("notificationType", type)}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          policyData.notificationType === type
+                            ? { color: COLORS.successText, fontWeight: "bold" }
+                            : { color: COLORS.TEXT_SECONDARY },
+                        ]}
+                      >
+                        {type}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={[styles.statusRow, { marginTop: SPACING.SMALL }]}>
+                  {(["active", "inactive"] as const).map((status) => (
+                    <TouchableOpacity
+                      key={status}
+                      style={[
+                        styles.statusButton,
+                        policyData.timeReminderStatus === status
+                          ? styles.statusActiveRented
+                          : styles.statusInactive,
+                      ]}
+                      onPress={() =>
+                        handlePolicyChange("timeReminderStatus", status)
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          policyData.timeReminderStatus === status
+                            ? { color: COLORS.warningText, fontWeight: "bold" }
+                            : { color: COLORS.TEXT_SECONDARY },
+                        ]}
+                      >
+                        {status === "active" ? "Bật" : "Tắt"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+
           {isEditMode && (
             <View style={styles.statusSection}>
               <View style={styles.labelContainer}>
@@ -1073,6 +1270,16 @@ const styles = StyleSheet.create({
   },
   statusSection: {
     marginTop: SPACING.SMALL,
+  },
+  policyAccordionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  policyCollapsedHint: {
+    marginTop: SPACING.XS,
+    fontSize: FONT_SIZE.ADDRESS,
+    color: COLORS.TEXT_SECONDARY,
   },
   statusRow: {
     flexDirection: "row",

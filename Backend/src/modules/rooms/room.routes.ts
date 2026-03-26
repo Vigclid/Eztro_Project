@@ -33,6 +33,10 @@ router.route('/my-room')
 router.route('/:id/members')
     .get(authenticate, RoomController.getRoomMembers)
 
+router.route('/:id/policy')
+    .get(authenticate, RoomController.getRoomPolicy)
+    .patch(authenticate, RoomController.updateRoomPolicy)
+
 router.route('/members/:id')
     .delete(authenticate, RoomController.removeRoomMember)
 
