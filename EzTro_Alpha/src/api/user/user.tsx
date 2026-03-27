@@ -182,3 +182,14 @@ export const putUserApi = {
     }
   },
 };
+
+export const deleteUserApi = {
+  deleteAccount: async (userId: string): Promise<any> => {
+    try {
+      const res = await apiService.delete(`${userApi}/${userId}`);
+      return res.data;
+    } catch (err: any) {
+      throw new Error(err.response?.data?.message || "Xóa tài khoản thất bại");
+    }
+  },
+};

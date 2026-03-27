@@ -184,4 +184,8 @@ export class userService extends GenericService<IUser> {
       .populate("roleId")
       .exec();
   };
+
+  deleteAccount = async (userId: string) => {
+    return userModel.findByIdAndDelete(userId).exec();
+  };
 }

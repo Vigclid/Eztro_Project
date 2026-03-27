@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Bell, ChevronLeft, Globe, Mail, Moon, Sun, Trash2, ShieldAlert } from "lucide-react-native";
+import { Bell, ChevronLeft, Globe, Mail, Moon, Sun, Trash2, ShieldAlert, AlertTriangle } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
   ScrollView,
@@ -12,6 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
 import {
   BORDER_RADIUS,
   COLORS,
@@ -23,6 +24,9 @@ import { appNavigator } from "../../navigation/navigationActions";
 import { ISetting } from "../../types/setting";
 import { getSettingApi, patchSettingApi } from "../../api/setting/setting";
 import { ApiResponse } from "../../types/app.common";
+import { logoutAsync } from "../../features/auth/authSlice";
+import { RootState } from "../../stores/store";
+import { deleteUserApi } from "../../api/user/user";
 
 // ─── Theme Card Component ───────────────────────────────────────────────────
 
@@ -91,9 +95,12 @@ const SectionHeader = ({ icon, title }: { icon: React.ReactNode; title: string }
 
 export const SettingScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [selectedTheme, setSelectedTheme] = useState<"light" | "dark">("light");
   const [language, setLanguage] = useState<"vi" | "en">("vi");
   const [setting, setSetting] = useState<ISetting | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchSetting = async (signal?: AbortSignal) => {
     try {
@@ -135,6 +142,51 @@ export const SettingScreen: React.FC = () => {
     } catch (err) {
       setSetting(previousSetting);
       Alert.alert("Thông báo", "Không thể cập nhật cài đặt. Vui lòng thử lại.");
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Xóa tài khoản",
+      "Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.",
+      [
+        {
+          text: "Hủy",
+          onPress: () => { },
+          style: "cancel",
+        },
+        {
+          text: "Xóa",
+          onPress: confirmDeleteAccount,
+          style: "destructive",
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await deleteUserApi.deleteAccount(user?._id || "");
+
+      if (response.status === "success") {
+        Alert.alert("Thành công", "Tài khoản đã được xóa", [
+          {
+            text: "OK",
+            onPress: () => {
+              dispatch(logoutAsync() as any);
+              appNavigator.goToLogin();
+            },
+          },
+        ]);
+      }
+    } catch (err: any) {
+      Alert.alert(
+        "Lỗi",
+        err.message || "Không thể xóa tài khoản. Vui lòng thử lại."
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -245,19 +297,40 @@ export const SettingScreen: React.FC = () => {
         </View>
 
         <SectionHeader icon={<ShieldAlert size={24} color="#ef4444" />} title="Quản lý dữ liệu" />
-        <View style={[styles.card, styles.dangerCard]}>
+        
+        {user?.roleName === "Landlord" && (
+          <View style={[styles.card, styles.dangerCard]}>
+            <TouchableOpacity
+              style={[styles.row, styles.rowLast]}
+              onPress={() => appNavigator.goToDeleteBoardingHouseScreen()}
+            >
+              <View style={[styles.iconBox, styles.dangerIconBox]}>
+                <Trash2 size={20} color="#ef4444" />
+              </View>
+              <View style={styles.rowContent}>
+                <Text style={[styles.rowTitle, { color: "#ef4444" }]}>Xóa cụm trọ</Text>
+                <Text style={styles.rowDesc}>Xóa các cụm trọ không còn sử dụng</Text>
+              </View>
+              <ChevronLeft size={20} color="#ef4444" style={styles.rotateIcon} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={[styles.card, styles.deleteAccountCard]}>
           <TouchableOpacity
             style={[styles.row, styles.rowLast]}
-            onPress={() => appNavigator.goToDeleteBoardingHouseScreen()}
+            onPress={handleDeleteAccount}
+            disabled={isDeleting}
           >
-            <View style={[styles.iconBox, styles.dangerIconBox]}>
-              <Trash2 size={20} color="#ef4444" />
+            <View style={[styles.iconBox, styles.deleteAccountIconBox]}>
+              <AlertTriangle size={20} color="#dc2626" />
             </View>
             <View style={styles.rowContent}>
-              <Text style={[styles.rowTitle, { color: "#ef4444" }]}>Xóa cụm trọ</Text>
-              <Text style={styles.rowDesc}>Xóa các cụm trọ không còn sử dụng</Text>
+              <Text style={[styles.rowTitle, { color: "#dc2626" }]}>Xóa tài khoản</Text>
+              <Text style={styles.rowDesc}>Xóa tài khoản của bạn vĩnh viễn</Text>
             </View>
-            <ChevronLeft size={20} color="#ef4444" style={styles.rotateIcon} />
+            {!isDeleting && <ChevronLeft size={20} color="#dc2626" style={styles.rotateIcon} />}
+            {isDeleting && <Text style={{ color: "#dc2626" }}>Đang xóa...</Text>}
           </TouchableOpacity>
         </View>
 
@@ -409,6 +482,8 @@ const styles = StyleSheet.create({
   infoBannerText: { flex: 1, color: "#1e40af", fontSize: 14, lineHeight: 20 },
   dangerCard: { borderColor: "#fee2e2", backgroundColor: "#fff5f5", marginBottom: 10 },
   dangerIconBox: { backgroundColor: "#fee2e2" },
+  deleteAccountCard: { borderColor: "#fecaca", backgroundColor: "#fef2f2", marginBottom: 10 },
+  deleteAccountIconBox: { backgroundColor: "#fecaca" },
   rotateIcon: { transform: [{ rotate: "180deg" }] },
   bottomPadding: { height: 60 },
 });
