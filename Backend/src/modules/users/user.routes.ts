@@ -31,7 +31,7 @@ router
   .route("/:id")
   .get(UserController.getById)
   .put(authenticate, UserController.update)
-  .delete(authenticate, authorize(["Admin"]), UserController.delete);
+  .delete(authenticate, UserController.deleteAccount);
 
 router.route("/:id/lock").put(authenticate, authorize(["Admin"]), UserController.lockAccount);
 router.route("/:id/unlock").put(authenticate, authorize(["Admin"]), UserController.unlockAccount);

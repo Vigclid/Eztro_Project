@@ -263,4 +263,31 @@ export class userController extends GenericController<IUser> {
       res.status(500).json(responseWrapper("error", error.message || "Internal Server Error"));
     }
   };
+
+  deleteAccount = async (req: Request, res: Response) => {
+    try {
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+
+      const { id: userId } = jwt.decode(token) as { id: string };
+      const { id: targetUserId } = req.params;
+
+      // User can only delete their own account
+      if (userId !== targetUserId) {
+        return res.status(403).json(responseWrapper("error", "Bạn không có quyền xóa tài khoản này"));
+      }
+
+      const deletedUser = await this.UserService.deleteAccount(targetUserId);
+
+      if (!deletedUser) {
+        return res.status(404).json(responseWrapper("error", "User not found"));
+      }
+
+      res.status(200).json(responseWrapper("success", "Tài khoản đã được xóa thành công"));
+    } catch (error: any) {
+      res.status(500).json(responseWrapper("error", error.message || "Internal Server Error"));
+    }
+  };
 }
