@@ -1,8 +1,18 @@
 import { useNavigation } from "@react-navigation/native";
-import { ChevronRight, Edit, HelpCircle, LogOut, Mail, Phone, Settings, User, ShieldCheck } from "lucide-react-native";
+import { 
+  ChevronRight, 
+  Edit, 
+  HelpCircle, 
+  LogOut, 
+  Mail, 
+  Phone, 
+  Settings, 
+  User, 
+  ShieldCheck,
+  History // Thêm icon Lịch sử
+} from "lucide-react-native";
 import React, { useContext, useEffect } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
 import { useDispatch, useSelector } from "react-redux";
 import { Avatar } from "../../components/misc/Avatar";
 import { COLORS, SHADOW } from "../../constants/theme";
@@ -75,7 +85,7 @@ export const UserProfile: React.FC = () => {
             </View>
           </View>
 
-          {/* New Dashboard Section (Thay thế cho Ví) */}
+          {/* Dashboard Section */}
           <View style={[styles.walletContainer, { paddingVertical: 15 }]}>
             <View style={{ flex: 1, alignItems: "center" }}>
               <Text style={{ color: COLORS.WHITE, fontSize: 18, fontWeight: "bold" }}>{isLandlord ? "12" : "01"}</Text>
@@ -107,6 +117,8 @@ export const UserProfile: React.FC = () => {
               <Text style={styles.sectionTitle}>Tài khoản</Text>
             </View>
             <View style={[styles.sectionCard, SHADOW.CARD]}>
+              
+              {/* Thông tin cá nhân */}
               <TouchableOpacity
                 style={styles.sectionItem}
                 activeOpacity={0.7}
@@ -121,6 +133,22 @@ export const UserProfile: React.FC = () => {
                 <ChevronRight size={18} color={COLORS.GRAY_LIGHT} />
               </TouchableOpacity>
 
+              {/* Lịch sử giao dịch */}
+              <TouchableOpacity
+                style={styles.sectionItem}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate("mainstack", { screen: "paymentHistoryScreen" })}>
+                <View style={styles.sectionIcon}>
+                  <History size={24} color={COLORS.GRADIENT_START} />
+                </View>
+                <View style={styles.sectionItemContent}>
+                  <Text style={styles.sectionItemTitle}>Lịch sử giao dịch</Text>
+                  <Text style={styles.sectionItemDescription}>Xem lại các hóa đơn và thanh toán</Text>
+                </View>
+                <ChevronRight size={18} color={COLORS.GRAY_LIGHT} />
+              </TouchableOpacity>
+
+              {/* Email (Hiển thị thông tin) */}
               <View style={styles.sectionItemRow}>
                 <View style={styles.sectionIcon}>
                   <Mail size={24} color={COLORS.GRADIENT_START} />
@@ -131,6 +159,7 @@ export const UserProfile: React.FC = () => {
                 </View>
               </View>
 
+              {/* Số điện thoại (Hiển thị thông tin) */}
               <View style={styles.sectionItemRow}>
                 <View style={styles.sectionIcon}>
                   <Phone size={24} color={COLORS.GRADIENT_START} />
@@ -143,7 +172,7 @@ export const UserProfile: React.FC = () => {
             </View>
           </View>
 
-          {/* Section: Cài đặt */}
+          {/* Section: Cài đặt & Hỗ trợ */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Cài đặt & Hỗ trợ</Text>
@@ -168,6 +197,7 @@ export const UserProfile: React.FC = () => {
                   <Text style={styles.sectionItemTitle}>Trợ giúp & Hỗ trợ</Text>
                   <Text style={styles.sectionItemDescription}>Báo lỗi hoặc góp ý phát triển</Text>
                 </View>
+                <ChevronRight size={18} color={COLORS.GRAY_LIGHT} />
               </TouchableOpacity>
             </View>
           </View>

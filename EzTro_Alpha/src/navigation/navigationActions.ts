@@ -171,12 +171,17 @@ export const appNavigator = {
     navigate("mainstack", {
       screen: "createFixedServiceFeeScreen",
       params: { houseId, action, utility },
-  })},  
+    })
+  },
 
   goToConversationScreen(tenantId: string, tenantName: string) {
     navigate("mainstack", {
       screen: "conversationListScreen",
-      params: {tenantId , tenantName },
+      params: { tenantId, tenantName },
     });
-  }
+  },
+
+  goToPaymentHistoryScreen() {
+    navigate("mainstack", { screen: "paymentHistoryScreen" });
+  },
 };

@@ -86,6 +86,7 @@ export type MainStackParamList = {
   createFixedServiceFeeScreen: { houseId: string  | undefined, action: string, utility: IUtilitesCharge }
   conversationListScreen: { tenantId?: string; tenantName?: string } | undefined;
   messageScreen: { conversationId?: string; recipientId?: string; recipientName?: string };
+  paymentHistoryScreen: undefined;
 };
 
 export type AuthStackParamList = {

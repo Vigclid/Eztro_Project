@@ -23,6 +23,7 @@ import { DeleteBoardingHouseScreen } from "../../screens/boardingHouse/DeleteBoa
 import { CreateFixedServiceScreen } from "../../screens/boardingHouse/CreateFixedServiceFeeScreen";
 import { ConversationListScreen } from "../../screens/chat/ConversationListScreen";
 import { MessageScreen } from "../../screens/chat/MessageScreen";
+import { PaymentHistoryScreen } from "../../screens/payment/PaymentHistoryScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -78,6 +79,7 @@ const MainStack = () => (
       component={ConversationListScreen}
     />
     <Stack.Screen name="messageScreen" component={MessageScreen} />
+    <Stack.Screen name="paymentHistoryScreen" component={PaymentHistoryScreen}/>
   </Stack.Navigator>
 );
 
