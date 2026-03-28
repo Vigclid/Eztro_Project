@@ -23,7 +23,6 @@ const allowedOrigins = [
   clientOrigin, 
   "http://localhost:3000",  // Mobile app web version
   "http://localhost:5173",  // Vite web app
-  "http://192.168.1.23:8080", // Mobile app local
   "https://h5.zdn.vn"
 ].filter(Boolean) as string[];
 app.use(
