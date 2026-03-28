@@ -13,6 +13,7 @@ router.route("/").post(UserController.createAccount).get(UserController.getAll);
 router.route("/me/password").put(authenticate, UserController.changePassword);
 router.route("/me/password/reset").post(UserController.resetPassword);
 router.route("/me/profile").put(UserController.updateProfile);
+router.route("/me/bank-info").put(authenticate, UserController.updateBankInfo);
 router
   .route("/me/avatar")
   .put(authenticate, UserController.uploadAvatar)

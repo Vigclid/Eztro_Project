@@ -170,6 +170,10 @@ export const putUserApi = {
     const res = await apiService.put(`${userApi}/me/profile`, data);
     return res.data;
   },
+  updateBankInfo: async (bankName: string, bankNumber: string) => {
+    const res = await apiService.put(`${userApi}/me/bank-info`, { bankName, bankNumber });
+    return res.data;
+  },
   async resetPassword(email: string, password: string) {
     try {
       const res = await apiService.post(`${userApi}/me/password/reset`, {

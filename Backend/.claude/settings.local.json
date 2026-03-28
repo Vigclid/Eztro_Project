@@ -7,7 +7,9 @@
       "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectEzTro_Alphasrcscreensinvoice -type f -name *)",
       "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectEzTro_Alphasrcapiinvoice -type f -name *)",
       "Bash(find c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectBackendsrc -type f \\\\\\(-name *cloudinary* -o -name *upload* \\\\\\))",
-      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
+      "Bash(xargs ls:*)",
+      "Bash(grep -r \"VITE_API_URL\\\\|API\\\\|fetch\\\\|http\" c:UserssonkkDocumentsCodeFPT_EDUCATION_PROJECTEztro_ProjectEztro_Zalo --include=*.env* --include=*.config.ts --include=*.config.js)"
     ]
   }
 }

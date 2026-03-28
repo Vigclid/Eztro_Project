@@ -9,6 +9,8 @@ import {
   ArrowLeft,
   Calendar,
   Camera,
+  CreditCard,
+  Hash,
   Mail,
   Phone,
   Save,
@@ -62,10 +64,14 @@ export const EditProfilePage: React.FC = () => {
   const [dateOfBirth, setDateOfBirth] = useState<Date>(
     user?.dateOfBirth ? new Date(user.dateOfBirth) : new Date(),
   );
+  const [bankName, setBankName] = useState(user?.bankName ?? "");
+  const [bankNumber, setBankNumber] = useState(user?.bankNumber ?? "");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const isLandlord = user?.roleName === "Landlord";
 
   // ─── Date Picker ──────────────────────────────────────────────────────────
 
@@ -150,6 +156,11 @@ export const EditProfilePage: React.FC = () => {
         email,
         dateOfBirth,
       });
+
+      if (isLandlord) {
+        await putUserApi.updateBankInfo(bankName, bankNumber);
+        updatedUser = { ...updatedUser, bankName, bankNumber };
+      }
 
       dispatch(setUser(updatedUser));
       await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
@@ -384,6 +395,54 @@ export const EditProfilePage: React.FC = () => {
               )}
             </View>
 
+            {/* Bank Info — Landlord only */}
+            {isLandlord && (
+              <>
+                <View style={styles.sectionDivider}>
+                  <Text style={styles.sectionTitle}>Thông tin ngân hàng</Text>
+                </View>
+
+                <View style={styles.fieldSection}>
+                  <View style={styles.labelRow}>
+                    <CreditCard
+                      size={IMAGE_SIZE.EDIT_PROFILE_ICON_SIZE}
+                      color={COLORS.GRADIENT_START}
+                    />
+                    <Text style={styles.label}> Tên ngân hàng</Text>
+                  </View>
+                  <TextInput
+                    style={getInputStyle("bankName")}
+                    placeholder="VD: Vietcombank, Techcombank..."
+                    placeholderTextColor={COLORS.LIGHT_GRAY_TEXT}
+                    value={bankName}
+                    onChangeText={setBankName}
+                    onFocus={() => setActiveField("bankName")}
+                    onBlur={() => setActiveField(null)}
+                  />
+                </View>
+
+                <View style={styles.fieldSection}>
+                  <View style={styles.labelRow}>
+                    <Hash
+                      size={IMAGE_SIZE.EDIT_PROFILE_ICON_SIZE}
+                      color={COLORS.GRADIENT_START}
+                    />
+                    <Text style={styles.label}> Số tài khoản</Text>
+                  </View>
+                  <TextInput
+                    style={getInputStyle("bankNumber")}
+                    placeholder="VD: 0123456789"
+                    placeholderTextColor={COLORS.LIGHT_GRAY_TEXT}
+                    value={bankNumber}
+                    onChangeText={setBankNumber}
+                    keyboardType="numeric"
+                    onFocus={() => setActiveField("bankNumber")}
+                    onBlur={() => setActiveField(null)}
+                  />
+                </View>
+              </>
+            )}
+
             {/* Save Button */}
             <AppButton
               title={isSaving ? "Đang lưu..." : "Lưu thay đổi"}
@@ -552,6 +611,17 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: FONT_SIZE.CREATE_FORM_INPUT,
     color: COLORS.DARK_TEXT,
+  },
+  // ─── Bank Info Section ────────────────────────────────────────────────────
+  sectionDivider: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.BORDER_GRAY,
+    paddingTop: SPACING.MEDIUM,
+  },
+  sectionTitle: {
+    color: COLORS.GRADIENT_START,
+    fontSize: FONT_SIZE.CREATE_FORM_INPUT,
+    fontWeight: "700",
   },
   // ─── Save Button ──────────────────────────────────────────────────────────
   saveButton: {
