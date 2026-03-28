@@ -287,6 +287,15 @@ export class invoiceService extends GenericService<IInvoice> {
       },
       { $unwind: "$houseDetail" },
       {
+        $lookup: {
+          from: "users",
+          localField: "houseDetail.landlordId",
+          foreignField: "_id",
+          as: "landlordDetail",
+        },
+      },
+      { $unwind: { path: "$landlordDetail", preserveNullAndEmptyArrays: true } },
+      {
         $project: {
           _id: 1,
           status: 1,
@@ -301,6 +310,8 @@ export class invoiceService extends GenericService<IInvoice> {
           transactionImage: 1,
           totalAmount: 1,
           createDate: 1,
+          landlordBankName: "$landlordDetail.bankName",
+          landlordBankNumber: "$landlordDetail.bankNumber",
           roomId: {
             $mergeObjects: ["$roomDetail", { houseId: "$houseDetail" }],
           },
@@ -560,6 +571,15 @@ export class invoiceService extends GenericService<IInvoice> {
       },
       { $unwind: "$houseDetail" },
       {
+        $lookup: {
+          from: "users",
+          localField: "houseDetail.landlordId",
+          foreignField: "_id",
+          as: "landlordDetail",
+        },
+      },
+      { $unwind: { path: "$landlordDetail", preserveNullAndEmptyArrays: true } },
+      {
         $project: {
           _id: 1,
           status: 1,
@@ -574,6 +594,8 @@ export class invoiceService extends GenericService<IInvoice> {
           transactionImage: 1,
           totalAmount: 1,
           createDate: 1,
+          landlordBankName: "$landlordDetail.bankName",
+          landlordBankNumber: "$landlordDetail.bankNumber",
           roomId: { $mergeObjects: ["$roomDetail", { houseId: "$houseDetail" }] },
         },
       },

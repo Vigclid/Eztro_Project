@@ -24,6 +24,11 @@ router.route("/my-room").get(authenticate, RoomController.getMyActiveRoom);
 
 router.route("/:id/members").get(authenticate, RoomController.getRoomMembers);
 
+router
+  .route("/:id/policy")
+  .get(authenticate, RoomController.getRoomPolicy)
+  .patch(authenticate, RoomController.updateRoomPolicy);
+
 router.route("/members/:id").delete(authenticate, RoomController.removeRoomMember);
 
 router.route("/:id").patch(authenticate, RoomController.updateRoom);

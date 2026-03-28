@@ -5,10 +5,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -23,24 +25,39 @@ import {
   Plus,
   Wrench,
   X,
+  MessageCircle,
 } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { COLORS } from "../../constants/theme";
+import { useSelector } from "react-redux";
 import { getRoomApi, postRoomApi } from "../../api/room/room";
+import { getTicketApi } from "../../api/ticket/ticketapi";
 import { ApiResponse } from "../../types/app.common";
 import { TenantHomeScreenStyle } from "./styles/TenantHomeScreen.style";
 import { NavigationProp } from "../../navigation/navigation.type";
+import { RootState } from "../../stores/store";
 
 type TenantRoomInfo = {
   role: "TENANT" | "CO-TENANT";
+  depositAmount?: number;
   moveInDate: Date | string;
   room: { roomName: string; rentalFee: number };
   house: { houseName: string; address: string };
-  landlord: { fullName: string };
+  landlord: { _id?: string; fullName: string };
+  policy?: {
+    description: string;
+    defaultTimeReminder: Date | string | null;
+    defaultTimeReminderContent: string;
+    notificationType: "in-app" | "mail" | "all";
+    timeReminderStatus: "active" | "inactive";
+  } | null;
 };
 
 type TenantInvitation = {
   _id: string;
   expiresAt: Date | string;
+  depositAmount?: number;
   roomId: {
     roomName: string;
     rentalFee: number;
@@ -53,11 +70,29 @@ const TAB_BAR_HEIGHT = 80;
 const TenantHomeScreen = () => {
   const insets = useSafeAreaInsets();
   const sheetBottom = Math.max(insets.bottom + TAB_BAR_HEIGHT + 8, 20);
+  const contentBottomPadding = TAB_BAR_HEIGHT + insets.bottom + 24;
   const styles = TenantHomeScreenStyle;
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const handleNavigateToMaintenance = () => {
     navigation.navigate("mainstack", { screen: "ticketListScreen" });
+  };
+
+  const handleMessageLandlord = (landlordId: string, landlordName: string) => {
+    if (!landlordId) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin chủ trọ");
+      return;
+    }
+
+    // Navigate to MessageScreen with landlordId
+    navigation.navigate("mainstack", {
+      screen: "messageScreen",
+      params: {
+        recipientId: landlordId,
+        recipientName: landlordName,
+      },
+    });
   };
 
   const [isJoinModalVisible, setIsJoinModalVisible] = useState(false);
@@ -69,6 +104,9 @@ const TenantHomeScreen = () => {
 
   const [myRoom, setMyRoom] = useState<TenantRoomInfo | null>(null);
   const [invitations, setInvitations] = useState<TenantInvitation[]>([]);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  const currentUserId = user?._id;
 
   const formattedRoomCode = useMemo(() => {
     const digits = roomCode.replace(/\D/g, "").slice(0, 6);
@@ -92,10 +130,37 @@ const TenantHomeScreen = () => {
           ? inviteRes.data
           : []
       );
+
+      // Load ticket stats for tenant
+      await loadTicketStats();
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUserId]);
+
+  const loadTicketStats = async () => {
+    try {
+      const response: any = await getTicketApi.getAllTicketsByTenant();
+      if (response.status && response.data) {
+        const tickets = Array.isArray(response.data) ? response.data : response.data.data || [];
+        
+        // Count unread messages from landlord
+        let unreadCount = 0;
+        tickets.forEach((ticket: any) => {
+          if (ticket.replies && Array.isArray(ticket.replies)) {
+            const unread = ticket.replies.filter((reply: any) => {
+              return reply.userId && typeof reply.userId === 'object' && 
+                     reply.userId._id !== currentUserId && 
+                     !reply.isRead;
+            }).length;
+            unreadCount += unread;
+          }
+        });
+        setUnreadMessagesCount(unreadCount);
+      }
+    } catch (error) {
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -143,7 +208,10 @@ const TenantHomeScreen = () => {
             <ActivityIndicator size="large" color="#0ea58d" />
           </View>
         ) : (
-          <>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: contentBottomPadding }}
+          >
             <Text style={styles.title}>Xin chào 👋</Text>
             <Text style={styles.subtitle}>Quản lý phòng trọ của bạn</Text>
 
@@ -190,6 +258,16 @@ const TenantHomeScreen = () => {
                 </View>
 
                 <View style={styles.roomInfoBox}>
+                  <DollarSign size={16} color="#10b981" />
+                  <View style={styles.roomInfoTextWrap}>
+                    <Text style={styles.roomInfoLabel}>Tiền cọc</Text>
+                    <Text style={styles.roomInfoValue}>
+                      {(myRoom.depositAmount || 0).toLocaleString("vi-VN")}đ
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.roomInfoBox}>
                   <Phone size={16} color="#10b981" />
                   <View style={styles.roomInfoTextWrap}>
                     <Text style={styles.roomInfoLabel}>Chủ trọ</Text>
@@ -197,25 +275,104 @@ const TenantHomeScreen = () => {
                       {myRoom.landlord?.fullName || "Không rõ"}
                     </Text>
                   </View>
+                  {myRoom.landlord?._id && (
+                    <TouchableOpacity
+                      style={styles.landlordMessageButton}
+                      onPress={() =>
+                        handleMessageLandlord(
+                          myRoom.landlord._id || "",
+                          myRoom.landlord.fullName || "Chủ trọ"
+                        )
+                      }
+                    >
+                      <Ionicons name="chatbubble-outline" size={20} color={COLORS.GRADIENT_START} />
+                    </TouchableOpacity>
+                  )}
                 </View>
+
+                {myRoom.policy && (
+                  <View
+                    style={{
+                      marginBottom: 12,
+                      borderRadius: 14,
+                      backgroundColor: "#edf4ff",
+                      borderWidth: 1,
+                      borderColor: "#d8e6ff",
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: "#1e3a8a",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Chính sách phòng
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#1f2937", marginBottom: 2 }}>
+                      Trạng thái nhắc nhở: {myRoom.policy.timeReminderStatus === "active" ? "Bật" : "Tắt"}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#1f2937", marginBottom: 2 }}>
+                      Kênh thông báo: {myRoom.policy.notificationType}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#1f2937", marginBottom: 2 }}>
+                      Thời gian nhắc:{" "}
+                      {myRoom.policy.defaultTimeReminder
+                        ? new Date(myRoom.policy.defaultTimeReminder).toLocaleDateString("vi-VN")
+                        : "Chưa thiết lập"}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#1f2937", marginBottom: 2 }}>
+                      Nội dung: {myRoom.policy.defaultTimeReminderContent || "Không có"}
+                    </Text>
+                    <Text style={{ marginTop: 4, fontSize: 12, color: "#475569" }}>
+                      {myRoom.policy.description || "Không có mô tả chính sách"}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Maintenance Button - Only show when tenant has joined a room */}
                 {myRoom && (
-                  <TouchableOpacity 
-                    style={styles.maintenanceCard}
-                    onPress={handleNavigateToMaintenance}
-                  >
-                    <View style={styles.maintenanceIconContainer}>
-                      <Wrench size={24} color="#fff" />
-                    </View>
-                    <View style={styles.maintenanceContent}>
-                      <Text style={styles.maintenanceTitle}>Bảo trì</Text>
-                      <Text style={styles.maintenanceDesc}>Yêu cầu sửa chữa</Text>
-                    </View>
-                    <View style={styles.maintenanceArrow}>
-                      <Text style={styles.maintenanceArrowText}>›</Text>
-                    </View>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity 
+                      style={styles.maintenanceCard}
+                      onPress={handleNavigateToMaintenance}
+                    >
+                      <View style={styles.maintenanceIconContainer}>
+                        <Wrench size={24} color="#fff" />
+                        {unreadMessagesCount > 0 && (
+                          <View style={styles.maintenanceNotificationBadge}>
+                            <Text style={styles.maintenanceNotificationText}>
+                              {unreadMessagesCount}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.maintenanceContent}>
+                        <Text style={styles.maintenanceTitle}>Bảo trì</Text>
+                        <Text style={styles.maintenanceDesc}>Yêu cầu sửa chữa</Text>
+                      </View>
+                      <View style={styles.maintenanceArrow}>
+                        <Text style={styles.maintenanceArrowText}>›</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* Landlord Reply Alert */}
+                    {unreadMessagesCount > 0 && (
+                      <View style={styles.alertCard}>
+                        <View style={styles.alertIconContainer}>
+                          <MessageCircle size={20} color="#3B82F6" />
+                        </View>
+                        <View style={styles.alertContent}>
+                          <Text style={styles.alertText}>
+                            Chủ trọ đã phản hồi phiếu hỗ trợ của bạn, hãy vào kiểm tra
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </>
                 )}
               </View>
             ) : (
@@ -236,7 +393,7 @@ const TenantHomeScreen = () => {
                 </TouchableOpacity>
               </View>
             )}
-          </>
+          </ScrollView>
         )}
       </SafeAreaView>
 
@@ -316,6 +473,9 @@ const TenantHomeScreen = () => {
                       <Text style={styles.inviteInfo}>{invite.roomId.houseId?.address || ""}</Text>
                       <Text style={styles.inviteInfo}>
                         Giá: {invite.roomId.rentalFee?.toLocaleString("vi-VN")} đ
+                      </Text>
+                      <Text style={styles.inviteInfo}>
+                        Cọc: {(invite.depositAmount || 0).toLocaleString("vi-VN")} đ
                       </Text>
                       <TouchableOpacity
                         style={styles.acceptBtn}

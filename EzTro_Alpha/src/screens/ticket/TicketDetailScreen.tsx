@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,33 +8,56 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { ArrowLeft, Send } from 'lucide-react-native';
-import { getTicketApi } from '../../api/ticket/ticketapi';
-import { postTicketApi } from '../../api/ticket/ticketapi';
-import { ITicket } from '../../types/ticket';
-import { COLORS } from '../../constants/theme';
-import { NavigationProp, MainStackParamList } from '../../navigation/navigation.type';
-import { styles } from './styles/TicketDetailScreen.styles';
+} from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import { ArrowLeft, Send } from "lucide-react-native";
+import { getTicketApi } from "../../api/ticket/ticketapi";
+import { postTicketApi } from "../../api/ticket/ticketapi";
+import { putTicketApi } from "../../api/ticket/ticketapi";
+import { ITicket } from "../../types/ticket";
+import { COLORS } from "../../constants/theme";
+import { NavigationProp, MainStackParamList } from "../../navigation/navigation.type";
+import { RootState } from "../../stores/store";
+import { styles } from "./styles/TicketDetailScreen.styles";
 
-type TicketDetailRouteProp = RouteProp<MainStackParamList, 'ticketDetailScreen'>;
+type TicketDetailRouteProp = RouteProp<MainStackParamList, "ticketDetailScreen">;
 
 export const TicketDetailScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const insets = useSafeAreaInsets();
   const route = useRoute<TicketDetailRouteProp>();
   const { ticketId } = route.params;
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const [ticket, setTicket] = useState<ITicket | null>(null);
   const [loading, setLoading] = useState(true);
-  const [replyText, setReplyText] = useState('');
+  const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+
+  const userRole = user?.roleName || "";
+  const isTenant = userRole === "Tenant";
+  const isLandlord = userRole === "Landlord";
+  const currentUserId = user?._id;
+
+  // Check if landlord has replied first (started the conversation)
+  // receiverId is the landlord (populated as IUser object)
+  const landlordId = typeof ticket?.receiverId === "object" ? ticket.receiverId._id : ticket?.receiverId;
+  const hasLandlordReplied =
+    ticket?.replies &&
+    ticket.replies.some((reply) => {
+      // Check if the reply is from the landlord
+      const replyUserId = reply.userId && typeof reply.userId === "object" ? reply.userId._id : reply.userId;
+      return replyUserId === landlordId;
+    });
+
+  // Tenant can send message only if landlord has replied first
+  const canSendMessage = isLandlord || (isTenant && hasLandlordReplied);
 
   useEffect(() => {
     loadTicket();
+    markTicketAsRead();
   }, [ticketId]);
 
   const loadTicket = async () => {
@@ -51,6 +74,12 @@ export const TicketDetailScreen: React.FC = () => {
     }
   };
 
+  const markTicketAsRead = async () => {
+    try {
+      await putTicketApi.markAsRead(ticketId);
+    } catch (error) {}
+  };
+
   const handleSendReply = async () => {
     if (!replyText.trim() || sending) return;
 
@@ -58,7 +87,7 @@ export const TicketDetailScreen: React.FC = () => {
       setSending(true);
       const response: any = await postTicketApi.addReply(ticketId, replyText.trim());
       if (response.status && response.data) {
-        setReplyText('');
+        setReplyText("");
         loadTicket(); // Reload to show new reply
       }
     } catch (error) {
@@ -68,12 +97,12 @@ export const TicketDetailScreen: React.FC = () => {
   };
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return COLORS.GREEN_PRIMARY;
-      case 'processing':
-        return '#3B82F6';
-      case 'pending':
-        return '#F59E0B';
+      case "processing":
+        return "#3B82F6";
+      case "pending":
+        return "#F59E0B";
       default:
         return COLORS.GRAY_DARK;
     }
@@ -81,12 +110,12 @@ export const TicketDetailScreen: React.FC = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'Đã hoàn thành';
-      case 'processing':
-        return 'Đang xử lý';
-      case 'pending':
-        return 'Chờ xử lý';
+      case "completed":
+        return "Đã hoàn thành";
+      case "processing":
+        return "Đang xử lý";
+      case "pending":
+        return "Chờ xử lý";
       default:
         return status;
     }
@@ -95,10 +124,7 @@ export const TicketDetailScreen: React.FC = () => {
   if (loading) {
     return (
       <SafeAreaProvider style={styles.container}>
-        <LinearGradient
-          colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-          style={styles.header}
-        >
+        <LinearGradient colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]} style={styles.header}>
           <View style={styles.headerContent}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <ArrowLeft size={24} color={COLORS.WHITE} />
@@ -117,10 +143,7 @@ export const TicketDetailScreen: React.FC = () => {
   if (!ticket) {
     return (
       <SafeAreaProvider style={styles.container}>
-        <LinearGradient
-          colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-          style={styles.header}
-        >
+        <LinearGradient colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]} style={styles.header}>
           <View style={styles.headerContent}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <ArrowLeft size={24} color={COLORS.WHITE} />
@@ -138,10 +161,7 @@ export const TicketDetailScreen: React.FC = () => {
 
   return (
     <SafeAreaProvider style={styles.container}>
-      <LinearGradient
-        colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-        style={styles.header}
-      >
+      <LinearGradient colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]} style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <ArrowLeft size={24} color={COLORS.WHITE} />
@@ -153,48 +173,41 @@ export const TicketDetailScreen: React.FC = () => {
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 16 }}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}>
+        <ScrollView style={styles.content}>
           {/* Ticket Info */}
           <View style={styles.infoCard}>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) }]}>
               <Text style={styles.statusText}>{getStatusText(ticket.status)}</Text>
             </View>
-            
+
             <Text style={styles.title}>{ticket.title}</Text>
-            
+
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Cụm trọ:</Text>
-              <Text style={styles.metaValue}>
-                {typeof ticket.houseId === 'object' && ticket.houseId?.houseName}
-              </Text>
+              <Text style={styles.metaValue}>{typeof ticket.houseId === "object" && ticket.houseId?.houseName}</Text>
             </View>
-            
+
             {ticket.roomId && (
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Phòng:</Text>
-                <Text style={styles.metaValue}>
-                  {typeof ticket.roomId === 'object' && ticket.roomId?.roomName}
-                </Text>
+                <Text style={styles.metaValue}>{typeof ticket.roomId === "object" && ticket.roomId?.roomName}</Text>
               </View>
             )}
-            
+
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Loại:</Text>
-              <Text style={styles.metaValue}>{ticket.categories.join(', ')}</Text>
+              <Text style={styles.metaValue}>{ticket.categories.join(", ")}</Text>
             </View>
-            
+
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Ngày tạo:</Text>
-              <Text style={styles.metaValue}>
-                {new Date(ticket.createdAt).toLocaleString('vi-VN')}
-              </Text>
+              <Text style={styles.metaValue}>{new Date(ticket.createdAt).toLocaleString("vi-VN")}</Text>
             </View>
-            
+
             <View style={styles.divider} />
-            
+
             <Text style={styles.descriptionLabel}>Mô tả:</Text>
             <Text style={styles.description}>{ticket.description}</Text>
           </View>
@@ -202,23 +215,38 @@ export const TicketDetailScreen: React.FC = () => {
           {/* Replies */}
           <View style={styles.repliesSection}>
             <Text style={styles.repliesTitle}>Trao đổi ({ticket.replies?.length || 0})</Text>
-            
+
             {ticket.replies && ticket.replies.length > 0 ? (
-              ticket.replies.map((reply, index) => (
-                <View key={index} style={styles.replyCard}>
-                  <View style={styles.replyHeader}>
-                    <Text style={styles.replyAuthor}>
-                      {typeof reply.userId === 'object' 
-                        ? `${reply.userId.firstName} ${reply.userId.lastName}`
-                        : 'User'}
-                    </Text>
-                    <Text style={styles.replyTime}>
-                      {new Date(reply.createdAt).toLocaleString('vi-VN')}
-                    </Text>
+              ticket.replies.map((reply, index) => {
+                const isMyMessage =
+                  reply.userId && typeof reply.userId === "object" && reply.userId._id === currentUserId;
+                const senderName =
+                  reply.userId && typeof reply.userId === "object"
+                    ? `${reply.userId.firstName} ${reply.userId.lastName}`
+                    : "User";
+
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      styles.messageContainer,
+                      isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer,
+                    ]}>
+                    <View
+                      style={[styles.messageBubble, isMyMessage ? styles.myMessageBubble : styles.otherMessageBubble]}>
+                      <Text style={[styles.senderName, isMyMessage ? styles.mySenderName : styles.otherSenderName]}>
+                        {senderName}
+                      </Text>
+                      <Text style={[styles.messageText, isMyMessage ? styles.myMessageText : styles.otherMessageText]}>
+                        {reply.content}
+                      </Text>
+                      <Text style={[styles.messageTime, isMyMessage ? styles.myMessageTime : styles.otherMessageTime]}>
+                        {new Date(reply.createdAt).toLocaleString("vi-VN")}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.replyContent}>{reply.content}</Text>
-                </View>
-              ))
+                );
+              })
             ) : (
               <Text style={styles.noReplies}>Chưa có trao đổi nào</Text>
             )}
@@ -226,28 +254,33 @@ export const TicketDetailScreen: React.FC = () => {
         </ScrollView>
 
         {/* Reply Input */}
-        <View style={[styles.replyInputContainer, { paddingBottom: insets.bottom + 16 }]}>
-          <TextInput
-            style={styles.replyInput}
-            placeholder="Nhập phản hồi..."
-            placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
-            value={replyText}
-            onChangeText={setReplyText}
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, (!replyText.trim() || sending) && styles.sendButtonDisabled]}
-            onPress={handleSendReply}
-            disabled={!replyText.trim() || sending}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color={COLORS.WHITE} />
-            ) : (
-              <Send size={20} color={COLORS.WHITE} />
-            )}
-          </TouchableOpacity>
-        </View>
+        {canSendMessage ? (
+          <View style={styles.replyInputContainer}>
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Nhập phản hồi..."
+              placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+              value={replyText}
+              onChangeText={setReplyText}
+              multiline
+              maxLength={500}
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, (!replyText.trim() || sending) && styles.sendButtonDisabled]}
+              onPress={handleSendReply}
+              disabled={!replyText.trim() || sending}>
+              {sending ? (
+                <ActivityIndicator size="small" color={COLORS.WHITE} />
+              ) : (
+                <Send size={20} color={COLORS.WHITE} />
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.waitingMessageContainer}>
+            <Text style={styles.waitingMessageText}>Vui lòng chờ chủ trọ phản hồi trước khi bạn có thể nhắn tin</Text>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaProvider>
   );

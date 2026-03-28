@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
+import Sidebar from "../../components/dashboard/Sidebar";
 import { reportGetAPI } from "../../api/reportAPI/GET";
 import { reportPostAPI } from "../../api/reportAPI/POST";
 import { reportPatchAPI } from "../../api/reportAPI/PATCH";
@@ -41,6 +42,7 @@ const ReportDetailScreen: React.FC = () => {
 
   const roleName = getRoleName();
   const isStaffOrAdmin = roleName === "Staff" || roleName === "Admin";
+  const isAdmin = roleName === "Admin" || roleName === "admin";
 
   useEffect(() => {
     if (reportId) {
@@ -209,7 +211,9 @@ const ReportDetailScreen: React.FC = () => {
   }
 
   return (
-    <div className="report-detail-container">
+    <div className="report-detail-wrapper">
+      <Sidebar user={currentUser} isAdmin={isAdmin} />
+      <div className="report-detail-container">
       <div className="report-header">
         <button className="back-button" onClick={() => navigate("/support")}>
           <ArrowLeft size={24} />
@@ -328,6 +332,7 @@ const ReportDetailScreen: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

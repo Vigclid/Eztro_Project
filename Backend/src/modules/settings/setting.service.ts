@@ -20,4 +20,5 @@ export class SettingService extends GenericService<ISetting> {
       .findOneAndUpdate({ userId }, { inApp, notifyEmail, notifyZalo, theme }, { new: true })
       .exec();
   };
+
 }

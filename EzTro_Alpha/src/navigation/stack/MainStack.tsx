@@ -21,6 +21,9 @@ import { CreateNotificationScreen } from "../../screens/notification/CreateNotif
 import { SettingScreen } from "../../screens/profile/SettingScreen";
 import { DeleteBoardingHouseScreen } from "../../screens/boardingHouse/DeleteBoardingHouseScreen";
 import { CreateFixedServiceScreen } from "../../screens/boardingHouse/CreateFixedServiceFeeScreen";
+import { ConversationListScreen } from "../../screens/chat/ConversationListScreen";
+import { MessageScreen } from "../../screens/chat/MessageScreen";
+import { PaymentHistoryScreen } from "../../screens/payment/PaymentHistoryScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -63,8 +66,20 @@ const MainStack = () => (
     <Stack.Screen name="supportScreen" component={SupportScreen} />
     <Stack.Screen name="myReportsScreen" component={MyReportsScreen} />
     <Stack.Screen name="reportDetailScreen" component={ReportDetailScreen} />
-    <Stack.Screen name="deleteBoardingHouseScreen" component={DeleteBoardingHouseScreen} />
-    <Stack.Screen name="createFixedServiceFeeScreen" component={CreateFixedServiceScreen} />
+    <Stack.Screen
+      name="deleteBoardingHouseScreen"
+      component={DeleteBoardingHouseScreen}
+    />
+    <Stack.Screen
+      name="createFixedServiceFeeScreen"
+      component={CreateFixedServiceScreen}
+    />
+    <Stack.Screen
+      name="conversationListScreen"
+      component={ConversationListScreen}
+    />
+    <Stack.Screen name="messageScreen" component={MessageScreen} />
+    <Stack.Screen name="paymentHistoryScreen" component={PaymentHistoryScreen}/>
   </Stack.Navigator>
 );
 

@@ -38,6 +38,15 @@ export const getRoomApi = {
       throw err;
     }
   },
+
+  async getRoomPolicy(roomId: string) {
+    try {
+      const res = await apiService.get(`${roomApi}${roomId}/policy`);
+      return res.data;
+    } catch (err: any) {
+      throw err;
+    }
+  },
 };
 
 export const postRoomApi = {
@@ -59,9 +68,13 @@ export const postRoomApi = {
     }
   },
 
-  async createInviteCode(roomId: string) {
+  async createInviteCode(roomId: string, depositAmount?: number) {
     try {
-      const res = await apiService.post(`${roomApi}invite-code/${roomId}`);
+      const payload =
+        typeof depositAmount === "number" && Number.isFinite(depositAmount)
+          ? { depositAmount }
+          : {};
+      const res = await apiService.post(`${roomApi}invite-code/${roomId}`, payload);
       return (
         res.data || {
           status: "error",
@@ -73,11 +86,17 @@ export const postRoomApi = {
     }
   },
 
-  async inviteTenant(roomId: string, invitedUserId: string) {
+  async inviteTenant(roomId: string, invitedUserId: string, depositAmount?: number) {
     try {
-      const res = await apiService.post(`${roomApi}invite`, {
+      const payload: Record<string, any> = {
         roomId,
         invitedUserId,
+      };
+      if (typeof depositAmount === "number" && Number.isFinite(depositAmount)) {
+        payload.depositAmount = depositAmount;
+      }
+      const res = await apiService.post(`${roomApi}invite`, {
+        ...payload,
       });
       return (
         res.data || {
@@ -129,6 +148,15 @@ export const postRoomApi = {
           message: res?.error?.message || "Không thể xóa thành viên lúc này.",
         }
       );
+    } catch (err: any) {
+      throw err;
+    }
+  },
+
+  async updateRoomPolicy(roomId: string, policyData: any) {
+    try {
+      const res = await apiService.patch(`${roomApi}${roomId}/policy`, policyData);
+      return res.data;
     } catch (err: any) {
       throw err;
     }

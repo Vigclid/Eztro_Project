@@ -3,6 +3,7 @@ import { GenericController } from "../../core/controllers/base.controller";
 import { Request, Response } from "express";
 import { housePackageService } from "./housePackage.service";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
+import jwt from "jsonwebtoken";
 
 export class housePackageController extends GenericController<IHousePackage> {
     private HousePackageService: housePackageService
@@ -13,6 +14,10 @@ export class housePackageController extends GenericController<IHousePackage> {
 
     createNewHousePackage = async (req: Request, res: Response) => {
         try {
+            const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
+                id: string;
+            };
+            req.body.userId = id
             const result = await this.HousePackageService.createNewHousePackage(req.body)
             return res
                 .status(201)

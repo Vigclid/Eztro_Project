@@ -1,58 +1,60 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import {
-  ArrowLeft,
-  Plus,
-  Wrench,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-} from 'lucide-react-native';
-import { getTicketApi } from '../../api/ticket/ticketapi';
-import { putTicketApi } from '../../api/ticket/ticketapi';
-import { ITicket } from '../../types/ticket';
-import { COLORS } from '../../constants/theme';
-import { NavigationProp } from '../../navigation/navigation.type';
-import { styles } from './styles/TicketListScreen.styles';
+import React, { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import { ArrowLeft, Plus, Wrench, AlertCircle, CheckCircle, Clock, Trash2 } from "lucide-react-native";
+import { getTicketApi } from "../../api/ticket/ticketapi";
+import { putTicketApi } from "../../api/ticket/ticketapi";
+import { deleteTicketApi } from "../../api/ticket/ticketapi";
+import { ITicket } from "../../types/ticket";
+import { COLORS } from "../../constants/theme";
+import { NavigationProp } from "../../navigation/navigation.type";
+import { RootState } from "../../stores/store";
+import { styles } from "./styles/TicketListScreen.styles";
 
-type FilterType = 'all' | 'pending' | 'processing' | 'completed';
+type FilterType = "all" | "pending" | "processing" | "completed";
 
 export const TicketListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const insets = useSafeAreaInsets();
-  const [filter, setFilter] = useState<FilterType>('all');
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [filter, setFilter] = useState<FilterType>("all");
   const [tickets, setTickets] = useState<ITicket[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Get user role from Redux auth state
+  const userRole = user?.roleName || "";
+  const isLandlord = userRole === "Landlord";
+  const isTenant = userRole === "Tenant";
 
   // Reload tickets when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadTickets();
-    }, [])
+    }, [isLandlord, isTenant]),
   );
 
   const loadTickets = async () => {
     try {
       setLoading(true);
-      const response: any = await getTicketApi.getAllTicketsByLandlord();
-      
+      let response: any;
+
+      if (isLandlord) {
+        response = await getTicketApi.getAllTicketsByLandlord();
+      } else if (isTenant) {
+        response = await getTicketApi.getAllTicketsByTenant();
+      } else {
+        setTickets([]);
+        return;
+      }
+
       // apiService wraps the backend response, so we need to access response.data.data
       // Backend returns: { status: "success", data: [...], message: "..." }
       // apiService wraps it: { status: true, data: { status: "success", data: [...] } }
       if (response.status && response.data) {
         // Check if data is already an array or nested in data.data
-        const ticketsData = Array.isArray(response.data) 
-          ? response.data 
-          : response.data.data || [];
+        const ticketsData = Array.isArray(response.data) ? response.data : response.data.data || [];
         setTickets(ticketsData);
       } else {
         setTickets([]);
@@ -65,33 +67,33 @@ export const TicketListScreen: React.FC = () => {
   };
 
   const filteredTickets = tickets.filter((ticket) => {
-    if (filter === 'all') return true;
+    if (filter === "all") return true;
     return ticket.status === filter;
   });
 
   const getPriorityColor = (categories: string[]) => {
-    if (categories.includes('electrical') || categories.includes('plumbing')) {
+    if (categories.includes("electrical") || categories.includes("plumbing")) {
       return styles.badgeUrgent;
     }
     return styles.badgeMedium;
   };
 
   const getPriorityText = (categories: string[]) => {
-    if (categories.includes('electrical')) return 'Hệ thống điện';
-    if (categories.includes('plumbing')) return 'Hệ thống nước';
-    if (categories.includes('furniture')) return 'Đồ đạc';
-    if (categories.includes('appliance')) return 'Thiết bị điện';
-    if (categories.includes('structure')) return 'Kết cấu';
-    return 'Khác';
+    if (categories.includes("electrical")) return "Hệ thống điện";
+    if (categories.includes("plumbing")) return "Hệ thống nước";
+    if (categories.includes("furniture")) return "Đồ đạc";
+    if (categories.includes("appliance")) return "Thiết bị điện";
+    if (categories.includes("structure")) return "Kết cấu";
+    return "Khác";
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <CheckCircle size={20} color={COLORS.GREEN_PRIMARY} />;
-      case 'processing':
+      case "processing":
         return <Clock size={20} color="#3B82F6" />;
-      case 'pending':
+      case "pending":
         return <AlertCircle size={20} color="#F59E0B" />;
       default:
         return <Wrench size={20} color={COLORS.GRAY_DARK} />;
@@ -100,44 +102,55 @@ export const TicketListScreen: React.FC = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'Đã hoàn thành';
-      case 'processing':
-        return 'Đang xử lý';
-      case 'pending':
-        return 'Chờ xử lý';
+      case "completed":
+        return "Đã hoàn thành";
+      case "processing":
+        return "Đang xử lý";
+      case "pending":
+        return "Chờ xử lý";
       default:
         return status;
     }
   };
 
   const handleCreateTicket = () => {
-    navigation.navigate('mainstack', { screen: 'createTicketScreen' });
+    navigation.navigate("mainstack", { screen: "createTicketScreen" });
   };
 
-  const handleUpdateStatus = async (ticketId: string, newStatus: 'processing' | 'completed') => {
+  const handleUpdateStatus = async (ticketId: string, newStatus: "processing" | "completed") => {
     try {
       await putTicketApi.updateStatus(ticketId, newStatus);
       loadTickets();
-    } catch (error) {
-    }
+    } catch (error) {}
   };
-  const pendingCount = tickets.filter((t) => t.status === 'pending').length;
-  const processingCount = tickets.filter((t) => t.status === 'processing').length;
-  const completedCount = tickets.filter((t) => t.status === 'completed').length;
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    try {
+      await deleteTicketApi.deleteTicket(ticketId);
+      loadTickets();
+    } catch (error) {}
+  };
+
+  const getUnreadCount = (ticket: ITicket) => {
+    if (!ticket.replies || ticket.replies.length === 0) return 0;
+
+    // Count unread replies from other users
+    return ticket.replies.filter((reply: any) => {
+      return reply.userId && typeof reply.userId === "object" && reply.userId._id !== currentUserId && !reply.isRead;
+    }).length;
+  };
+
+  const currentUserId = user?._id;
+  const pendingCount = tickets.filter((t) => t.status === "pending").length;
+  const processingCount = tickets.filter((t) => t.status === "processing").length;
+  const completedCount = tickets.filter((t) => t.status === "completed").length;
 
   return (
     <SafeAreaProvider style={styles.container}>
       {/* Header */}
-      <LinearGradient
-        colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]}
-        style={styles.header}
-      >
+      <LinearGradient colors={[COLORS.GRADIENT_START, COLORS.GRADIENT_END]} style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <ArrowLeft size={24} color={COLORS.WHITE} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Bảo trì & Sửa chữa</Text>
@@ -163,40 +176,25 @@ export const TicketListScreen: React.FC = () => {
         </View>
 
         {/* Filter Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterTabs}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterTabs}>
           {[
-            { key: 'all', label: 'Tất cả' },
-            { key: 'pending', label: 'Chờ xử lý' },
-            { key: 'processing', label: 'Đang xử lý' },
-            { key: 'completed', label: 'Hoàn thành' },
+            { key: "all", label: "Tất cả" },
+            { key: "pending", label: "Chờ xử lý" },
+            { key: "processing", label: "Đang xử lý" },
+            { key: "completed", label: "Hoàn thành" },
           ].map((tab) => (
             <TouchableOpacity
               key={tab.key}
               onPress={() => setFilter(tab.key as FilterType)}
-              style={[
-                styles.filterTab,
-                filter === tab.key && styles.filterTabActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterTabText,
-                  filter === tab.key && styles.filterTabTextActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
+              style={[styles.filterTab, filter === tab.key && styles.filterTabActive]}>
+              <Text style={[styles.filterTabText, filter === tab.key && styles.filterTabTextActive]}>{tab.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </LinearGradient>
 
       {/* Ticket List */}
-      <ScrollView style={styles.ticketList} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
+      <ScrollView style={styles.ticketList}>
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.GREEN_PRIMARY} />
@@ -211,27 +209,43 @@ export const TicketListScreen: React.FC = () => {
             <TouchableOpacity
               key={ticket._id}
               style={styles.ticketCard}
-              onPress={() => navigation.navigate('mainstack', {
-                screen: 'ticketDetailScreen',
-                params: { ticketId: ticket._id }
-              })}
-              activeOpacity={0.7}
-            >
+              onPress={() =>
+                navigation.navigate("mainstack", {
+                  screen: "ticketDetailScreen",
+                  params: { ticketId: ticket._id },
+                })
+              }
+              activeOpacity={0.7}>
               <View style={styles.ticketHeader}>
                 <View style={styles.ticketInfo}>
                   {getStatusIcon(ticket.status)}
                   <View style={styles.ticketTitleContainer}>
                     <Text style={styles.ticketTitle}>{ticket.title}</Text>
                     <Text style={styles.ticketLocation}>
-                      {typeof ticket.houseId === 'object' && ticket.houseId?.houseName}
-                      {ticket.roomId && ` - Phòng ${typeof ticket.roomId === 'object' && ticket.roomId?.roomName}`}
+                      {typeof ticket.houseId === "object" && ticket.houseId?.houseName}
+                      {ticket.roomId && ` - Phòng ${typeof ticket.roomId === "object" && ticket.roomId?.roomName}`}
                     </Text>
                   </View>
                 </View>
-                <View style={getPriorityColor(ticket.categories)}>
-                  <Text style={styles.badgeText}>
-                    {getPriorityText(ticket.categories)}
-                  </Text>
+                <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                  <View style={{ position: "relative" }}>
+                    <View style={getPriorityColor(ticket.categories)}>
+                      <Text style={styles.badgeText}>{getPriorityText(ticket.categories)}</Text>
+                    </View>
+                    {getUnreadCount(ticket) > 0 && (
+                      <View style={styles.notificationBadge}>
+                        <Text style={styles.notificationBadgeText}>{getUnreadCount(ticket)}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={{ padding: 8 }}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTicket(ticket._id);
+                    }}>
+                    <Trash2 size={18} color="#EF4444" />
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -241,33 +255,29 @@ export const TicketListScreen: React.FC = () => {
 
               <View style={styles.ticketMeta}>
                 <Text style={styles.metaText}>{getStatusText(ticket.status)}</Text>
-                <Text style={styles.metaText}>
-                  Báo cáo: {new Date(ticket.createdAt).toLocaleDateString('vi-VN')}
-                </Text>
+                <Text style={styles.metaText}>Báo cáo: {new Date(ticket.createdAt).toLocaleDateString("vi-VN")}</Text>
               </View>
 
-              {ticket.status === 'pending' && (
+              {isLandlord && ticket.status === "pending" && (
                 <View style={styles.actionButtons}>
                   <TouchableOpacity
                     style={styles.startButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleUpdateStatus(ticket._id, 'processing');
-                    }}
-                  >
+                      handleUpdateStatus(ticket._id, "processing");
+                    }}>
                     <Text style={styles.startButtonText}>Bắt đầu xử lý</Text>
                   </TouchableOpacity>
                 </View>
               )}
 
-              {ticket.status === 'processing' && (
+              {isLandlord && ticket.status === "processing" && (
                 <TouchableOpacity
                   style={styles.completeButton}
                   onPress={(e) => {
                     e.stopPropagation();
-                    handleUpdateStatus(ticket._id, 'completed');
-                  }}
-                >
+                    handleUpdateStatus(ticket._id, "completed");
+                  }}>
                   <Text style={styles.completeButtonText}>Đánh dấu hoàn thành</Text>
                 </TouchableOpacity>
               )}

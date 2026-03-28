@@ -16,4 +16,6 @@ export interface IUser {
   createdAt: Date | undefined;
   loginFailedTime: Date | null | undefined;
   roleName: string | undefined;
+  bankName?: string | undefined;
+  bankNumber?: string | undefined;
 }

@@ -192,13 +192,49 @@ export class TicketController {
   // Xóa ticket
   delete = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await this.ticketService.delete(req.params.id);
-      if (!result) {
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id: userId } = jwt.decode(token) as { id: string };
+      const { id: ticketId } = req.params;
+
+      // Get ticket to check ownership
+      const ticket = await this.ticketService.getById(ticketId);
+      if (!ticket) {
         res.status(404).json(responseWrapper("error", "Ticket không tồn tại"));
         return;
       }
+
+      // Check if user is the sender (creator) or receiver (landlord)
+      const isSender = ticket.senderId.toString() === userId;
+      const isReceiver = ticket.receiverId.toString() === userId;
+
+      if (!isSender && !isReceiver) {
+        res.status(403).json(responseWrapper("error", "Bạn không có quyền xóa ticket này"));
+        return;
+      }
+
+      const result = await this.ticketService.delete(ticketId);
       res.json(responseWrapper("success", "Xóa ticket thành công", result));
-    } catch (error) {
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  // Mark replies as read
+  markRepliesAsRead = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const token = req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json(responseWrapper("error", "Unauthorized"));
+      }
+      const { id: userId } = jwt.decode(token) as { id: string };
+      const { ticketId } = req.params;
+
+      const ticket = await this.ticketService.markRepliesAsRead(ticketId, userId);
+      res.json(responseWrapper("success", "Đánh dấu đã đọc thành công", ticket));
+    } catch (error: any) {
       next(error);
     }
   };

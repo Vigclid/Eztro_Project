@@ -79,7 +79,7 @@ export class houseController extends GenericController<IHouse> {
             };
             req.body.landlordId = id;
             const result = await this.HouseService.createNewHouse(req.body)
-            await this.HousePackageService.createNewHousePackage({ houseId: result._id, packageId: req.body.packageId })
+            await this.HousePackageService.createNewHousePackage({ userId: req.body.landlordId, houseId: result._id, packageId: req.body.packageId })
             return res
                 .status(201)
                 .json(responseWrapper("success", "Tạo Cụm Trọ Thành Công", result))

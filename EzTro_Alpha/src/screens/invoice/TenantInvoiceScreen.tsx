@@ -508,6 +508,31 @@ export const TenantInvoiceScreen: React.FC = () => {
               {/* Tenant action */}
               {isPaymentProcessing && (
                 <View style={styles.actionArea}>
+                  {/* Landlord bank info */}
+                  {(inv.landlordBankName || inv.landlordBankNumber) && (
+                    <View style={styles.bankInfoBox}>
+                      <Text style={styles.bankInfoTitle}>
+                        Thông tin chuyển khoản
+                      </Text>
+                      {inv.landlordBankName ? (
+                        <View style={styles.bankInfoRow}>
+                          <Text style={styles.bankInfoLabel}>Ngân hàng</Text>
+                          <Text style={styles.bankInfoValue}>
+                            {inv.landlordBankName}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {inv.landlordBankNumber ? (
+                        <View style={styles.bankInfoRow}>
+                          <Text style={styles.bankInfoLabel}>Số tài khoản</Text>
+                          <Text style={styles.bankInfoValue}>
+                            {inv.landlordBankNumber}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  )}
+
                   {/* Image picker with AI overlay */}
                   <TouchableOpacity
                     style={styles.uploadBtn}
@@ -923,6 +948,34 @@ const styles = StyleSheet.create({
     color: COLORS.GREEN_PRIMARY,
   },
   actionArea: { marginTop: 16, gap: 10 },
+  bankInfoBox: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    gap: 6,
+  },
+  bankInfoTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1D4ED8",
+    marginBottom: 4,
+  },
+  bankInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  bankInfoLabel: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  bankInfoValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#1E40AF",
+  },
   uploadBtn: {
     borderWidth: 1.5,
     borderColor: COLORS.GREEN_PRIMARY,

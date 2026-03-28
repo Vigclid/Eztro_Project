@@ -24,6 +24,8 @@ interface Invoice {
   transactionImage?: string;
   createDate: string;
   roomId?: { roomName?: string; houseId?: { houseName?: string } };
+  landlordBankName?: string;
+  landlordBankNumber?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -614,6 +616,74 @@ function HomePage() {
                           gap: 8,
                         }}
                       >
+                        {/* Bank info */}
+                        {(inv.landlordBankName || inv.landlordBankNumber) && (
+                          <div
+                            style={{
+                              background: "#EFF6FF",
+                              border: "1px solid #BFDBFE",
+                              borderRadius: 10,
+                              padding: "10px 12px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 4,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "#1D4ED8",
+                                marginBottom: 2,
+                              }}
+                            >
+                              Thông tin chuyển khoản
+                            </span>
+                            {inv.landlordBankName && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <span style={{ fontSize: 13, color: "#6B7280" }}>
+                                  Ngân hàng
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: "#1E40AF",
+                                  }}
+                                >
+                                  {inv.landlordBankName}
+                                </span>
+                              </div>
+                            )}
+                            {inv.landlordBankNumber && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <span style={{ fontSize: 13, color: "#6B7280" }}>
+                                  Số tài khoản
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: "#1E40AF",
+                                  }}
+                                >
+                                  {inv.landlordBankNumber}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {/* Image picker */}
                         <button
                           style={{

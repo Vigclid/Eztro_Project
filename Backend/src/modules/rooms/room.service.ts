@@ -4,6 +4,7 @@ import housePackageModel from "../../modules/housePackage/housePackage.model";
 import { IPackage } from "../package/package.model";
 import roomInvitationModel from "./roomInvitation.model";
 import roomMemberModel from "./roomMember.model";
+import roomPolicyModel from "./roomPolicy.model";
 import { Types } from "mongoose";
 import userModel from "../users/user.model";
 import houseModel from "../houses/house.model";
@@ -18,6 +19,42 @@ export class roomService extends GenericService<IRoom> {
   private getExpireDate = () => new Date(Date.now() + 48 * 60 * 60 * 1000);
 
   private generateInviteCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  private normalizeDepositAmount = (
+    depositAmount: any,
+    fallback = 0
+  ): number => {
+    if (typeof depositAmount === "number" && Number.isFinite(depositAmount)) {
+      return Math.max(0, Math.floor(depositAmount));
+    }
+
+    if (typeof depositAmount === "string" && depositAmount.trim() !== "") {
+      const parsed = Number(depositAmount);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+
+    return Math.max(0, Math.floor(fallback || 0));
+  };
+
+  private normalizeRoomPolicyPayload = (policy: any = {}) => {
+    const notificationTypeRaw = String(policy?.notificationType || "in-app");
+    const allowedTypes = ["in-app", "mail", "all"];
+    const notificationType = allowedTypes.includes(notificationTypeRaw)
+      ? notificationTypeRaw
+      : "in-app";
+
+    return {
+      description: String(policy?.description || ""),
+      defaultTimeReminder: policy?.defaultTimeReminder
+        ? new Date(policy.defaultTimeReminder)
+        : null,
+      defaultTimeReminderContent: String(policy?.defaultTimeReminderContent || ""),
+      notificationType: notificationType as "in-app" | "mail" | "all",
+      timeReminderStatus: String(policy?.timeReminderStatus || "active"),
+    };
+  };
 
     createNewRoom = async (data: Partial<IRoom>) => {
         // Đảm bảo không tạo 2 phòng trùng tên trong cùng 1 cụm trọ
@@ -71,10 +108,29 @@ export class roomService extends GenericService<IRoom> {
             throw error;
         }
 
-        const newRoom = new roomModel({
-            ...data,
-        });
-        return await roomModel.create(newRoom);
+    const inputData: any = { ...(data as any) };
+    const policyPayload = inputData.policy;
+    delete inputData.policy;
+
+    const newRoom = new roomModel({
+      ...inputData,
+    });
+    const createdRoom = await roomModel.create(newRoom);
+
+    if (policyPayload) {
+      const normalizedPolicy = this.normalizeRoomPolicyPayload(policyPayload);
+      await roomPolicyModel.findOneAndUpdate(
+        { roomId: createdRoom._id },
+        {
+          roomId: createdRoom._id,
+          houseId: inputData.houseId,
+          ...normalizedPolicy,
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+    }
+
+    return createdRoom;
     };
 
   getAllRoomsByHouseId = async (houseId: string) => {
@@ -93,7 +149,12 @@ export class roomService extends GenericService<IRoom> {
     }
   };
 
-  private createRoomMember = async (roomId: string, userId: string, invitedBy: string) => {
+  private createRoomMember = async (
+    roomId: string,
+    userId: string,
+    invitedBy: string,
+    depositAmount = 0
+  ) => {
     const activeInRoomCount = await roomMemberModel.countDocuments({
       roomId: this.toObjectId(roomId),
       status: "Đang Thuê",
@@ -104,6 +165,7 @@ export class roomService extends GenericService<IRoom> {
       roomId: this.toObjectId(roomId),
       userId: this.toObjectId(userId),
       invitedBy: this.toObjectId(invitedBy),
+      depositAmount: this.normalizeDepositAmount(depositAmount),
       role: memberRole,
       status: "Đang Thuê",
       moveInDate: new Date(),
@@ -123,13 +185,24 @@ export class roomService extends GenericService<IRoom> {
     );
   };
 
-  createInviteCodeForRoom = async (roomId: string, createdBy: string) => {
+  createInviteCodeForRoom = async (
+    roomId: string,
+    createdBy: string,
+    depositAmount?: number
+  ) => {
     const room = await roomModel.findById(roomId);
     if (!room) {
       const error: any = new Error("ROOM_NOT_FOUND");
       error.code = "ROOM_NOT_FOUND";
       throw error;
     }
+
+    const normalizedDeposit = this.normalizeDepositAmount(
+      depositAmount,
+      room.defaultDepositAmount || 0
+    );
+    const shouldUpdateRoomDefaultDeposit =
+      typeof depositAmount === "number" && Number.isFinite(depositAmount);
 
     await this.markExpiredInvitations();
     await roomInvitationModel.updateMany(
@@ -148,23 +221,43 @@ export class roomService extends GenericService<IRoom> {
       existedCode = await roomInvitationModel.findOne({ inviteCode });
     }
 
-    return roomInvitationModel.create({
+    const invitation = await roomInvitationModel.create({
       roomId: this.toObjectId(roomId),
       inviteCode,
       invitedUserId: null,
       createdBy: this.toObjectId(createdBy),
+      depositAmount: normalizedDeposit,
       status: "Đang Chờ",
       expiresAt: this.getExpireDate(),
     });
+
+    if (shouldUpdateRoomDefaultDeposit) {
+      room.defaultDepositAmount = normalizedDeposit;
+      await room.save();
+    }
+
+    return invitation;
   };
 
-  inviteTenantToRoom = async (roomId: string, invitedUserId: string, createdBy: string) => {
+  inviteTenantToRoom = async (
+    roomId: string,
+    invitedUserId: string,
+    createdBy: string,
+    depositAmount?: number
+  ) => {
     const room = await roomModel.findById(roomId);
     if (!room) {
       const error: any = new Error("ROOM_NOT_FOUND");
       error.code = "ROOM_NOT_FOUND";
       throw error;
     }
+
+    const normalizedDeposit = this.normalizeDepositAmount(
+      depositAmount,
+      room.defaultDepositAmount || 0
+    );
+    const shouldUpdateRoomDefaultDeposit =
+      typeof depositAmount === "number" && Number.isFinite(depositAmount);
 
     const invitedUser = await userModel.findById(invitedUserId).populate("roleId");
     const invitedRole = (invitedUser?.roleId as any)?.name;
@@ -188,13 +281,21 @@ export class roomService extends GenericService<IRoom> {
       throw error;
     }
 
-    return roomInvitationModel.create({
+    const invitation = await roomInvitationModel.create({
       roomId: this.toObjectId(roomId),
       invitedUserId: this.toObjectId(invitedUserId),
       createdBy: this.toObjectId(createdBy),
+      depositAmount: normalizedDeposit,
       status: "Đang Chờ",
       expiresAt: this.getExpireDate(),
     });
+
+    if (shouldUpdateRoomDefaultDeposit) {
+      room.defaultDepositAmount = normalizedDeposit;
+      await room.save();
+    }
+
+    return invitation;
   };
 
   joinRoomByCode = async (inviteCode: string, userId: string) => {
@@ -212,7 +313,12 @@ export class roomService extends GenericService<IRoom> {
       throw error;
     }
 
-    await this.createRoomMember(String(invitation.roomId), userId, String(invitation.createdBy));
+    await this.createRoomMember(
+      String(invitation.roomId),
+      userId,
+      String(invitation.createdBy),
+      invitation.depositAmount || 0
+    );
 
     invitation.status = "Đã Chấp Nhận";
     await invitation.save();
@@ -222,7 +328,7 @@ export class roomService extends GenericService<IRoom> {
 
   getPendingInvitationsOfTenant = async (userId: string) => {
     await this.markExpiredInvitations();
-    return roomInvitationModel
+    const invitations = await roomInvitationModel
       .find({
         invitedUserId: this.toObjectId(userId),
         status: "Đang Chờ",
@@ -234,6 +340,14 @@ export class roomService extends GenericService<IRoom> {
         populate: { path: "houseId" },
       })
       .populate("createdBy", "firstName lastName phoneNumber");
+
+    return invitations.map((invitation: any) => ({
+      ...invitation.toObject(),
+      depositAmount: this.normalizeDepositAmount(
+        invitation.depositAmount,
+        0
+      ),
+    }));
   };
 
   acceptInvitation = async (invitationId: string, userId: string) => {
@@ -259,7 +373,12 @@ export class roomService extends GenericService<IRoom> {
       throw error;
     }
 
-    await this.createRoomMember(String(invitation.roomId), userId, String(invitation.createdBy));
+    await this.createRoomMember(
+      String(invitation.roomId),
+      userId,
+      String(invitation.createdBy),
+      invitation.depositAmount || 0
+    );
     invitation.status = "Đã Chấp Nhận";
     await invitation.save();
 
@@ -284,10 +403,19 @@ export class roomService extends GenericService<IRoom> {
     const room: any = roomMember.roomId;
     const house: any = room?.houseId;
     const landlord: any = roomMember.invitedBy;
+    const roomPolicy: any = room?._id
+      ? await roomPolicyModel.findOne({
+          roomId: this.toObjectId(String(room._id)),
+        })
+      : null;
 
     return {
       roomMemberId: roomMember._id,
       role: roomMember.role,
+      depositAmount: this.normalizeDepositAmount(
+        roomMember.depositAmount,
+        room?.defaultDepositAmount || 0
+      ),
       moveInDate: roomMember.moveInDate,
       status: roomMember.status,
       room: {
@@ -307,6 +435,15 @@ export class roomService extends GenericService<IRoom> {
         fullName: `${landlord?.lastName || ""} ${landlord?.firstName || ""}`.trim(),
         phoneNumber: landlord?.phoneNumber,
       },
+      policy: roomPolicy
+        ? {
+            description: roomPolicy.description || "",
+            defaultTimeReminder: roomPolicy.defaultTimeReminder || null,
+            defaultTimeReminderContent: roomPolicy.defaultTimeReminderContent || "",
+            notificationType: roomPolicy.notificationType || "in-app",
+            timeReminderStatus: roomPolicy.timeReminderStatus || "active",
+          }
+        : null,
     };
   };
 
@@ -403,6 +540,64 @@ export class roomService extends GenericService<IRoom> {
       })
       .sort({ moveInDate: 1, createdAt: 1 })
       .populate("userId", "firstName lastName phoneNumber email");
+  };
+
+  getRoomPolicyByLandlord = async (roomId: string, landlordId: string) => {
+    const room = await roomModel.findById(roomId);
+    if (!room) {
+      const error: any = new Error("ROOM_NOT_FOUND");
+      error.code = "ROOM_NOT_FOUND";
+      throw error;
+    }
+
+    const house = await houseModel.findById(room.houseId);
+    if (!house) {
+      const error: any = new Error("HOUSE_NOT_FOUND");
+      error.code = "HOUSE_NOT_FOUND";
+      throw error;
+    }
+
+    if (String(house.landlordId) !== landlordId) {
+      const error: any = new Error("LANDLORD_FORBIDDEN");
+      error.code = "LANDLORD_FORBIDDEN";
+      throw error;
+    }
+
+    return roomPolicyModel.findOne({ roomId: this.toObjectId(roomId) });
+  };
+
+  updateRoomPolicyByLandlord = async (roomId: string, landlordId: string, payload: any) => {
+    const room = await roomModel.findById(roomId);
+    if (!room) {
+      const error: any = new Error("ROOM_NOT_FOUND");
+      error.code = "ROOM_NOT_FOUND";
+      throw error;
+    }
+
+    const house = await houseModel.findById(room.houseId);
+    if (!house) {
+      const error: any = new Error("HOUSE_NOT_FOUND");
+      error.code = "HOUSE_NOT_FOUND";
+      throw error;
+    }
+
+    if (String(house.landlordId) !== landlordId) {
+      const error: any = new Error("LANDLORD_FORBIDDEN");
+      error.code = "LANDLORD_FORBIDDEN";
+      throw error;
+    }
+
+    const normalizedPolicy = this.normalizeRoomPolicyPayload(payload || {});
+
+    return roomPolicyModel.findOneAndUpdate(
+      { roomId: this.toObjectId(roomId) },
+      {
+        roomId: this.toObjectId(roomId),
+        houseId: room.houseId,
+        ...normalizedPolicy,
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
   };
 
     updateRoom = async (roomId: string, data: Partial<IRoom>) => {

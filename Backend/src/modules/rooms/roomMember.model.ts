@@ -9,6 +9,7 @@ export interface IRoomMember extends Document {
   roomId: Types.ObjectId | IRoom;
   userId: Types.ObjectId | IUser;
   invitedBy: Types.ObjectId | IUser;
+  depositAmount: number;
   role: RoomMemberRole;
   status: RoomMemberStatus;
   moveInDate: Date;
@@ -21,6 +22,7 @@ const RoomMemberSchema = new mongoose.Schema<IRoomMember>(
     roomId: { type: Types.ObjectId, ref: "rooms", required: true },
     userId: { type: Types.ObjectId, ref: "users", required: true },
     invitedBy: { type: Types.ObjectId, ref: "users", required: true },
+    depositAmount: { type: Number, required: true, default: 0 },
     role: { type: String, enum: ["TENANT", "CO-TENANT"], required: true },
     status: {
       type: String,

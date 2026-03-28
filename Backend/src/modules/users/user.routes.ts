@@ -8,31 +8,35 @@ const router = Router();
 const UserController = new userController(new userService());
 
 router.route("/").post(UserController.createAccount).get(UserController.getAll);
-// router.route("/search").get(authenticate, UserController.getUserIsActive);
 
+// Specific routes BEFORE generic /:id routes
 router.route("/me/password").put(authenticate, UserController.changePassword);
-
+router.route("/me/password/reset").post(UserController.resetPassword);
+router.route("/me/profile").put(UserController.updateProfile);
+router.route("/me/bank-info").put(authenticate, UserController.updateBankInfo);
 router
   .route("/me/avatar")
   .put(authenticate, UserController.uploadAvatar)
   .get(UserController.getAvatar);
 
-router.route("/me/password/reset").post(UserController.resetPassword);
 router.route("/tenants").get(authenticate, UserController.getAllTenants);
-
-// ---------- ADMIN ----------
 router.route("/count").get(authenticate, authorize(["Admin"]), UserController.getNumberOfUsers);
+router.route("/exist/:email").get(UserController.checkExistEmail);
 
-router.route("/me/profile").put(UserController.updateProfile);
+// Staff Management Routes (specific routes before /:id)
+router.route("/staff/list").get(authenticate, authorize(["Admin"]), UserController.getStaffAndAdmins);
+router.route("/search").get(authenticate, UserController.searchUsers);
 
+// Generic ID routes (must be last)
 router
   .route("/:id")
   .get(UserController.getById)
   .put(authenticate, UserController.update)
-  .delete(authenticate, authorize(["Admin"]), UserController.delete);
+  .delete(authenticate, UserController.deleteAccount);
 
-router.route("/exist/:email").get(UserController.checkExistEmail);
 router.route("/:id/lock").put(authenticate, authorize(["Admin"]), UserController.lockAccount);
 router.route("/:id/unlock").put(authenticate, authorize(["Admin"]), UserController.unlockAccount);
+router.route("/:id/role").put(authenticate, authorize(["Admin"]), UserController.assignRole);
+router.route("/:id/role/remove").put(authenticate, authorize(["Admin"]), UserController.removeRole);
 
 export default router;
