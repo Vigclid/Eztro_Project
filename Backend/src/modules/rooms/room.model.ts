@@ -13,6 +13,7 @@ export interface IRoom extends Document {
   rentalFee: number;
   status: string;
   rentalDate: Date;
+  defaultDepositAmount?: number;
   virtualTenants: IVirtualTenant[];
 }
 
@@ -31,6 +32,7 @@ export const RoomSchema = new mongoose.Schema<IRoom>({
   rentalFee: { type: Number, required: true },
   status: { type: String, enum: ["Đang Thuê", "Còn Trống"], required: true },
   rentalDate: { type: Date, default: null },
+  defaultDepositAmount: { type: Number, required: false, default: 0 },
   virtualTenants: { type: [VirtualTenantSchema], default: [] },
 });
 

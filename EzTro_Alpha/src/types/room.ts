@@ -16,6 +16,7 @@ export interface IRoom {
   rentalFee: number | undefined;
   status: string | undefined;
   rentDate: Date | undefined;
+  defaultDepositAmount?: number;
   virtualTenants?: IVirtualTenant[];
 }
 
@@ -23,6 +24,7 @@ export interface IRoomMember {
   roomId: String | IRoom;
   userId: String | IUser;
   invitedBy: String | IUser;
+  depositAmount?: number;
   role: string;
   status: string;
   moveInDate: Date;

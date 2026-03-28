@@ -296,6 +296,7 @@ export const BoardingHouseDetailsScreen = () => {
                     rentalFee: room.rentalFee,
                     status: room.status,
                     rentDate: room.rentalDate ? new Date(room.rentalDate) : undefined,
+                    defaultDepositAmount: room.defaultDepositAmount ?? 0,
                     virtualTenants: room.virtualTenants || [],
                     accountTenants,
                 };
@@ -619,6 +620,7 @@ export const BoardingHouseDetailsScreen = () => {
                                                 "addTenantScreen" as never,
                                                 {
                                                     roomId: room._id!,
+                                                    room,
                                                 } as never,
                                             )
                                         }
