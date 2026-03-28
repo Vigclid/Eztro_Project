@@ -40,10 +40,11 @@ import { RootState } from "../../stores/store";
 
 type TenantRoomInfo = {
   role: "TENANT" | "CO-TENANT";
+  depositAmount?: number;
   moveInDate: Date | string;
   room: { roomName: string; rentalFee: number };
   house: { houseName: string; address: string };
-  landlord: { fullName: string };
+  landlord: { _id?: string; fullName: string };
   policy?: {
     description: string;
     defaultTimeReminder: Date | string | null;
@@ -56,6 +57,7 @@ type TenantRoomInfo = {
 type TenantInvitation = {
   _id: string;
   expiresAt: Date | string;
+  depositAmount?: number;
   roomId: {
     roomName: string;
     rentalFee: number;
@@ -256,6 +258,16 @@ const TenantHomeScreen = () => {
                 </View>
 
                 <View style={styles.roomInfoBox}>
+                  <DollarSign size={16} color="#10b981" />
+                  <View style={styles.roomInfoTextWrap}>
+                    <Text style={styles.roomInfoLabel}>Tiền cọc</Text>
+                    <Text style={styles.roomInfoValue}>
+                      {(myRoom.depositAmount || 0).toLocaleString("vi-VN")}đ
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.roomInfoBox}>
                   <Phone size={16} color="#10b981" />
                   <View style={styles.roomInfoTextWrap}>
                     <Text style={styles.roomInfoLabel}>Chủ trọ</Text>
@@ -266,7 +278,12 @@ const TenantHomeScreen = () => {
                   {myRoom.landlord?._id && (
                     <TouchableOpacity
                       style={styles.landlordMessageButton}
-                      onPress={() => handleMessageLandlord(myRoom.landlord._id, myRoom.landlord.fullName)}
+                      onPress={() =>
+                        handleMessageLandlord(
+                          myRoom.landlord._id || "",
+                          myRoom.landlord.fullName || "Chủ trọ"
+                        )
+                      }
                     >
                       <Ionicons name="chatbubble-outline" size={20} color={COLORS.GRADIENT_START} />
                     </TouchableOpacity>
@@ -456,6 +473,9 @@ const TenantHomeScreen = () => {
                       <Text style={styles.inviteInfo}>{invite.roomId.houseId?.address || ""}</Text>
                       <Text style={styles.inviteInfo}>
                         Giá: {invite.roomId.rentalFee?.toLocaleString("vi-VN")} đ
+                      </Text>
+                      <Text style={styles.inviteInfo}>
+                        Cọc: {(invite.depositAmount || 0).toLocaleString("vi-VN")} đ
                       </Text>
                       <TouchableOpacity
                         style={styles.acceptBtn}

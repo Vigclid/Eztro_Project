@@ -68,9 +68,13 @@ export const postRoomApi = {
     }
   },
 
-  async createInviteCode(roomId: string) {
+  async createInviteCode(roomId: string, depositAmount?: number) {
     try {
-      const res = await apiService.post(`${roomApi}invite-code/${roomId}`);
+      const payload =
+        typeof depositAmount === "number" && Number.isFinite(depositAmount)
+          ? { depositAmount }
+          : {};
+      const res = await apiService.post(`${roomApi}invite-code/${roomId}`, payload);
       return (
         res.data || {
           status: "error",
@@ -82,11 +86,17 @@ export const postRoomApi = {
     }
   },
 
-  async inviteTenant(roomId: string, invitedUserId: string) {
+  async inviteTenant(roomId: string, invitedUserId: string, depositAmount?: number) {
     try {
-      const res = await apiService.post(`${roomApi}invite`, {
+      const payload: Record<string, any> = {
         roomId,
         invitedUserId,
+      };
+      if (typeof depositAmount === "number" && Number.isFinite(depositAmount)) {
+        payload.depositAmount = depositAmount;
+      }
+      const res = await apiService.post(`${roomApi}invite`, {
+        ...payload,
       });
       return (
         res.data || {

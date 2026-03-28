@@ -151,10 +151,15 @@ export class roomController extends GenericController<IRoom> {
   createInviteCode = async (req: Request, res: Response) => {
     try {
       const roomId = req.params.id;
+      const { depositAmount } = req.body || {};
       const token = req.headers["authorization"]?.split(" ")[1];
       const { id } = jwt.decode(token as string) as { id: string };
 
-      const invitation = await this.RoomService.createInviteCodeForRoom(roomId, id);
+      const invitation = await this.RoomService.createInviteCodeForRoom(
+        roomId,
+        id,
+        depositAmount
+      );
       return res
         .status(200)
         .json(responseWrapper("success", "Tạo mã phòng thành công", invitation));
@@ -168,14 +173,15 @@ export class roomController extends GenericController<IRoom> {
 
   inviteTenant = async (req: Request, res: Response) => {
     try {
-      const { roomId, invitedUserId } = req.body;
+      const { roomId, invitedUserId, depositAmount } = req.body;
       const token = req.headers["authorization"]?.split(" ")[1];
       const { id } = jwt.decode(token as string) as { id: string };
 
       const invitation = await this.RoomService.inviteTenantToRoom(
         String(roomId),
         String(invitedUserId),
-        id
+        id,
+        depositAmount
       );
       return res.status(200).json(responseWrapper("success", "Gửi lời mời thành công", invitation));
     } catch (error: any) {

@@ -9,6 +9,7 @@ export interface IRoomInvitation extends Document {
   inviteCode?: string | null;
   invitedUserId?: Types.ObjectId | IUser | null;
   createdBy: Types.ObjectId | IUser;
+  depositAmount: number;
   status: InvitationStatus;
   expiresAt: Date;
   createdAt: Date;
@@ -20,6 +21,7 @@ const RoomInvitationSchema = new mongoose.Schema<IRoomInvitation>(
     inviteCode: { type: String, required: false },
     invitedUserId: { type: Types.ObjectId, ref: "users", required: false, default: null },
     createdBy: { type: Types.ObjectId, ref: "users", required: true },
+    depositAmount: { type: Number, required: true, default: 0 },
     status: {
       type: String,
       enum: ["Đang Chờ", "Đã Chấp Nhận", "Hết Hạn"],

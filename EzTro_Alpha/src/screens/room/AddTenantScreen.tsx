@@ -46,6 +46,9 @@ const AddTenantScreen = () => {
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [depositAmount, setDepositAmount] = useState(
+    String(existingRoom?.defaultDepositAmount ?? 0),
+  );
   const [searchPhone, setSearchPhone] = useState("");
   const [searchingTenants, setSearchingTenants] = useState(false);
   const [tenantResults, setTenantResults] = useState<IUser[]>([]);
@@ -69,7 +72,11 @@ const AddTenantScreen = () => {
     if (selectedTenantAccount?._id) {
       setSubmitting(true);
       try {
-        const raw = await postRoomApi.inviteTenant(roomId, String(selectedTenantAccount._id));
+        const raw = await postRoomApi.inviteTenant(
+          roomId,
+          String(selectedTenantAccount._id),
+          normalizeDepositAmount()
+        );
         const res = (raw || {
           status: "error",
           message: "Không nhận được phản hồi từ máy chủ.",
@@ -141,7 +148,11 @@ const AddTenantScreen = () => {
 
     setSubmitting(true);
     try {
-      const raw = await postRoomApi.inviteTenant(roomId, String(tenant._id));
+      const raw = await postRoomApi.inviteTenant(
+        roomId,
+        String(tenant._id),
+        normalizeDepositAmount()
+      );
       const res = (raw || {
         status: "error",
         message: "Không nhận được phản hồi từ máy chủ.",
@@ -171,6 +182,15 @@ const AddTenantScreen = () => {
   const getTenantDisplayName = (user: IUser) => {
     const fullName = `${user.lastName || ""} ${user.firstName || ""}`.trim();
     return fullName || user.email || "Không rõ tên";
+  };
+
+  const keepDigitsOnly = (text: string) => text.replace(/\D/g, "");
+  const normalizeDepositAmount = () => {
+    const digits = keepDigitsOnly(depositAmount);
+    if (!digits) return 0;
+    const parsed = Number(digits);
+    if (!Number.isFinite(parsed) || parsed < 0) return 0;
+    return Math.floor(parsed);
   };
 
   const handleSearchTenantByPhone = async () => {
@@ -322,6 +342,28 @@ const AddTenantScreen = () => {
                   placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
                   value={tenantName}
                   onChangeText={setTenantName}
+                />
+              </View>
+            </View>
+
+            <View style={styles.singleRow}>
+              <View style={styles.inputWrapper}>
+                <View style={styles.labelContainer}>
+                  <MaterialCommunityIcons
+                    name="cash-multiple"
+                    size={18}
+                    color={COLORS.PRIMARY}
+                    style={styles.inputIcon}
+                  />
+                  <Text style={styles.label}>Tiền cọc áp dụng cho lời mời (đ)</Text>
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0"
+                  placeholderTextColor={COLORS.PLACEHOLDER_GRAY}
+                  value={depositAmount}
+                  keyboardType="numeric"
+                  onChangeText={(text) => setDepositAmount(keepDigitsOnly(text))}
                 />
               </View>
             </View>
