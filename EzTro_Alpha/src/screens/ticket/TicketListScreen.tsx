@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, Wrench, AlertCircle, CheckCircle, Clock, Trash2 } from
 import { getTicketApi } from "../../api/ticket/ticketapi";
 import { putTicketApi } from "../../api/ticket/ticketapi";
 import { deleteTicketApi } from "../../api/ticket/ticketapi";
+import socketService from "../../service/socketService";
 import { ITicket } from "../../types/ticket";
 import { COLORS } from "../../constants/theme";
 import { NavigationProp } from "../../navigation/navigation.type";
@@ -32,6 +33,22 @@ export const TicketListScreen: React.FC = () => {
   useFocusEffect(
     React.useCallback(() => {
       loadTickets();
+      
+      // Connect to socket
+      socketService.connect();
+      
+      // Listen for ticket status changes
+      socketService.onTicketStatusChanged(({ ticketId, status }) => {
+        setTickets((prevTickets) =>
+          prevTickets.map((ticket) =>
+            ticket._id === ticketId ? { ...ticket, status: status as "pending" | "processing" | "completed" } : ticket
+          )
+        );
+      });
+
+      return () => {
+        socketService.offTicketStatusChanged();
+      };
     }, [isLandlord, isTenant]),
   );
 

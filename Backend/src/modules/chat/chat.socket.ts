@@ -77,7 +77,6 @@ export function initChatSocketHandlers(io: any) {
               } // Store Cloudinary URL as content
               finalContent = uploadResult.secure_url;
             } catch (uploadError: any) {
-              console.error("Image upload error:", uploadError);
               socket.emit("error", { message: "Failed to upload image: " + uploadError.message });
               return;
             }
@@ -166,7 +165,6 @@ export function initChatSocketHandlers(io: any) {
             unreadCount,
           });
         } catch (error: any) {
-          console.error("send_message error:", error);
           socket.emit("error", { message: "Failed to send message" });
         }
       }
@@ -200,7 +198,6 @@ export function initChatSocketHandlers(io: any) {
         // Emit confirmation (Requirement 4.2)
         socket.emit("seen_updated", { conversationId, timestamp: new Date() });
       } catch (error: any) {
-        console.error("message_seen error:", error);
         socket.emit("error", { message: "Failed to update seen status" });
       }
     });
@@ -232,7 +229,6 @@ export function initChatSocketHandlers(io: any) {
         });
       } catch (error: any) {
         // Silently ignore errors (non-critical feature)
-        console.error("typing error:", error);
       }
     });
   });

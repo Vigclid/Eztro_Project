@@ -13,6 +13,7 @@ import {
 import Sidebar from "../../components/dashboard/Sidebar";
 import { reportGetAPI } from "../../api/reportAPI/GET";
 import { Report } from "../../types/report";
+import socketService from "../../service/socketService";
 import "./styles/StaffSupportScreen.css";
 
 const StaffSupportScreen: React.FC = () => {
@@ -42,7 +43,39 @@ const StaffSupportScreen: React.FC = () => {
 
   useEffect(() => {
     loadReports();
-  }, []); // Remove statusFilter dependency, we filter on frontend
+    
+    // Connect to socket and listen for real-time updates
+    socketService.connect();
+    
+    // Listen for new reports
+    socketService.onReportCreated((newReport) => {
+      setReports((prevReports) => [newReport, ...prevReports]);
+    });
+
+    // Listen for report updates (status changes)
+    socketService.onReportUpdated((updatedReport) => {
+      setReports((prevReports) =>
+        prevReports.map((report) =>
+          report._id === updatedReport._id ? updatedReport : report
+        )
+      );
+    });
+
+    // Listen for status changes
+    socketService.onReportStatusChanged(({ reportId, status }) => {
+      setReports((prevReports) =>
+        prevReports.map((report) =>
+          report._id === reportId ? { ...report, status } : report
+        )
+      );
+    });
+
+    return () => {
+      socketService.offReportCreated();
+      socketService.offReportUpdated();
+      socketService.offReportStatusChanged();
+    };
+  }, []);
 
   const loadReports = async () => {
     setLoading(true);
@@ -119,14 +152,15 @@ const StaffSupportScreen: React.FC = () => {
   const getUserFullName = (user: {
     firstName?: string;
     lastName?: string;
-    email: string;
-  }) => {
+    email?: string;
+  } | null) => {
+    if (!user) return "Unknown User";
     if (user.firstName && user.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }
     if (user.firstName) return user.firstName;
     if (user.lastName) return user.lastName;
-    return user.email;
+    return user.email || "Unknown User";
   };
 
   const formatDate = (dateString: string) => {
@@ -263,7 +297,7 @@ const StaffSupportScreen: React.FC = () => {
                     <span className="user-name">
                       {getUserFullName(report.userId)}
                     </span>
-                    <span className="user-email">{report.userId.email}</span>
+                    <span className="user-email">{report.userId?.email || "N/A"}</span>
                   </div>
                   <div className="report-meta">
                     <span className="reply-count">

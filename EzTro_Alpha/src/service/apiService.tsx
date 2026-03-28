@@ -168,12 +168,18 @@ apiClient.interceptors.response.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => response,
   async (error: AxiosError): Promise<ApiResponse<never>> => {
-    const { status } = error.response || {};
+    const { status, data: responseData } = error.response || {};
+
+    // Extract error message from response
+    let errorMessage = ERROR_MESSAGE.NETWORK_ERROR;
+    if (responseData && typeof responseData === 'object') {
+      errorMessage = (responseData as any).message || (responseData as any).error || ERROR_MESSAGE.NETWORK_ERROR;
+    }
 
     if (!error || status === undefined || status === NUMBER.ZERO) {
       return Promise.reject(
         ApiResponseWrapper.error({
-          message: ERROR_MESSAGE.NETWORK_ERROR,
+          message: errorMessage,
           status: null,
           config: error.config!,
           response: error.response,
@@ -184,7 +190,7 @@ apiClient.interceptors.response.use(
     if (status >= HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR) {
       return Promise.reject(
         ApiResponseWrapper.error({
-          message: ERROR_MESSAGE.SERVER_ERROR,
+          message: errorMessage || ERROR_MESSAGE.SERVER_ERROR,
           status,
           config: error.config!,
           response: error.response,
@@ -195,7 +201,7 @@ apiClient.interceptors.response.use(
     if (status === HTTP_STATUS_CODE.BAD_REQUEST) {
       return Promise.reject(
         ApiResponseWrapper.error({
-          message: ERROR_MESSAGE.CLIENT_ERROR,
+          message: errorMessage || ERROR_MESSAGE.CLIENT_ERROR,
           status,
           config: error.config!,
           response: error.response,
@@ -208,7 +214,7 @@ apiClient.interceptors.response.use(
     if (status === HTTP_STATUS_CODE.FORBIDDEN) {
       return Promise.reject(
         ApiResponseWrapper.error({
-          message: ERROR_MESSAGE.FORBIDDEN,
+          message: errorMessage || ERROR_MESSAGE.FORBIDDEN,
           status,
           config: error.config!,
           response: error.response,
@@ -219,7 +225,7 @@ apiClient.interceptors.response.use(
     if (status === HTTP_STATUS_CODE.UNAUTHORIZED) {
       return Promise.reject(
         ApiResponseWrapper.error({
-          message: ERROR_MESSAGE.INVALID_SESSION,
+          message: errorMessage || ERROR_MESSAGE.INVALID_SESSION,
           status,
           config: error.config!,
           response: error.response,
@@ -229,7 +235,7 @@ apiClient.interceptors.response.use(
 
     return Promise.reject(
       ApiResponseWrapper.error({
-        message: ERROR_MESSAGE.ERROR,
+        message: errorMessage || ERROR_MESSAGE.ERROR,
         status,
         config: error.config!,
         response: error.response,

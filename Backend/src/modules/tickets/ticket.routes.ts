@@ -7,8 +7,8 @@ const router = Router();
 const ticketController = new TicketController();
 
 // Routes cho tenant
-router.post("/tenant", authenticate, authorize(["Tenant"]), ticketController.createByTenant);
-router.get("/tenant/my-tickets", authenticate, authorize(["Tenant"]), ticketController.getByTenant);
+router.post("/tenant", authenticate, ticketController.createByTenant);
+router.get("/tenant/my-tickets", authenticate, ticketController.getByTenant);
 
 // Routes cho landlord
 router.post("/landlord", authenticate, authorize(["Landlord"]), ticketController.createByLandlord);

@@ -316,7 +316,6 @@ export class invoiceController extends GenericController<IInvoice> {
 
       return res.status(200).json(responseWrapper("success", "Kiểm tra xong", parsedResult));
     } catch (err: any) {
-      console.error("Gemini Error:", err);
       res.status(500).json(responseWrapper("error", "Lỗi kiểm tra ảnh", null));
     }
   };

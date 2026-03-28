@@ -4,6 +4,7 @@ import { ReportService } from "./report.service";
 import { responseWrapper } from "../../interfaces/wrapper/ApiResponseWrapper";
 import { ReportType, ReportStatus } from "./report.model";
 import jwt from "jsonwebtoken";
+import { emitToAll, getIO } from "../../core/socket/socket.gateway";
 
 const VALID_TYPES: ReportType[] = ["Help", "Bug", "Advice"];
 const VALID_STATUSES: ReportStatus[] = ["Pending", "InProgress", "Resolved", "Closed"];
@@ -40,6 +41,9 @@ export class ReportController {
         title,
         description,
       });
+
+      // Emit socket event to all connected clients
+      emitToAll("report:created", report);
 
       res.status(201).json(responseWrapper("success", "Gửi báo cáo thành công", report));
     } catch (error) {
@@ -110,6 +114,19 @@ export class ReportController {
         return;
       }
 
+      // Get the newly added reply with populated sender info
+      const updatedReport = await this.reportService.getReportById(id);
+      const newReply = updatedReport?.replies[updatedReport.replies.length - 1];
+
+      // Emit socket event to other users in this report room (not to sender)
+      // Sender already has optimistic update, so only send to others
+      const io = getIO();
+      io.to(`report:${id}`).emit("report:reply-added", {
+        reportId: id,
+        reply: newReply,
+        senderId: senderId, // Include senderId so client can filter if needed
+      });
+
       res.json(responseWrapper("success", "Phản hồi thành công", report));
     } catch (error) {
       next(error);
@@ -132,6 +149,13 @@ export class ReportController {
         res.status(404).json(responseWrapper("error", "Không tìm thấy báo cáo"));
         return;
       }
+
+      // Emit socket event to all users in this report room
+      const io = getIO();
+      io.to(`report:${id}`).emit("report:status-changed", {
+        reportId: id,
+        status: status,
+      });
 
       res.json(responseWrapper("success", "Cập nhật trạng thái thành công", report));
     } catch (error) {

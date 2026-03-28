@@ -108,7 +108,6 @@ export const MessageScreen = () => {
                           }
           }
         } catch (error: any) {
-                    console.error('Error details:', JSON.stringify(error, null, 2));
         } finally {
           setCreatingConversation(false);
         }
