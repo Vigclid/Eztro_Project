@@ -69,4 +69,101 @@ export class housePackageService extends GenericService<IHousePackage> {
             .sort({ expirationDate: -1, createDate: -1 })
             .populate("packageId");
     }
+
+    getAllHousePackages = async () => {
+        return await housePackageModel
+            .find()
+            .populate("userId", "firstName lastName email")
+            .populate("houseId", "houseName address")
+            .populate("packageId", "packageName price duration maxRoom")
+            .sort({ createDate: -1 });
+    }
+
+    getRevenueByMonth = async () => {
+        const result = await housePackageModel.aggregate([
+            {
+                $lookup: {
+                    from: "packages",
+                    localField: "packageId",
+                    foreignField: "_id",
+                    as: "packageInfo"
+                }
+            },
+            {
+                $unwind: "$packageInfo"
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: "$createDate" },
+                        month: { $month: "$createDate" }
+                    },
+                    revenue: { $sum: "$packageInfo.price" },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { "_id.year": 1, "_id.month": 1 }
+            }
+        ]);
+
+        return result;
+    }
+
+    getTotalRevenue = async () => {
+        const result = await housePackageModel.aggregate([
+            {
+                $lookup: {
+                    from: "packages",
+                    localField: "packageId",
+                    foreignField: "_id",
+                    as: "packageInfo"
+                }
+            },
+            {
+                $unwind: "$packageInfo"
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: "$packageInfo.price" },
+                    totalPackages: { $sum: 1 }
+                }
+            }
+        ]);
+
+        return result[0] || { totalRevenue: 0, totalPackages: 0 };
+    }
+
+    getRevenueByDay = async () => {
+        const result = await housePackageModel.aggregate([
+            {
+                $lookup: {
+                    from: "packages",
+                    localField: "packageId",
+                    foreignField: "_id",
+                    as: "packageInfo"
+                }
+            },
+            {
+                $unwind: "$packageInfo"
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: "$createDate" },
+                        month: { $month: "$createDate" },
+                        day: { $dayOfMonth: "$createDate" }
+                    },
+                    revenue: { $sum: "$packageInfo.price" },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 }
+            }
+        ]);
+
+        return result;
+    }
 }

@@ -46,7 +46,7 @@ export class TicketService extends GenericService<ITicket> {
     }).populate("roomId");
 
     if (!roomMember) {
-      throw new Error("Bạn chưa tham gia phòng nào");
+      throw new Error("Bạn chưa tham gia phòng nào hoặc phòng của bạn không hoạt động");
     }
 
     const room = roomMember.roomId as any;

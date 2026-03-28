@@ -22,6 +22,7 @@ import { MainStackParamList } from "../../navigation/navigation.type";
 import { styles } from "./styles/ReportDetailScreen.styles";
 import { useSelector } from "react-redux";
 import { RootState } from "../../stores/store";
+import socketService from "../../service/socketService";
 
 const GRADIENT: [string, string] = ["#10b981", "#14b8a6"];
 
@@ -69,6 +70,7 @@ export const ReportDetailScreen: React.FC = () => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   
   const currentUserId = useSelector((state: RootState) => state.auth.user?._id);
+  const currentUser = useSelector((state: RootState) => state.auth.user);
   const userRole = useSelector((state: RootState) => state.auth.user?.roleName);
   const isStaffOrAdmin = userRole === "Staff" || userRole === "Admin";
 
@@ -100,7 +102,60 @@ export const ReportDetailScreen: React.FC = () => {
 
   useEffect(() => {
     fetchReportDetail();
-  }, [reportId]);
+    
+    // Connect to socket with authentication
+    if (currentUserId) {
+      socketService.connect();
+      
+      // Small delay to ensure socket is connected before joining room
+      const timer = setTimeout(() => {
+        socketService.joinReportRoom(reportId);
+      }, 500);
+
+      // Listen for new replies from other users
+      socketService.onReplyAdded(({ reportId: updatedReportId, reply, senderId }) => {
+        if (updatedReportId === reportId) {
+          // Only add if it's from another user (not from sender)
+          if (senderId !== currentUserId) {
+            setReport((prevReport) => {
+              if (!prevReport) return prevReport;
+              
+              // Check if this reply already exists (to avoid duplicates)
+              const replyExists = prevReport.replies.some(
+                (r) => r.message === reply.message && 
+                       r.senderId._id === reply.senderId._id &&
+                       new Date(r.createdAt).getTime() === new Date(reply.createdAt).getTime()
+              );
+              
+              if (replyExists) return prevReport;
+              
+              return {
+                ...prevReport,
+                replies: [...prevReport.replies, reply],
+              };
+            });
+          }
+        }
+      });
+
+      // Listen for status changes
+      socketService.onReportStatusChanged(({ reportId: updatedReportId, status }) => {
+        if (updatedReportId === reportId) {
+          setReport((prevReport) => {
+            if (!prevReport) return prevReport;
+            return { ...prevReport, status: status as ReportStatus };
+          });
+        }
+      });
+
+      return () => {
+        clearTimeout(timer);
+        socketService.leaveReportRoom(reportId);
+        socketService.offReplyAdded();
+        socketService.offReportStatusChanged();
+      };
+    }
+  }, [reportId, currentUserId]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -110,15 +165,54 @@ export const ReportDetailScreen: React.FC = () => {
   const handleSendReply = async () => {
     if (!replyMessage.trim()) return;
 
+    const messageContent = replyMessage.trim();
     setSending(true);
+    
     try {
-      const res = await postReportApi.addReply(reportId, { message: replyMessage.trim() });
+      // Optimistically add the reply to the UI immediately
+      const optimisticReply = {
+        senderId: {
+          _id: currentUserId || "",
+          firstName: currentUser?.firstName,
+          lastName: currentUser?.lastName,
+          email: currentUser?.email || "",
+        },
+        message: messageContent,
+        createdAt: new Date().toISOString(),
+      };
+
+      setReport((prevReport) => {
+        if (!prevReport) return prevReport;
+        return {
+          ...prevReport,
+          replies: [...prevReport.replies, optimisticReply],
+        };
+      });
+
+      setReplyMessage("");
+
+      // Send to server
+      const res = await postReportApi.addReply(reportId, { message: messageContent });
       
-      if (res.status && res.data) {
-        setReplyMessage("");
-        fetchReportDetail();
+      if (!res.status || !res.data) {
+        // If failed, remove the optimistic reply
+        setReport((prevReport) => {
+          if (!prevReport) return prevReport;
+          return {
+            ...prevReport,
+            replies: prevReport.replies.slice(0, -1),
+          };
+        });
       }
     } catch (error) {
+      // Remove optimistic reply on error
+      setReport((prevReport) => {
+        if (!prevReport) return prevReport;
+        return {
+          ...prevReport,
+          replies: prevReport.replies.slice(0, -1),
+        };
+      });
     } finally {
       setSending(false);
     }
@@ -131,7 +225,8 @@ export const ReportDetailScreen: React.FC = () => {
       
       if (res.status && res.data) {
         setShowStatusModal(false);
-        fetchReportDetail();
+        // Don't need to reload - socket will update in real-time
+        // The status will be updated via the socket listener
       }
     } catch (error) {
     } finally {

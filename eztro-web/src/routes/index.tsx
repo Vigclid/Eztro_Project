@@ -16,6 +16,7 @@ import ReportDetailScreen from "../pages/support/ReportDetailScreen";
 import UsersPage from "../pages/users/UsersPage";
 import WebLogPage from "../pages/admin/WebLogPage";
 import StaffManagementPage from "../pages/admin/StaffManagementPage";
+import PaymentsPage from "../pages/payments/PaymentsPage";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -57,6 +58,14 @@ const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute allowedRoles={["Staff", "Admin"]}>
             <ReportDetailScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute allowedRoles={["Staff", "Admin"]}>
+            <PaymentsPage />
           </ProtectedRoute>
         }
       />

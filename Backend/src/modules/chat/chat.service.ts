@@ -33,12 +33,6 @@ export class ChatService {
           .select("firstName lastName profilePicture");
 
         if (users.length !== 2) {
-          console.error("findOrCreateConversation - could not find both users");
-          console.error("findOrCreateConversation - expected 2 users, found:", users.length);
-          console.error(
-            "findOrCreateConversation - looking for userIds:",
-            participantIds.map((id) => id.toString())
-          );
           throw new Error(`Could not find both users. Found ${users.length} out of 2 users.`);
         }
 
@@ -60,8 +54,6 @@ export class ChatService {
 
       return conversation;
     } catch (error: any) {
-      console.error("findOrCreateConversation - error:", error);
-      console.error("findOrCreateConversation - error stack:", error.stack);
       throw error;
     }
   }
