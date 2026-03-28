@@ -22,7 +22,9 @@ export interface IInvoice {
     waterCharge: number | undefined,
     totalAmount: number | undefined,
     createDate: Date | undefined,
-    isVirtualTenant: boolean | undefined
+    isVirtualTenant: boolean | undefined,
+    landlordBankName: string | undefined,
+    landlordBankNumber: string | undefined,
 }
 
 export interface IRoomInvoice {

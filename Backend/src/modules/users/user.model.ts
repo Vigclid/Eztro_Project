@@ -16,6 +16,8 @@ export interface IUser extends Document {
   statusActive: boolean;
   createdAt: Date;
   loginFailedTime: Date | null;
+  bankName?: string;
+  bankNumber?: string;
 }
 
 const UserSchema = new mongoose.Schema<IUser>(
@@ -37,6 +39,8 @@ const UserSchema = new mongoose.Schema<IUser>(
     statusActive: { type: Boolean, default: true },
     loginFailedTime: { type: Date, default: null },
     createdAt: { type: Date, default: Date.now },
+    bankName: { type: String },
+    bankNumber: { type: String },
   },
   {
     versionKey: false,

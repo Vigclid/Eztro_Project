@@ -185,6 +185,13 @@ export class userService extends GenericService<IUser> {
       .exec();
   };
 
+  updateBankInfo = async (id: string, bankName: string, bankNumber: string) => {
+    return userModel
+      .findByIdAndUpdate(id, { bankName, bankNumber }, { new: true })
+      .select("bankName bankNumber")
+      .exec();
+  };
+
   deleteAccount = async (userId: string) => {
     return userModel.findByIdAndDelete(userId).exec();
   };

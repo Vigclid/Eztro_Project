@@ -264,6 +264,20 @@ export class userController extends GenericController<IUser> {
     }
   };
 
+  updateBankInfo = async (req: Request, res: Response) => {
+    try {
+      const { id } = jwt.decode(req.headers["authorization"]?.split(" ")[1] as string) as {
+        id: string;
+      };
+      const { bankName, bankNumber } = req.body;
+      const updated = await this.UserService.updateBankInfo(id, bankName, bankNumber);
+      if (!updated) return res.status(404).json(responseWrapper("error", "User not found"));
+      res.status(200).json(responseWrapper("success", "Bank info updated successfully", updated));
+    } catch (error) {
+      res.status(500).json(responseWrapper("error", "Internal Server Error", error));
+    }
+  };
+
   deleteAccount = async (req: Request, res: Response) => {
     try {
       const token = req.headers["authorization"]?.split(" ")[1];

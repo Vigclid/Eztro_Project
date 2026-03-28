@@ -15,7 +15,7 @@ import {
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { MainStackParamList, RootStackParamList } from "../../navigation/navigation.type";
 import { getRoomApi, postRoomApi } from "../../api/room/room";
@@ -38,7 +38,7 @@ type CreateRoomRouteProps = RouteProp<
   "createNewRoomScreen"
 >;
 
-type CreateRoomNavigationProp = StackNavigationProp<RootStackParamList>;
+type CreateRoomNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const FormInput = ({
   label,
@@ -117,6 +117,7 @@ const CreateNewRoomScreen = () => {
   });
   const [showVirtualTenantDatePicker, setShowVirtualTenantDatePicker] =
     useState(false);
+  const [inviteDepositAmount, setInviteDepositAmount] = useState("0");
   const [policyData, setPolicyData] = useState({
     description: "",
     defaultTimeReminder: "",
@@ -141,6 +142,7 @@ const CreateNewRoomScreen = () => {
           : new Date().toISOString().slice(0, 10),
       });
       setTenants(editingRoom.virtualTenants || []);
+      setInviteDepositAmount(String(editingRoom.defaultDepositAmount ?? 0));
       setPolicyData((prev) => ({
         ...prev,
         defaultTimeReminder: new Date().toISOString().slice(0, 10),
@@ -158,6 +160,7 @@ const CreateNewRoomScreen = () => {
         notificationType: "in-app",
         timeReminderStatus: "active",
       });
+      setInviteDepositAmount("0");
       setIsPolicyExpanded(true);
     }
   }, [editingRoom]);
@@ -226,6 +229,14 @@ const CreateNewRoomScreen = () => {
     setPolicyData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const getDepositAmount = () => {
+    const digits = inviteDepositAmount.replace(/\D/g, "");
+    if (!digits) return 0;
+    const parsed = Number(digits);
+    if (!Number.isFinite(parsed) || parsed < 0) return 0;
+    return Math.floor(parsed);
+  };
+
   const mapStatusForBackend = (status: "Trống" | "Đang thuê") => {
     if (status === "Trống") return "Còn Trống";
     return "Đang Thuê";
@@ -261,6 +272,7 @@ const CreateNewRoomScreen = () => {
       rentalDate: formData.rentalDate
         ? new Date(formData.rentalDate)
         : new Date(),
+      defaultDepositAmount: getDepositAmount(),
       virtualTenants: tenants,
       policy: {
         description: policyData.description.trim(),
@@ -339,13 +351,19 @@ const CreateNewRoomScreen = () => {
 
     setGeneratingCode(true);
     try {
-      const raw = await postRoomApi.createInviteCode(editingRoom._id);
+      const raw = await postRoomApi.createInviteCode(
+        editingRoom._id,
+        getDepositAmount()
+      );
       const res = raw as ApiResponse<any>;
 
       if (res.status === "success") {
         const code = res.data?.inviteCode || "";
         setInviteCode(String(code));
-        Alert.alert("Thành công", `Mã mời phòng: ${code}`);
+        Alert.alert(
+          "Thành công",
+          `Mã mời phòng: ${code}\nTiền cọc: ${getDepositAmount().toLocaleString("vi-VN")} đ`
+        );
       } else {
         Alert.alert("Lỗi", res.message || "Không thể tạo mã mời.");
       }
@@ -450,7 +468,11 @@ const CreateNewRoomScreen = () => {
 
     setInvitingTenant(true);
     try {
-      const raw = await postRoomApi.inviteTenant(editingRoom._id, String(tenant._id));
+      const raw = await postRoomApi.inviteTenant(
+        editingRoom._id,
+        String(tenant._id),
+        getDepositAmount()
+      );
       const res = (raw || {
         status: "error",
         message: "Không nhận được phản hồi từ máy chủ.",
@@ -600,6 +622,19 @@ const CreateNewRoomScreen = () => {
               value={formData.price}
               keyboardType="numeric"
               onChangeText={(text: string) => handleChange("price", text)}
+            />
+          </View>
+
+          <View style={styles.singleRow}>
+            <FormInput
+              label="Tiền cọc mặc định (đ)"
+              icon="cash-multiple"
+              placeholder="0"
+              value={inviteDepositAmount}
+              keyboardType="numeric"
+              onChangeText={(text: string) =>
+                setInviteDepositAmount(keepDigitsOnly(text))
+              }
             />
           </View>
 
@@ -868,7 +903,7 @@ const CreateNewRoomScreen = () => {
 
               {inviteCode ? (
                 <Text style={[styles.tenantsTitle, { marginTop: SPACING.SMALL }]}>
-                  Mã hiện tại: {inviteCode}
+                  Mã hiện tại: {inviteCode} (Cọc: {getDepositAmount().toLocaleString("vi-VN")} đ)
                 </Text>
               ) : null}
             </View>
@@ -957,6 +992,9 @@ const CreateNewRoomScreen = () => {
                         </Text>
                         <Text style={styles.tenantText}>
                           Ngày vào ở: {member?.moveInDate ? new Date(member.moveInDate).toISOString().slice(0, 10) : "--/--/----"}
+                        </Text>
+                        <Text style={styles.tenantText}>
+                          Tiền cọc: {(member?.depositAmount || 0).toLocaleString("vi-VN")} đ
                         </Text>
                       </View>
                       <View style={styles.tenantActions}>
