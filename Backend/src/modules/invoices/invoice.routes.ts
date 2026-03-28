@@ -7,13 +7,19 @@ import { invoiceService } from "./invoice.service";
 const router = Router();
 const InvoiceController = new invoiceController(new invoiceService());
 
+router.route("/").get(InvoiceController.getAll);
+
 router.route("/filter/all").get(authenticate, InvoiceController.getInvoicesByFilter);
 router.route("/create/many").post(authenticate, InvoiceController.createNewInvoices);
 router.route("/finalize/many").patch(authenticate, InvoiceController.finalizeInvoices);
 router.route("/tenant/my").get(authenticate, InvoiceController.getMyInvoicesAsTenant);
 router.route("/tenant/processing").get(authenticate, InvoiceController.getMyProcessingInvoice);
-router.route("/tenant/meter-reading").patch(authenticate, InvoiceController.tenantSubmitMeterReading);
-router.route("/draft/house/:houseId").get(authenticate, InvoiceController.getProcessingInvoicesByHouse);
+router
+  .route("/tenant/meter-reading")
+  .patch(authenticate, InvoiceController.tenantSubmitMeterReading);
+router
+  .route("/draft/house/:houseId")
+  .get(authenticate, InvoiceController.getProcessingInvoicesByHouse);
 
 router
   .route("/verify-transaction-image")
