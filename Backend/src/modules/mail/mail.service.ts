@@ -41,7 +41,7 @@ export class MailService {
       },
     });
 
-    const subject = "Your Verification Token";
+    const subject = "EzTro - Mã xác thực của bạn";
     const html = MailService.buildEmailContent(generatedToken);
 
     try {
@@ -66,29 +66,39 @@ export class MailService {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
-      body { font-family: Arial, sans-serif; text-align: center; padding: 0; margin: 0; }
-      .container { padding: 20px; max-width: 600px; margin: 24px auto; border: 1px solid #eee; border-radius: 8px; }
-      .logo { width: 96px; margin: 8px auto; display:block; }
-      .token { font-size: 28px; font-weight: 700; color: #d9534f; margin: 12px 0; }
-      .footer { margin-top: 18px; font-size: 12px; color: #777; }
-      .banner { width: 100%; border-radius: 6px; margin-top: 8px; }
+      * { box-sizing: border-box; }
+      body { font-family: Arial, sans-serif; text-align: center; padding: 0; margin: 0; background: #f5f5f5; }
+      .wrapper { padding: 32px 16px; }
+      .container { padding: 32px 24px; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .brand { font-size: 22px; font-weight: 700; color: #1a73e8; margin: 0 0 4px; }
+      .tagline { font-size: 13px; color: #888; margin: 0 0 24px; }
+      .divider { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+      .title { font-size: 18px; font-weight: 600; color: #333; margin: 0 0 8px; }
+      .desc { font-size: 14px; color: #555; margin: 0 0 20px; }
+      .token-box { display: inline-block; background: #f0f6ff; border: 2px dashed #1a73e8; border-radius: 10px; padding: 14px 36px; margin: 0 0 20px; }
+      .token { font-size: 32px; font-weight: 700; color: #1a73e8; letter-spacing: 6px; margin: 0; }
+      .expiry { font-size: 13px; color: #e53935; margin: 0 0 24px; }
+      .note { font-size: 12px; color: #999; line-height: 1.6; margin: 0; }
+      .footer { margin-top: 24px; font-size: 12px; color: #aaa; }
     </style>
   </head>
   <body>
-    <div class="container">
-      <img class="logo" src="https://res.cloudinary.com/dx8iuner7/image/upload/Union_w8qgub.png" alt="logo" />
-      <img class="banner" src="https://res.cloudinary.com/dx8iuner7/image/upload/ArtHubBanner_jpncuk.png" alt="banner" />
-      <h2>Your Verification Token</h2>
-      <p>Use the following code to verify your email:</p>
-      <p class="token">${token}</p>
-      <p>This token is valid for 10 minutes.</p>
-      <div class="footer">
-        <p>Follow us on:</p>
-        <div>
-          <a href="https://facebook.com/namson03"><img src="https://upload.wikimedia.org/wikipedia/commons/c/cd/Facebook_logo_%28square%29.png" alt="Facebook" width="28" /></a>
-          <a href="https://instagram.com/namson.10"><img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="28" /></a>
-          
+    <div class="wrapper">
+      <div class="container">
+        <p class="brand">EzTro</p>
+        <p class="tagline">Quản lý 1 chạm</p>
+        <hr class="divider" />
+        <p class="title">Xác thực tài khoản của bạn</p>
+        <p class="desc">Sử dụng mã dưới đây để xác thực địa chỉ email của bạn:</p>
+        <div class="token-box">
+          <p class="token">${token}</p>
         </div>
+        <p class="expiry">Mã này có hiệu lực trong <strong>10 phút</strong>.</p>
+        <hr class="divider" />
+        <p class="note">Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.<br/>Không chia sẻ mã này với bất kỳ ai.</p>
+      </div>
+      <div class="footer">
+        <p>&copy; ${new Date().getFullYear()} EzTro. Mọi quyền được bảo lưu.</p>
       </div>
     </div>
   </body>
