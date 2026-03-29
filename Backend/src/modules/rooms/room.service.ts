@@ -8,11 +8,12 @@ import roomPolicyModel from "./roomPolicy.model";
 import { Types } from "mongoose";
 import userModel from "../users/user.model";
 import houseModel from "../houses/house.model";
+import invoiceModel, { IInvoice } from "../invoices/invoice.model";
 
 export class roomService extends GenericService<IRoom> {
-    constructor() {
-        super(roomModel);
-    }
+  constructor() {
+    super(roomModel);
+  }
 
   private toObjectId = (value: string) => new Types.ObjectId(value);
 
@@ -20,10 +21,7 @@ export class roomService extends GenericService<IRoom> {
 
   private generateInviteCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-  private normalizeDepositAmount = (
-    depositAmount: any,
-    fallback = 0
-  ): number => {
+  private normalizeDepositAmount = (depositAmount: any, fallback = 0): number => {
     if (typeof depositAmount === "number" && Number.isFinite(depositAmount)) {
       return Math.max(0, Math.floor(depositAmount));
     }
@@ -56,57 +54,57 @@ export class roomService extends GenericService<IRoom> {
     };
   };
 
-    createNewRoom = async (data: Partial<IRoom>) => {
-        // Đảm bảo không tạo 2 phòng trùng tên trong cùng 1 cụm trọ
-        if (!data.houseId || !data.roomName) {
-            throw new Error("HOUSE_ID_AND_ROOM_NAME_REQUIRED");
-        }
+  createNewRoom = async (data: Partial<IRoom>) => {
+    // Đảm bảo không tạo 2 phòng trùng tên trong cùng 1 cụm trọ
+    if (!data.houseId || !data.roomName) {
+      throw new Error("HOUSE_ID_AND_ROOM_NAME_REQUIRED");
+    }
 
-        const existed = await roomModel.findOne({
-            houseId: data.houseId,
-            roomName: data.roomName,
-        });
+    const existed = await roomModel.findOne({
+      houseId: data.houseId,
+      roomName: data.roomName,
+    });
 
-        if (existed) {
-            const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
-            error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
-            throw error;
-        }
+    if (existed) {
+      const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
+      error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
+      throw error;
+    }
 
-        const housePackage = await housePackageModel
-            .findOne({
-                houseId: data.houseId,
-            })
-            .sort({ expirationDate: -1, createDate: -1 })
-            .populate("packageId");
+    const housePackage = await housePackageModel
+      .findOne({
+        houseId: data.houseId,
+      })
+      .sort({ expirationDate: -1, createDate: -1 })
+      .populate("packageId");
 
-        const packageData = housePackage?.packageId as IPackage;
+    const packageData = housePackage?.packageId as IPackage;
 
-        if (!housePackage) {
-            const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
-            error.code = "HOUSE_PACKAGE_NOT_FOUND";
-            throw error;
-        }
+    if (!housePackage) {
+      const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
+      error.code = "HOUSE_PACKAGE_NOT_FOUND";
+      throw error;
+    }
 
-        if (new Date(housePackage.expirationDate) < new Date()) {
-            const error: any = new Error("HOUSE_PACKAGE_EXPIRED");
-            error.code = "HOUSE_PACKAGE_EXPIRED";
-            throw error;
-        }
+    if (new Date(housePackage.expirationDate) < new Date()) {
+      const error: any = new Error("HOUSE_PACKAGE_EXPIRED");
+      error.code = "HOUSE_PACKAGE_EXPIRED";
+      throw error;
+    }
 
-        if (!packageData || typeof packageData.maxRoom !== "number") {
-            const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
-            error.code = "HOUSE_PACKAGE_NOT_FOUND";
-            throw error;
-        }
+    if (!packageData || typeof packageData.maxRoom !== "number") {
+      const error: any = new Error("HOUSE_PACKAGE_NOT_FOUND");
+      error.code = "HOUSE_PACKAGE_NOT_FOUND";
+      throw error;
+    }
 
-        const countRoom = await roomModel.countDocuments({ houseId: data.houseId });
-        if (countRoom >= packageData.maxRoom) {
-            const error: any = new Error("ROOM_LIMIT_EXCEEDED");
-            error.code = "ROOM_LIMIT_EXCEEDED";
-            error.maxRoom = packageData.maxRoom;
-            throw error;
-        }
+    const countRoom = await roomModel.countDocuments({ houseId: data.houseId });
+    if (countRoom >= packageData.maxRoom) {
+      const error: any = new Error("ROOM_LIMIT_EXCEEDED");
+      error.code = "ROOM_LIMIT_EXCEEDED";
+      error.maxRoom = packageData.maxRoom;
+      throw error;
+    }
 
     const inputData: any = { ...(data as any) };
     const policyPayload = inputData.policy;
@@ -130,8 +128,23 @@ export class roomService extends GenericService<IRoom> {
       );
     }
 
-    return createdRoom;
+    const house = await houseModel.findById(inputData.houseId);
+    const invoiceData: Partial<IInvoice> = {
+      roomId: createdRoom._id as Types.ObjectId,
+      status: "processing",
+      rentalFee: house?.defaultPrice ?? 0,
+      electricityCharge: house?.defaultElectricityCharge ?? 0,
+      waterCharge: house?.defaultWaterCharge ?? 0,
+      utilities: (house?.defaultUtilitesCharge as IInvoice["utilities"]) ?? [],
+      previousElectricityNumber: 0,
+      currentElectricityNumber: 0,
+      previousWaterNumber: 0,
+      currentWaterNumber: 0,
     };
+    await new invoiceModel(invoiceData).save();
+
+    return createdRoom;
+  };
 
   getAllRoomsByHouseId = async (houseId: string) => {
     return await roomModel.find({ houseId: houseId });
@@ -185,11 +198,7 @@ export class roomService extends GenericService<IRoom> {
     );
   };
 
-  createInviteCodeForRoom = async (
-    roomId: string,
-    createdBy: string,
-    depositAmount?: number
-  ) => {
+  createInviteCodeForRoom = async (roomId: string, createdBy: string, depositAmount?: number) => {
     const room = await roomModel.findById(roomId);
     if (!room) {
       const error: any = new Error("ROOM_NOT_FOUND");
@@ -343,10 +352,7 @@ export class roomService extends GenericService<IRoom> {
 
     return invitations.map((invitation: any) => ({
       ...invitation.toObject(),
-      depositAmount: this.normalizeDepositAmount(
-        invitation.depositAmount,
-        0
-      ),
+      depositAmount: this.normalizeDepositAmount(invitation.depositAmount, 0),
     }));
   };
 
@@ -625,32 +631,32 @@ export class roomService extends GenericService<IRoom> {
     );
   };
 
-    updateRoom = async (roomId: string, data: Partial<IRoom>) => {
-        const existing = await roomModel.findById(roomId);
-        if (!existing) {
-            const error: any = new Error("ROOM_NOT_FOUND");
-            error.code = "ROOM_NOT_FOUND";
-            throw error;
-        }
-        const targetHouseId = (data.houseId as any) || existing.houseId;
-        const targetRoomName = (data.roomName as any) || existing.roomName;
+  updateRoom = async (roomId: string, data: Partial<IRoom>) => {
+    const existing = await roomModel.findById(roomId);
+    if (!existing) {
+      const error: any = new Error("ROOM_NOT_FOUND");
+      error.code = "ROOM_NOT_FOUND";
+      throw error;
+    }
+    const targetHouseId = (data.houseId as any) || existing.houseId;
+    const targetRoomName = (data.roomName as any) || existing.roomName;
 
-        if (!targetHouseId || !targetRoomName) {
-            return await roomModel.findByIdAndUpdate(roomId, data, { new: true });
-        }
+    if (!targetHouseId || !targetRoomName) {
+      return await roomModel.findByIdAndUpdate(roomId, data, { new: true });
+    }
 
-        const duplicate = await roomModel.findOne({
-            houseId: targetHouseId,
-            roomName: targetRoomName,
-            _id: { $ne: roomId },
-        });
+    const duplicate = await roomModel.findOne({
+      houseId: targetHouseId,
+      roomName: targetRoomName,
+      _id: { $ne: roomId },
+    });
 
-        if (duplicate) {
-            const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
-            error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
-            throw error;
-        }
+    if (duplicate) {
+      const error: any = new Error("ROOM_NAME_ALREADY_EXISTS_IN_HOUSE");
+      error.code = "ROOM_NAME_ALREADY_EXISTS_IN_HOUSE";
+      throw error;
+    }
 
-        return await roomModel.findByIdAndUpdate(roomId, data, { new: true });
-    };
+    return await roomModel.findByIdAndUpdate(roomId, data, { new: true });
+  };
 }
