@@ -138,7 +138,6 @@ const StaffDashboard: React.FC = () => {
       const reports = Array.isArray(reportsRes?.data) ? reportsRes.data : [];
 
       // Load revenue data
-      const revenueMonthlyRes = await paymentGetAPI.getRevenueByMonth() as any;
       
       const revenueDailyRes = await paymentGetAPI.getRevenueByDay() as any;
       
