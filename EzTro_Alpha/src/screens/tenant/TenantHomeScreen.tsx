@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -45,6 +46,17 @@ type TenantRoomInfo = {
   room: { roomName: string; rentalFee: number };
   house: { houseName: string; address: string };
   landlord: { _id?: string; fullName: string };
+  roommates?: Array<{
+    roomMemberId: string;
+    userId?: string;
+    fullName: string;
+    phoneNumber?: string;
+    email?: string;
+    role: "TENANT" | "CO-TENANT";
+    moveInDate?: Date | string;
+    depositAmount?: number;
+    isCurrentUser?: boolean;
+  }>;
   policy?: {
     description: string;
     defaultTimeReminder: Date | string | null;
@@ -95,10 +107,26 @@ const TenantHomeScreen = () => {
     });
   };
 
+  const handleMessageRoommate = (roommateId?: string, roommateName?: string) => {
+    if (!roommateId) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin người thuê");
+      return;
+    }
+
+    navigation.navigate("mainstack", {
+      screen: "messageScreen",
+      params: {
+        recipientId: roommateId,
+        recipientName: roommateName || "Người thuê",
+      },
+    });
+  };
+
   const [isJoinModalVisible, setIsJoinModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<"roomCode" | "invites">("roomCode");
   const [roomCode, setRoomCode] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [joining, setJoining] = useState(false);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
@@ -168,6 +196,15 @@ const TenantHomeScreen = () => {
     }, [fetchData])
   );
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchData]);
+
   const handleJoinByCode = async () => {
     const code = roomCode.replace(/\D/g, "").slice(0, 6);
     if (code.length !== 6) return;
@@ -211,6 +248,14 @@ const TenantHomeScreen = () => {
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: contentBottomPadding }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={["#0ea58d"]}
+                tintColor="#0ea58d"
+              />
+            }
           >
             <Text style={styles.title}>Xin chào 👋</Text>
             <Text style={styles.subtitle}>Quản lý phòng trọ của bạn</Text>
@@ -330,6 +375,94 @@ const TenantHomeScreen = () => {
                     <Text style={{ marginTop: 4, fontSize: 12, color: "#475569" }}>
                       {myRoom.policy.description || "Không có mô tả chính sách"}
                     </Text>
+                  </View>
+                )}
+
+                {!!myRoom.roommates?.length && (
+                  <View style={{ marginBottom: 12 }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: "#1f2937",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Thành viên cùng phòng
+                    </Text>
+                    {myRoom.roommates.map((member) => (
+                      <View
+                        key={member.roomMemberId}
+                        style={{
+                          borderRadius: 14,
+                          borderWidth: 1,
+                          borderColor: "#dbe4ee",
+                          backgroundColor: "#ffffff",
+                          padding: 12,
+                          marginBottom: 10,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                            marginBottom: 8,
+                          }}
+                        >
+                          <View style={{ flex: 1, marginRight: 8 }}>
+                            <Text
+                              style={{
+                                fontSize: 14,
+                                fontWeight: "700",
+                                color: "#0f172a",
+                              }}
+                            >
+                              {member.fullName}
+                              {member.isCurrentUser ? " (Bạn)" : ""}
+                            </Text>
+                            <Text style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                              {member.role === "TENANT" ? "Người thuê chính" : "Người thuê phụ"}
+                            </Text>
+                          </View>
+                          {!member.isCurrentUser && !!member.userId && (
+                            <TouchableOpacity
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 17,
+                                backgroundColor: "#eefdf6",
+                                borderWidth: 1,
+                                borderColor: "#b9f3d7",
+                                justifyContent: "center",
+                                alignItems: "center",
+                              }}
+                              onPress={() =>
+                                handleMessageRoommate(
+                                  member.userId,
+                                  member.fullName
+                                )
+                              }
+                            >
+                              <Ionicons
+                                name="chatbubble-ellipses-outline"
+                                size={18}
+                                color="#0ea58d"
+                              />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                        <Text style={{ fontSize: 12, color: "#475569", marginTop: 1 }}>
+                          SĐT: {member.phoneNumber || "Không có"}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: "#475569", marginTop: 1 }}>
+                          Email: {member.email || "Không có"}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: "#475569", marginTop: 1 }}>
+                          Cọc: {(member.depositAmount || 0).toLocaleString("vi-VN")} đ
+                        </Text>
+                      </View>
+                    ))}
                   </View>
                 )}
 
