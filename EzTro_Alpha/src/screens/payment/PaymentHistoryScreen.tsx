@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, ScrollView, Text, StyleSheet } from "react-native";
+import { View, ScrollView, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Calendar, CreditCard, ArrowLeft } from "lucide-react-native";
@@ -9,6 +9,7 @@ import { getPaymentPackageApi } from "../../api/paymentPackage/paymentPackage";
 import { ApiResponse } from "../../types/app.common";
 import PaymentPackageCard from "../../components/payment/PaymentPackageCard";
 import { useFocusEffect } from "@react-navigation/native";
+import { appNavigator } from "../../navigation/navigationActions";
 
 // Extracted interface for transaction data typing (image URLs removed)
 interface Transaction {
@@ -63,9 +64,11 @@ export const PaymentHistoryScreen = () => {
                         colors={[COLORS.GRADIENT_CARD_START, COLORS.GRADIENT_CARD_END]}
                         style={styles.headerGradient}
                     >
-                        <View style={styles.headerIconContainer}>
+                        <TouchableOpacity style={styles.headerIconContainer}
+                        onPress={() => appNavigator.goBack()}
+                        >
                             <ArrowLeft size={METRICS.LUCIDE_HEADER_SIZE} color={COLORS.WHITE} />
-                        </View>
+                        </TouchableOpacity>
                         <View>
                             <Text style={styles.headerTitle}>Lịch sử giao dịch</Text>
                         </View>
