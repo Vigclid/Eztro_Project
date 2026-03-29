@@ -51,7 +51,6 @@ export const useChat = (): UseChatReturn => {
       try {
         await context.loadConversations(cursor);
       } catch (error) {
-        console.error('Failed to load conversations:', error);
         throw error;
       }
     },
@@ -68,7 +67,6 @@ export const useChat = (): UseChatReturn => {
       try {
         await context.loadMessages(conversationId, cursor);
       } catch (error) {
-        console.error('Failed to load messages:', error);
         throw error;
       }
     },
@@ -94,7 +92,6 @@ export const useChat = (): UseChatReturn => {
 
         await context.sendMessage(to, content, imageBase64);
       } catch (error) {
-        console.error('Failed to send message:', error);
         throw error;
       }
     },
@@ -110,7 +107,6 @@ export const useChat = (): UseChatReturn => {
       try {
         context.markAsSeen(conversationId);
       } catch (error) {
-        console.error('Failed to mark messages as seen:', error);
       }
     },
     [context]
@@ -125,7 +121,6 @@ export const useChat = (): UseChatReturn => {
       try {
         context.sendTyping(conversationId, to);
       } catch (error) {
-        console.error('Failed to send typing indicator:', error);
       }
     },
     [context]

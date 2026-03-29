@@ -42,7 +42,6 @@ export class ChatController {
         .json(responseWrapper("success", "Conversations retrieved successfully", result));
     } catch (error: any) {
       // Handle errors with appropriate HTTP status codes
-      console.error("Error in getConversations:", error);
       return res
         .status(500)
         .json(responseWrapper("error", error.message || "Internal server error"));
@@ -95,7 +94,6 @@ export class ChatController {
         .json(responseWrapper("success", "Messages retrieved successfully", result));
     } catch (error: any) {
       // Handle errors with appropriate HTTP status codes
-      console.error("Error in getMessages:", error);
       return res
         .status(500)
         .json(responseWrapper("error", error.message || "Internal server error"));
@@ -151,7 +149,6 @@ export class ChatController {
             // Store Cloudinary URL as content
             finalContent = uploadResult.secure_url;
           } catch (uploadError: any) {
-            console.error('Image upload error:', uploadError);
             return res.status(500).json(responseWrapper("error", "Failed to upload image: " + uploadError.message));
           }
         } else {
@@ -197,7 +194,6 @@ export class ChatController {
         );
       } catch (error: any) {
         // Handle errors with appropriate HTTP status codes
-        console.error("Error in sendMessage:", error);
         return res
           .status(500)
           .json(responseWrapper("error", error.message || "Internal server error"));
@@ -246,7 +242,6 @@ export class ChatController {
         .json(responseWrapper("success", "Conversation retrieved successfully", { conversation }));
     } catch (error: any) {
       // Handle errors with appropriate HTTP status codes
-      console.error("Error in getConversationWithUser:", error);
       return res
         .status(500)
         .json(responseWrapper("error", error.message || "Internal server error"));
@@ -282,7 +277,6 @@ export class ChatController {
         .json(responseWrapper("success", "Conversation created successfully", { conversation }));
     } catch (error: any) {
       // Handle errors with appropriate HTTP status codes
-      console.error("Error in createConversationWithUser:", error);
       return res
         .status(500)
         .json(responseWrapper("error", error.message || "Internal server error"));

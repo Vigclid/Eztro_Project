@@ -16,6 +16,7 @@ import { reportGetAPI } from "../../api/reportAPI/GET";
 import { reportPostAPI } from "../../api/reportAPI/POST";
 import { reportPatchAPI } from "../../api/reportAPI/PATCH";
 import { Report } from "../../types/report";
+import socketService from "../../service/socketService";
 import "./styles/ReportDetailScreen.css";
 
 const ReportDetailScreen: React.FC = () => {
@@ -47,6 +48,57 @@ const ReportDetailScreen: React.FC = () => {
   useEffect(() => {
     if (reportId) {
       loadReportDetail();
+      
+      // Connect to socket with authentication
+      socketService.connect();
+      
+      // Small delay to ensure socket is connected before joining room
+      const timer = setTimeout(() => {
+        socketService.joinReportRoom(reportId);
+      }, 500);
+
+      // Listen for new replies from other users
+      socketService.onReplyAdded(({ reportId: updatedReportId, reply, senderId }) => {
+        if (updatedReportId === reportId) {
+          // Only add if it's from another user (not from sender)
+          if (senderId !== currentUser?._id) {
+            setReport((prevReport) => {
+              if (!prevReport) return prevReport;
+              
+              // Check if this reply already exists (to avoid duplicates)
+              const replyExists = prevReport.replies.some(
+                (r) => r.message === reply.message && 
+                       r.senderId._id === reply.senderId._id &&
+                       new Date(r.createdAt).getTime() === new Date(reply.createdAt).getTime()
+              );
+              
+              if (replyExists) return prevReport;
+              
+              return {
+                ...prevReport,
+                replies: [...prevReport.replies, reply],
+              };
+            });
+          }
+        }
+      });
+
+      // Listen for status changes
+      socketService.onReportStatusChanged(({ reportId: updatedReportId, status }) => {
+        if (updatedReportId === reportId) {
+          setReport((prevReport) => {
+            if (!prevReport) return prevReport;
+            return { ...prevReport, status: status as "Pending" | "InProgress" | "Resolved" | "Closed" };
+          });
+        }
+      });
+
+      return () => {
+        clearTimeout(timer);
+        socketService.leaveReportRoom(reportId);
+        socketService.offReplyAdded();
+        socketService.offReportStatusChanged();
+      };
     }
   }, [reportId]);
 
@@ -68,14 +120,49 @@ const ReportDetailScreen: React.FC = () => {
   const handleSendReply = async () => {
     if (!replyMessage.trim() || !reportId) return;
 
+    const messageContent = replyMessage.trim();
     setSending(true);
+    
     try {
-      const res = await reportPostAPI.addReply(reportId, { message: replyMessage.trim() });
-      if (res.status === "success") {
-        setReplyMessage("");
-        loadReportDetail();
+      // Optimistically add the reply to the UI immediately
+      const optimisticReply = {
+        senderId: currentUser,
+        message: messageContent,
+        createdAt: new Date().toISOString(),
+      };
+
+      setReport((prevReport) => {
+        if (!prevReport) return prevReport;
+        return {
+          ...prevReport,
+          replies: [...prevReport.replies, optimisticReply],
+        };
+      });
+
+      setReplyMessage("");
+
+      // Send to server
+      const res = await reportPostAPI.addReply(reportId, { message: messageContent });
+      if (res.status !== "success") {
+        // If failed, remove the optimistic reply
+        setReport((prevReport) => {
+          if (!prevReport) return prevReport;
+          return {
+            ...prevReport,
+            replies: prevReport.replies.slice(0, -1),
+          };
+        });
+        alert("Lỗi khi gửi tin nhắn");
       }
     } catch (error) {
+      // Remove optimistic reply on error
+      setReport((prevReport) => {
+        if (!prevReport) return prevReport;
+        return {
+          ...prevReport,
+          replies: prevReport.replies.slice(0, -1),
+        };
+      });
     } finally {
       setSending(false);
     }
@@ -88,7 +175,8 @@ const ReportDetailScreen: React.FC = () => {
       const res = await reportPatchAPI.updateStatus(reportId, { status: newStatus });
       if (res.status === "success") {
         setShowStatusModal(false);
-        loadReportDetail();
+        // Don't need to reload - socket will update in real-time
+        // The status will be updated via the socket listener
       } else {
         alert("Không thể cập nhật trạng thái: " + (res.message || "Lỗi không xác định"));
       }

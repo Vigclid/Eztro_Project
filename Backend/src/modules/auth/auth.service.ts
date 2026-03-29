@@ -84,9 +84,9 @@ export class AuthService {
 
   static refresh(token: string) {
     try {
-      const decoded = jwt.verify(token, jwtConfig.secret) as { id: number };
+      const decoded = jwt.verify(token, jwtConfig.secret) as { id: number; role?: string };
       const newAccessToken = jwt.sign(
-        { id: decoded.id },
+        { id: decoded.id, role: decoded.role || "User" },
         jwtConfig.secret as Secret,
         {
           expiresIn: jwtConfig.expiresIn,
