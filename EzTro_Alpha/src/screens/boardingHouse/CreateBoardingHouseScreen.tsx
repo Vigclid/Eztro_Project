@@ -249,7 +249,7 @@ export const CreateBoardingHouseScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={{ marginBottom: 100 }}>
+          {/* <View style={{ marginBottom: 100 }}>
             <View style={styles.formSection}>
               <View style={styles.labelContainer}>
                 <View style={styles.formIcon}>
@@ -265,7 +265,7 @@ export const CreateBoardingHouseScreen: React.FC = () => {
                 keyboardType="numeric"
               />
             </View>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
       <View style={styles.footerContainer}>
