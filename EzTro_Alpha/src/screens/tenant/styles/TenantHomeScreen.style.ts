@@ -81,6 +81,46 @@ export const TenantHomeScreenStyle = StyleSheet.create({
     color: "#1f2937",
     fontWeight: "700",
   },
+  roommateSection: {
+    marginBottom: 12,
+  },
+  roommateSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1f2937",
+    marginBottom: 8,
+  },
+  roommateCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+    padding: 10,
+    marginBottom: 8,
+  },
+  roommateHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  roommateName: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0f172a",
+    flex: 1,
+    marginRight: 8,
+  },
+  roommateRole: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0ea58d",
+  },
+  roommateInfo: {
+    fontSize: 12,
+    color: "#475569",
+    marginTop: 2,
+  },
   policyCard: {
     marginBottom: 12,
     borderRadius: 14,
