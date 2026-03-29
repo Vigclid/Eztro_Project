@@ -30,7 +30,7 @@ class SocketService {
     this.socket.on("disconnect", () => {
     });
 
-    this.socket.on("error", (error) => {
+    this.socket.on("error", (_error) => {
     });
   }
 
@@ -128,4 +128,6 @@ class SocketService {
   }
 }
 
-export default new SocketService();
+const socketServiceInstance = new SocketService();
+export { SocketService };
+export default socketServiceInstance;

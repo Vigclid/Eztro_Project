@@ -65,7 +65,7 @@ const StaffSupportScreen: React.FC = () => {
     socketService.onReportStatusChanged(({ reportId, status }) => {
       setReports((prevReports) =>
         prevReports.map((report) =>
-          report._id === reportId ? { ...report, status } : report
+          report._id === reportId ? { ...report, status: status as any } : report
         )
       );
     });
