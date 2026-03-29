@@ -46,7 +46,6 @@ export const useSocket = (): UseSocketReturn => {
   const sendMessage = useCallback(
     (data: { to: string; content: string; type?: string }) => {
       if (!socket || !isConnected) {
-        console.warn('Socket not connected, message will not be sent via Socket.IO');
         return;
       }
 
@@ -57,7 +56,6 @@ export const useSocket = (): UseSocketReturn => {
           type: data.type || 'text',
         });
       } catch (error) {
-        console.error('Failed to send message via Socket.IO:', error);
       }
     },
     [socket, isConnected]
@@ -70,7 +68,6 @@ export const useSocket = (): UseSocketReturn => {
   const onReceiveMessage = useCallback(
     (callback: (data: ReceiveMessagePayload) => void): (() => void) => {
       if (!socket) {
-        console.warn('Socket not available');
         return () => {};
       }
 
@@ -91,7 +88,6 @@ export const useSocket = (): UseSocketReturn => {
   const onMessageSent = useCallback(
     (callback: (data: any) => void): (() => void) => {
       if (!socket) {
-        console.warn('Socket not available');
         return () => {};
       }
 
@@ -112,7 +108,6 @@ export const useSocket = (): UseSocketReturn => {
   const markAsSeen = useCallback(
     (conversationId: string) => {
       if (!socket || !isConnected) {
-        console.warn('Socket not connected, mark as seen will not be sent');
         return;
       }
 
@@ -121,7 +116,6 @@ export const useSocket = (): UseSocketReturn => {
           conversationId,
         });
       } catch (error) {
-        console.error('Failed to mark messages as seen:', error);
       }
     },
     [socket, isConnected]
@@ -134,7 +128,6 @@ export const useSocket = (): UseSocketReturn => {
   const sendTyping = useCallback(
     (conversationId: string, to: string) => {
       if (!socket || !isConnected) {
-        console.warn('Socket not connected, typing indicator will not be sent');
         return;
       }
 
@@ -144,7 +137,6 @@ export const useSocket = (): UseSocketReturn => {
           to,
         });
       } catch (error) {
-        console.error('Failed to send typing indicator:', error);
       }
     },
     [socket, isConnected]
@@ -157,7 +149,6 @@ export const useSocket = (): UseSocketReturn => {
   const onUserTyping = useCallback(
     (callback: (data: { conversationId: string; userId: string }) => void): (() => void) => {
       if (!socket) {
-        console.warn('Socket not available');
         return () => {};
       }
 

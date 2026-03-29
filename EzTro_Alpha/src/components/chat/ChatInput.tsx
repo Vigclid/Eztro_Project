@@ -57,7 +57,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled = false, 
         setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error picking image:', error);
       Alert.alert('Lỗi', 'Không thể chọn ảnh');
     }
   }, []);

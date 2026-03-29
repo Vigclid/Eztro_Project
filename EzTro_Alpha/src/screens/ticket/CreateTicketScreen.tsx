@@ -169,7 +169,7 @@ export const CreateTicketScreen: React.FC = () => {
           },
         ]);
       } else {
-        Alert.alert("Lỗi", response.error?.message || "Không thể tạo yêu cầu. Vui lòng thử lại.");
+        Alert.alert("Lỗi", response.error?.message || response.message || "Không thể tạo yêu cầu. Vui lòng thử lại.");
       }
     } catch (error: any) {
       Alert.alert("Lỗi", error?.message || "Không thể tạo yêu cầu. Vui lòng thử lại.");

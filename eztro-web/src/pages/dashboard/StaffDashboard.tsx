@@ -8,16 +8,14 @@ import {
   CheckCircle,
   Clock,
   ChevronRight,
-  ArrowUpRight,
-  ArrowDownRight,
   Shield,
   BarChart3,
 } from "lucide-react";
 import {
-  LineChart,
   Line,
   BarChart,
   Bar,
+  ComposedChart,
   PieChart,
   Pie,
   Cell,
@@ -31,6 +29,7 @@ import {
 import Sidebar from "../../components/dashboard/Sidebar";
 import { reportGetAPI } from "../../api/reportAPI/GET";
 import { userGetAPI } from "../../api/userAPI/GET";
+import { paymentGetAPI } from "../../api/paymentAPI/GET";
 import "./styles/StaffDashboard.css";
 
 interface DashboardStats {
@@ -40,8 +39,7 @@ interface DashboardStats {
   };
   revenue: {
     total: number;
-    paid: number;
-    pending: number;
+    packages: number;
   };
   tickets: {
     total: number;
@@ -62,13 +60,13 @@ const StaffDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     users: { total: 0, active: 0 },
-    revenue: { total: 0, paid: 0, pending: 0 },
+    revenue: { total: 0, packages: 0 },
     tickets: { total: 0, open: 0, inProgress: 0, highPriority: 0, resolved: 0 },
     activity: { today: 0, total: 0, uniqueUsers: 0, successRate: 0 },
   });
 
   // Chart data
-  const [revenueChartData] = useState([
+  const [revenueChartData, setRevenueChartData] = useState([
     { month: "Jan", revenue: 4000, target: 5000 },
     { month: "Feb", revenue: 3000, target: 5000 },
     { month: "Mar", revenue: 2000, target: 5000 },
@@ -114,13 +112,63 @@ const StaffDashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
+      
       // Load users data
       const usersRes = await userGetAPI.getAllUsers() as any;
-      const users = Array.isArray(usersRes.data) ? usersRes.data : [];
+      
+      if (!usersRes) {
+        return;
+      }
+      
+      if (usersRes.error) {
+      }
+      
+      const users = Array.isArray(usersRes?.data) ? usersRes.data : [];
 
       // Load reports data
       const reportsRes = await reportGetAPI.getAllReports() as any;
-      const reports = Array.isArray(reportsRes.data) ? reportsRes.data : [];
+      
+      if (!reportsRes) {
+        return;
+      }
+      
+      if (reportsRes.error) {
+      }
+      
+      const reports = Array.isArray(reportsRes?.data) ? reportsRes.data : [];
+
+      // Load revenue data
+      const revenueMonthlyRes = await paymentGetAPI.getRevenueByMonth() as any;
+      
+      const revenueDailyRes = await paymentGetAPI.getRevenueByDay() as any;
+      
+      const revenueTotalRes = await paymentGetAPI.getTotalRevenue() as any;
+
+      // Transform daily revenue data for chart
+      let chartData = revenueChartData;
+      if (revenueDailyRes?.data && Array.isArray(revenueDailyRes.data)) {
+        chartData = revenueDailyRes.data.map((item: any) => {
+          const dateStr = `${item._id.day}/${item._id.month}/${item._id.year}`;
+          return {
+            date: dateStr,
+            revenue: item.revenue || 0,
+            packages: item.count || 0,
+          };
+        });
+      }
+      setRevenueChartData(chartData);
+
+      // Get total revenue
+      let totalRevenue = 45000000;
+      if (revenueTotalRes?.data && revenueTotalRes.data.totalRevenue) {
+        totalRevenue = revenueTotalRes.data.totalRevenue;
+      }
+
+      // Get total packages sold
+      let totalPackagesSold = 0;
+      if (revenueTotalRes?.data && revenueTotalRes.data.totalPackages) {
+        totalPackagesSold = revenueTotalRes.data.totalPackages;
+      }
 
       // Calculate report statistics
       const pending = reports.filter((r: any) => r.status === "Pending").length;
@@ -143,26 +191,28 @@ const StaffDashboard: React.FC = () => {
         const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
         const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
         
-        const weekUsers = users.filter((u: any) => {
+        // Get all users created up to the end of this week (cumulative)
+        const cumulativeUsers = users.filter((u: any) => {
           const createdDate = new Date(u.createdAt);
-          return createdDate >= weekStart && createdDate < weekEnd;
+          return createdDate < weekEnd;
         });
         
-        const activeWeekUsers = weekUsers.filter((u: any) => u.statusActive).length;
+        // Get active users from cumulative users
+        const activeUsers = cumulativeUsers.filter((u: any) => u.statusActive).length;
         
         const weekLabel = `${weekStart.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })} - ${weekEnd.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}`;
         
         weeklyData.push({
           week: weekLabel,
-          users: weekUsers.length,
-          active: activeWeekUsers,
+          users: cumulativeUsers.length,
+          active: activeUsers,
         });
       }
       setUserGrowthData(weeklyData);
 
       setStats({
         users: { total: users.length, active: users.filter((u: any) => u.statusActive).length },
-        revenue: { total: 45000000, paid: 38, pending: 12 },
+        revenue: { total: totalRevenue, packages: totalPackagesSold },
         tickets: {
           total: reports.length,
           open: pending,
@@ -177,14 +227,14 @@ const StaffDashboard: React.FC = () => {
             return reportDate.toDateString() === today.toDateString();
           }).length,
           total: reports.length,
-          uniqueUsers: new Set(reports.map((r: any) => r.userId._id)).size,
+          uniqueUsers: new Set(reports.filter((r: any) => r.userId).map((r: any) => r.userId._id)).size,
           successRate: reports.length > 0 ? Math.round((resolved / reports.length) * 100) : 0,
         },
       });
     } catch (error) {
       setStats({
         users: { total: 0, active: 0 },
-        revenue: { total: 45000000, paid: 38, pending: 12 },
+        revenue: { total: 0, packages: 0 },
         tickets: {
           total: 0,
           open: 0,
@@ -218,10 +268,6 @@ const StaffDashboard: React.FC = () => {
                   <div className="stat-icon stat-icon-green">
                     <Users size={24} />
                   </div>
-                  <div className="stat-trend stat-trend-up">
-                    <ArrowUpRight size={16} />
-                    <span>12%</span>
-                  </div>
                 </div>
                 <div className="stat-body">
                   <p className="stat-label">Người dùng</p>
@@ -235,19 +281,13 @@ const StaffDashboard: React.FC = () => {
                   <div className="stat-icon stat-icon-orange">
                     <DollarSign size={24} />
                   </div>
-                  <div className="stat-trend stat-trend-up">
-                    <ArrowUpRight size={16} />
-                    <span>8%</span>
-                  </div>
                 </div>
                 <div className="stat-body">
                   <p className="stat-label">Doanh thu</p>
                   <h3 className="stat-value">
                     {(stats.revenue.total / 1000000).toFixed(1)}M
                   </h3>
-                  <p className="stat-subtitle">
-                    {stats.revenue.paid}/{stats.revenue.paid + stats.revenue.pending} đã thu
-                  </p>
+                  <p className="stat-subtitle">{stats.revenue.packages} gói đã bán</p>
                 </div>
               </div>
 
@@ -255,10 +295,6 @@ const StaffDashboard: React.FC = () => {
                 <div className="stat-header">
                   <div className="stat-icon stat-icon-blue">
                     <LifeBuoy size={24} />
-                  </div>
-                  <div className="stat-trend stat-trend-down">
-                    <ArrowDownRight size={16} />
-                    <span>5%</span>
                   </div>
                 </div>
                 <div className="stat-body">
@@ -272,10 +308,6 @@ const StaffDashboard: React.FC = () => {
                 <div className="stat-header">
                   <div className="stat-icon stat-icon-purple">
                     <TrendingUp size={24} />
-                  </div>
-                  <div className="stat-trend stat-trend-up">
-                    <ArrowUpRight size={16} />
-                    <span>15%</span>
                   </div>
                 </div>
                 <div className="stat-body">
@@ -292,37 +324,43 @@ const StaffDashboard: React.FC = () => {
             {/* Revenue Chart */}
             <div className="chart-card">
               <div className="chart-header">
-                <h3 className="chart-title">Doanh thu theo tháng</h3>
+                <h3 className="chart-title">Doanh thu theo ngày</h3>
                 <button className="chart-link">Xem chi tiết</button>
               </div>
               <div className="chart-content">
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={revenueChartData}>
+                  <ComposedChart data={revenueChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" />
+                    <XAxis dataKey="date" stroke="#6b7280" />
+                    <YAxis yAxisId="left" stroke="#10b981" />
+                    <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" />
                     <Tooltip 
                       contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+                      formatter={(value: any) => {
+                        if (typeof value === 'number') {
+                          return value.toLocaleString('vi-VN');
+                        }
+                        return value;
+                      }}
                     />
                     <Legend />
                     <Line 
+                      yAxisId="left"
                       type="monotone" 
                       dataKey="revenue" 
                       stroke="#10b981" 
                       strokeWidth={2}
                       dot={{ fill: "#10b981", r: 4 }}
-                      name="Doanh thu"
+                      name="Doanh thu (VND)"
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="target" 
-                      stroke="#9ca3af" 
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      dot={{ fill: "#9ca3af", r: 4 }}
-                      name="Mục tiêu"
+                    <Bar 
+                      yAxisId="right"
+                      dataKey="packages" 
+                      fill="#3b82f6" 
+                      name="Số gói bán"
+                      radius={[8, 8, 0, 0]}
                     />
-                  </LineChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             </div>

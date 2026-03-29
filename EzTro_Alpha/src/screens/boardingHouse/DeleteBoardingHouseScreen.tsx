@@ -52,7 +52,6 @@ export const DeleteBoardingHouseScreen = () => {
                 fetchHouses();
             }
         } catch (err) {
-            console.error(err);
         }
     }, []);
 

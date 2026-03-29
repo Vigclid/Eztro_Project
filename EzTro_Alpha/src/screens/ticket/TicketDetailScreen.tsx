@@ -17,6 +17,7 @@ import { ArrowLeft, Send } from "lucide-react-native";
 import { getTicketApi } from "../../api/ticket/ticketapi";
 import { postTicketApi } from "../../api/ticket/ticketapi";
 import { putTicketApi } from "../../api/ticket/ticketapi";
+import socketService from "../../service/socketService";
 import { ITicket } from "../../types/ticket";
 import { COLORS } from "../../constants/theme";
 import { NavigationProp, MainStackParamList } from "../../navigation/navigation.type";
@@ -58,7 +59,60 @@ export const TicketDetailScreen: React.FC = () => {
   useEffect(() => {
     loadTicket();
     markTicketAsRead();
-  }, [ticketId]);
+    
+    // Connect to socket with authentication
+    if (currentUserId) {
+      socketService.connect();
+      
+      // Small delay to ensure socket is connected before joining room
+      const timer = setTimeout(() => {
+        socketService.joinTicketRoom(ticketId);
+      }, 500);
+
+      // Listen for new replies from other users
+      socketService.onTicketReplyAdded(({ ticketId: updatedTicketId, reply, senderId }) => {
+        if (updatedTicketId === ticketId) {
+          // Only add if it's from another user (not from sender)
+          if (senderId !== currentUserId) {
+            setTicket((prevTicket) => {
+              if (!prevTicket) return prevTicket;
+              
+              // Check if this reply already exists (to avoid duplicates)
+              const replyExists = prevTicket.replies?.some(
+                (r) => r.content === reply.content && 
+                       r.userId && typeof r.userId === "object" && r.userId._id === reply.userId._id &&
+                       new Date(r.createdAt).getTime() === new Date(reply.createdAt).getTime()
+              );
+              
+              if (replyExists) return prevTicket;
+              
+              return {
+                ...prevTicket,
+                replies: [...(prevTicket.replies || []), reply],
+              };
+            });
+          }
+        }
+      });
+
+      // Listen for status changes
+      socketService.onTicketStatusChanged(({ ticketId: updatedTicketId, status }) => {
+        if (updatedTicketId === ticketId) {
+          setTicket((prevTicket) => {
+            if (!prevTicket) return prevTicket;
+            return { ...prevTicket, status: status as "pending" | "processing" | "completed" };
+          });
+        }
+      });
+
+      return () => {
+        clearTimeout(timer);
+        socketService.leaveTicketRoom(ticketId);
+        socketService.offTicketReplyAdded();
+        socketService.offTicketStatusChanged();
+      };
+    }
+  }, [ticketId, currentUserId]);
 
   const loadTicket = async () => {
     try {

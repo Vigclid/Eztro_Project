@@ -403,6 +403,13 @@ export class roomService extends GenericService<IRoom> {
     const room: any = roomMember.roomId;
     const house: any = room?.houseId;
     const landlord: any = roomMember.invitedBy;
+    const roommates = await roomMemberModel
+      .find({
+        roomId: roomMember.roomId,
+        status: "Đang Thuê",
+      })
+      .sort({ moveInDate: 1, createdAt: 1 })
+      .populate("userId", "firstName lastName phoneNumber email");
     const roomPolicy: any = room?._id
       ? await roomPolicyModel.findOne({
           roomId: this.toObjectId(String(room._id)),
@@ -435,6 +442,24 @@ export class roomService extends GenericService<IRoom> {
         fullName: `${landlord?.lastName || ""} ${landlord?.firstName || ""}`.trim(),
         phoneNumber: landlord?.phoneNumber,
       },
+      roommates: roommates.map((member: any) => {
+        const roommateUser = member?.userId;
+        const fullName =
+          `${roommateUser?.lastName || ""} ${roommateUser?.firstName || ""}`.trim() ||
+          roommateUser?.email ||
+          "Không rõ";
+        return {
+          roomMemberId: member?._id,
+          userId: roommateUser?._id,
+          fullName,
+          phoneNumber: roommateUser?.phoneNumber || "",
+          email: roommateUser?.email || "",
+          role: member?.role,
+          moveInDate: member?.moveInDate,
+          depositAmount: this.normalizeDepositAmount(member?.depositAmount, 0),
+          isCurrentUser: String(roommateUser?._id || "") === String(userId),
+        };
+      }),
       policy: roomPolicy
         ? {
             description: roomPolicy.description || "",
