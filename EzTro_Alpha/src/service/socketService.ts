@@ -30,7 +30,7 @@ class SocketService {
     this.socket.on("disconnect", () => {
     });
 
-    this.socket.on("error", (error: any) => {
+    this.socket.on("error", (_error: any) => {
     });
   }
 
@@ -79,6 +79,17 @@ class SocketService {
 
   offReportStatusChanged() {
     this.socket?.off("report:status-changed");
+  }
+
+  // Join/Leave report room
+  joinReportRoom(reportId: string) {
+    if (!this.socket) this.connect();
+    this.socket?.emit("join:report", { reportId });
+  }
+
+  leaveReportRoom(reportId: string) {
+    if (!this.socket) this.connect();
+    this.socket?.emit("leave:report", { reportId });
   }
 
   // Ticket reply events
